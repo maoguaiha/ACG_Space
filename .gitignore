@@ -1,0 +1,35 @@
+# Java
+backend/target/
+*.class
+*.jar
+*.war
+.idea/
+*.iml
+
+# Node
+node_modules/
+front-ui/node_modules/
+admin-ui/node_modules/
+*.log
+npm-debug.log*
+
+# Environment
+.env
+.env.local
+.env.*.local
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Build
+dist/
+build/
+out/
+
+# Logs
+*.log
+logs/

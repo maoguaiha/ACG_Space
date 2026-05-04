@@ -1,0 +1,48 @@
+version: '3.8'
+
+services:
+  # 1. MySQL 服务 (自带建表)
+  mysql:
+    image: mysql:8.0.33
+    container_name: acg_mysql
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: "123456" # 与 application-dev.yml 中的密码强对应
+      MYSQL_DATABASE: "acg_space"   # Docker 会在首次启动时自动创建此库
+      TZ: Asia/Shanghai
+    volumes:
+      # 杀手锏：将我们之前写好的 SQL 挂载进去，MySQL 首次启动时会自动执行它完成建表！
+      - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/init.sql
+    command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
+
+  # 2. Redis 缓存服务
+  redis:
+    image: redis:7.0.11
+    container_name: acg_redis
+    ports:
+      - "6379:6379"
+
+  # 3. RocketMQ NameServer (路由中心)
+  rmqnamesrv:
+    image: apache/rocketmq:4.9.6
+    container_name: acg_rmqnamesrv
+    ports:
+      - "9876:9876"
+    command: sh mqnamesrv
+
+  # 4. RocketMQ Broker (消息存储与转发)
+  rmqbroker:
+    image: apache/rocketmq:4.9.6
+    container_name: acg_rmqbroker
+    ports:
+      - "10909:10909"
+      - "10911:10911"
+    environment:
+      - NAMESRV_ADDR=rmqnamesrv:9876
+    depends_on:
+      - rmqnamesrv
+    volumes:
+      # 挂载自定义配置文件，解决宿主机与 Docker 网络无法通信的经典大坑
+      - ./broker.conf:/opt/rocketmq/conf/broker.conf
+    command: sh mqbroker -n rmqnamesrv:9876 -c /opt/rocketmq/conf/broker.conf
