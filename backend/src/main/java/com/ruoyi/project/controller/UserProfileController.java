@@ -7,9 +7,12 @@ import com.ruoyi.project.domain.entity.BizAnime;
 import com.ruoyi.project.domain.entity.BizArticle;
 import com.ruoyi.project.domain.entity.BizComment;
 import com.ruoyi.project.domain.entity.BizArticleComment;
+import com.ruoyi.project.domain.entity.BizCommentReaction;
+import com.ruoyi.project.domain.entity.BizArticleCommentReaction;
 import com.ruoyi.project.domain.entity.SysUser;
 import com.ruoyi.project.domain.vo.UserProfileVO;
 import com.ruoyi.project.domain.vo.UserCommentVO;
+import com.ruoyi.project.domain.vo.UserLikeHistoryVO;
 import com.ruoyi.project.service.IBizAnimeFollowService;
 import com.ruoyi.project.service.IBizArticleService;
 import com.ruoyi.project.service.IBizCommentService;
@@ -17,6 +20,8 @@ import com.ruoyi.project.service.IBizArticleCommentService;
 import com.ruoyi.project.service.IBizAnimeService;
 import com.ruoyi.project.service.IBizUserFollowService;
 import com.ruoyi.project.service.ISysUserService;
+import com.ruoyi.project.service.impl.BizCommentReactionServiceImpl;
+import com.ruoyi.project.service.impl.BizArticleCommentReactionServiceImpl;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
 
@@ -41,6 +46,8 @@ public class UserProfileController {
     private final IBizCommentService commentService;
     private final IBizArticleCommentService articleCommentService;
     private final IBizAnimeService animeService;
+    private final BizCommentReactionServiceImpl commentReactionService;
+    private final BizArticleCommentReactionServiceImpl articleCommentReactionService;
 
     /**
      * 获取用户公开资料
@@ -64,6 +71,10 @@ public class UserProfileController {
         vo.setPoints(user.getPoints());
         vo.setFollowerCount(user.getFollowerCount() != null ? user.getFollowerCount() : 0);
         vo.setFollowingCount(user.getFollowingCount() != null ? user.getFollowingCount() : 0);
+        vo.setVipStatus(user.getVipStatus() != null ? user.getVipStatus() : 0);
+        vo.setVipExpireTime(user.getVipExpireTime());
+        vo.setUserLevel(user.getUserLevel() != null ? user.getUserLevel() : 1);
+        vo.setLevelExperience(user.getLevelExperience() != null ? user.getLevelExperience() : 0);
 
         if (currentUserId != null) {
             vo.setIsSelf(currentUserId.equals(id));
@@ -334,6 +345,102 @@ public class UserProfileController {
                 .page(new Page<>(pageNum, pageSize));
         // 脱敏：清除密码
         page.getRecords().forEach(u -> u.setPassword(null));
+        return Result.success(page);
+    }
+
+    /**
+     * 获取某用户的点赞历史（番剧评论点赞 + 文章评论点赞）
+     */
+    @GetMapping("/{id}/likes")
+    public Result<Page<UserLikeHistoryVO>> getUserLikes(
+            @PathVariable Long id,
+            @RequestParam(defaultValue = "1") long pageNum,
+            @RequestParam(defaultValue = "20") long pageSize) {
+
+        List<UserLikeHistoryVO> allLikes = new ArrayList<>();
+
+        // 获取番剧评论点赞
+        List<BizCommentReaction> animeLikes = commentReactionService.lambdaQuery()
+                .eq(BizCommentReaction::getUserId, id)
+                .eq(BizCommentReaction::getReactionType, 1)
+                .orderByDesc(BizCommentReaction::getCreateTime)
+                .list();
+
+        List<Long> animeCommentIds = animeLikes.stream()
+                .map(BizCommentReaction::getCommentId)
+                .toList();
+        Map<Long, BizComment> animeCommentMap = animeCommentIds.isEmpty() ? Map.of() :
+                commentService.listByIds(animeCommentIds).stream()
+                        .filter(c -> c.getId() != null)
+                        .collect(Collectors.toMap(BizComment::getId, c -> c));
+
+        for (BizCommentReaction r : animeLikes) {
+            UserLikeHistoryVO vo = new UserLikeHistoryVO();
+            vo.setId(r.getId());
+            vo.setType(1);
+            vo.setTargetId(r.getCommentId());
+            vo.setCreateTime(r.getCreateTime());
+            BizComment comment = animeCommentMap.get(r.getCommentId());
+            if (comment != null) {
+                vo.setTargetId(comment.getAnimeId());
+                BizAnime anime = animeService.getById(comment.getAnimeId());
+                if (anime != null) {
+                    vo.setTargetTitle(anime.getTitle());
+                    vo.setTargetCover(anime.getCoverUrl());
+                }
+            }
+            allLikes.add(vo);
+        }
+
+        // 获取文章评论点赞
+        List<BizArticleCommentReaction> articleLikes = articleCommentReactionService.lambdaQuery()
+                .eq(BizArticleCommentReaction::getUserId, id)
+                .eq(BizArticleCommentReaction::getReactionType, 1)
+                .orderByDesc(BizArticleCommentReaction::getCreateTime)
+                .list();
+
+        List<Long> articleCommentIds = articleLikes.stream()
+                .map(BizArticleCommentReaction::getArticleCommentId)
+                .toList();
+        Map<Long, BizArticleComment> articleCommentMap = articleCommentIds.isEmpty() ? Map.of() :
+                articleCommentService.listByIds(articleCommentIds).stream()
+                        .filter(c -> c.getId() != null)
+                        .collect(Collectors.toMap(BizArticleComment::getId, c -> c));
+
+        for (BizArticleCommentReaction r : articleLikes) {
+            UserLikeHistoryVO vo = new UserLikeHistoryVO();
+            vo.setId(r.getId());
+            vo.setType(2);
+            vo.setTargetId(r.getArticleCommentId());
+            vo.setCreateTime(r.getCreateTime());
+            BizArticleComment comment = articleCommentMap.get(r.getArticleCommentId());
+            if (comment != null) {
+                vo.setTargetId(comment.getArticleId());
+                BizArticle article = articleService.getById(comment.getArticleId());
+                if (article != null) {
+                    vo.setTargetTitle(article.getTitle());
+                    vo.setTargetCover(article.getCoverUrl());
+                }
+            }
+            allLikes.add(vo);
+        }
+
+        // 按时间倒序
+        allLikes.sort(Comparator.comparing(
+                UserLikeHistoryVO::getCreateTime,
+                Comparator.nullsLast(Comparator.reverseOrder())
+        ));
+
+        // 分页
+        int total = allLikes.size();
+        int start = (int) ((pageNum - 1) * pageSize);
+        int end = Math.min(start + (int) pageSize, total);
+        List<UserLikeHistoryVO> pageRecords = start < end ? allLikes.subList(start, end) : new ArrayList<>();
+
+        Page<UserLikeHistoryVO> page = new Page<>(pageNum, pageSize, total);
+        page.setRecords(pageRecords);
+        page.setPages((total + (int) pageSize - 1) / (int) pageSize);
+
         return Result.success(page);
     }
 }

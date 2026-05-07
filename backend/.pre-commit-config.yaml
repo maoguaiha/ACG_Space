@@ -1,0 +1,52 @@
+repos:
+  - repo: https://github.com/pre-commit/pre-commit-hooks
+    rev: v4.6.0
+    hooks:
+      - id: trailing-whitespace
+      - id: end-of-file-fixer
+      - id: check-yaml
+      - id: check-json
+      - id: check-xml
+      - id: check-added-large-files
+      - id: detect-private-key
+      - id: no-commit-to-branch
+        args: ['--branch', 'main', '--branch', 'develop']
+
+  - repo: local
+    hooks:
+      - id: java-checkstyle
+        name: Java Checkstyle
+        entry: mvn
+        args: ['checkstyle:check', '-q']
+        language: system
+        files: \.java$
+        pass_filenames: false
+        working_directory: backend
+
+      - id: backend-tests
+        name: Backend Unit Tests
+        entry: mvn
+        args: ['test', '-q']
+        language: system
+        files: \.java$
+        pass_filenames: false
+        working_directory: backend
+        verbose: true
+
+      - id: admin-ui-lint
+        name: Admin UI ESLint
+        entry: npm
+        args: ['run', 'lint']
+        language: system
+        files: \.(ts|tsx|vue)$
+        pass_filenames: false
+        working_directory: admin-ui
+
+      - id: admin-ui-typecheck
+        name: Admin UI TypeScript Check
+        entry: npm
+        args: ['run', 'typecheck']
+        language: system
+        files: \.(ts|tsx|vue)$
+        pass_filenames: false
+        working_directory: admin-ui

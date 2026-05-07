@@ -68,6 +68,11 @@ public class BizAnime extends BaseEntity {
     private BigDecimal rating;
 
     /**
+     * 番剧类型（逗号分隔，如：热血,异世界,治愈）
+     */
+    private String genre;
+
+    /**
      * 是否首页轮播推荐（0否 1是）
      */
     private Integer featured;

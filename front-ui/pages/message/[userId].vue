@@ -68,7 +68,7 @@
                   class="max-w-[60%] px-5 py-3 rounded-2xl shadow-lg"
                   :class="getCurrentUserId() === msg.fromUserId ? 'theme-chat-message-self' : 'theme-chat-message-other'"
                 >
-                  <p class="text-sm leading-relaxed">{{ msg.content }}</p>
+                  <p class="text-sm leading-relaxed" v-html="formatMessage(msg.content)"></p>
                 </div>
               </div>
             </div>
@@ -104,7 +104,7 @@
 <script setup lang="ts">
 import { ref, onMounted, nextTick, watch } from 'vue'
 import { useUserStore } from '~/stores/user'
-import { fetchConversation, sendMessage as apiSendMessage, markMessagesRead, fetchUserProfile, type MessageVO } from '~/composables/useApi'
+import { fetchConversation, sendMessage as apiSendMessage, markMessagesRead, fetchUserProfile, claimRegistrationBonus, type MessageVO } from '~/composables/useApi'
 
 const route = useRoute()
 const userStore = useUserStore()
@@ -120,6 +120,34 @@ function getCurrentUserId(): string {
   return String(userStore.userInfo?.id || '')
 }
 
+function formatMessage(content: string): string {
+  if (!content) return ''
+  // 将 [领取积分] 替换为可点击的按钮
+  return content.replace(/\[领取积分\]/g, '<span class="claim-bonus-btn inline-block px-4 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-medium rounded-full hover:opacity-80 transition-opacity ml-1 cursor-pointer">领取积分</span>')
+}
+
+async function handleClaimBonus() {
+  try {
+    await claimRegistrationBonus()
+    alert('领取成功！获得2600积分')
+    window.location.href = '/gacha'
+  } catch (e) {
+    console.error('领取积分失败:', e)
+    alert('领取积分失败，请稍后重试')
+  }
+}
+
+// 事件委托处理领取积分按钮点击
+function setupClaimBonusHandler() {
+  document.addEventListener('click', async (e) => {
+    const target = e.target as HTMLElement
+    if (target.classList.contains('claim-bonus-btn')) {
+      e.preventDefault()
+      await handleClaimBonus()
+    }
+  })
+}
+
 if (!userStore.isLoggedIn) {
   navigateTo('/login')
 }
@@ -132,7 +160,19 @@ function formatTime(dateStr: string): string {
 
 async function loadProfile() {
   try {
-    otherUser.value = await fetchUserProfile(route.params.userId as string)
+    const userId = route.params.userId as string
+    // 如果是官方账号（userId=0），设置默认信息
+    if (userId === '0') {
+      otherUser.value = {
+        id: '0',
+        username: 'ACG_Space',
+        nickname: 'ACG Space 官方',
+        avatar: '',
+        bio: '欢迎来到 ACG Space！'
+      }
+      return
+    }
+    otherUser.value = await fetchUserProfile(userId)
   } catch (e) {
     console.error('加载用户信息失败:', e)
   }
@@ -184,6 +224,7 @@ async function sendMessage() {
 }
 
 onMounted(async () => {
+  setupClaimBonusHandler()
   await loadProfile()
   await loadMessages()
   await markRead()

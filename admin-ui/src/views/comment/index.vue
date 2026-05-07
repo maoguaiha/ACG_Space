@@ -68,7 +68,7 @@
       </el-descriptions>
       <template #footer>
         <el-button @click="detailDialogVisible = false">关闭</el-button>
-        <el-button type="danger" @click="handleDelete(currentComment.id)">删除</el-button>
+        <el-button v-if="currentComment" type="danger" @click="handleDelete(currentComment?.id)">删除</el-button>
       </template>
     </el-dialog>
   </div>
@@ -135,7 +135,8 @@ const handleDetail = (row: CommentItem) => {
   detailDialogVisible.value = true
 }
 
-const handleDelete = async (id: number) => {
+const handleDelete = async (id?: number) => {
+  if (!id) return
   try {
     await ElMessageBox.confirm('确定要删除这条评论吗?', '提示', {
       confirmButtonText: '确定',

@@ -41,8 +41,11 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
         LambdaQueryWrapper<BizArticle> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BizArticle::getDelFlag, 0);
 
+        // 默认只显示已发布的文章（status=1），只有显式传入状态时才查询对应状态
         if (status != null) {
             wrapper.eq(BizArticle::getStatus, status);
+        } else {
+            wrapper.eq(BizArticle::getStatus, 1);
         }
 
         if (keyword != null && !keyword.isBlank()) {
@@ -103,6 +106,10 @@ public class BizArticleServiceImpl extends ServiceImpl<BizArticleMapper, BizArti
     public ArticleDetailVO getArticleDetail(Long id) {
         BizArticle article = this.getById(id);
         if (article == null) {
+            return null;
+        }
+        // 只允许查看已发布的文章（status=1）
+        if (article.getStatus() == null || article.getStatus() != 1) {
             return null;
         }
 

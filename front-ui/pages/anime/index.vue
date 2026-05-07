@@ -79,16 +79,27 @@
     <!-- 搜索结果 / 推荐内容 -->
     <div v-if="bgmResults.length > 0">
       <div class="flex items-center gap-4 mb-8">
-          <h2 class="text-2xl font-bold text-white">搜索结果</h2>
-          <span class="text-sm text-slate-500">共找到 {{ bgmResults.length }} 条记录</span>
-          <div class="h-px flex-1 bg-slate-800"></div>
+          <h2 class="text-2xl font-bold" :class="['theme-text-main']">搜索结果</h2>
+          <span class="text-sm" :class="['theme-text-muted']">共找到 {{ bgmResults.length }} 条记录</span>
+          <div class="h-px flex-1" :class="['theme-stat-divider']"></div>
+          <button
+            @click="clearSearch"
+            class="flex items-center gap-2 px-4 py-2 rounded-xl transition-all"
+            :class="['theme-btn-secondary']"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="m15 18-6-6 6-6"/>
+            </svg>
+            返回番剧库
+          </button>
         </div>
       <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-8">
         <NuxtLink
           v-for="item in bgmResults"
           :key="item.id"
           :to="`/anime/bgm-${item.id}`"
-          class="group bg-white dark:bg-slate-800/40 border border-slate-200 dark:border-slate-700/50 rounded-3xl overflow-hidden hover:border-indigo-500/50 transition-all duration-300 hover:-translate-y-2 flex flex-col relative shadow-sm hover:shadow-xl"
+          class="group rounded-3xl overflow-hidden transition-all duration-300 hover:-translate-y-2 flex flex-col relative shadow-sm hover:shadow-xl"
+          :class="['theme-anime-card']"
         >
           <!-- 悬浮追番按钮 -->
           <button
@@ -103,15 +114,15 @@
             <img :src="item.images?.large || item.images?.common || item.image || item.images?.medium || 'https://placehold.jp/334155/ffffff/300x400.png?text=No%20Image'" @error="(e: any) => e.target.src = 'https://placehold.jp/334155/ffffff/300x400.png?text=No%20Image'" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="eager" />
             <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-transparent to-transparent opacity-80"></div>
             <div class="absolute bottom-4 left-4 right-4">
-              <span class="text-[10px] font-black bg-indigo-600 text-white px-2 py-0.5 rounded uppercase tracking-wider force-white">ID: {{ item.id }}</span>
+              <span class="text-[10px] font-black px-2 py-0.5 rounded uppercase tracking-wider force-white" :class="['theme-primary-bg']">ID: {{ item.id }}</span>
             </div>
           </div>
           <div class="p-5 flex-1 flex flex-col">
-            <h3 class="text-base font-bold text-white theme-text-main line-clamp-2 mb-2 group-hover:text-indigo-400 transition-colors">{{ item.name_cn || item.name }}</h3>
-            <p class="text-xs text-slate-500 theme-text-muted line-clamp-3 mb-4 leading-relaxed">{{ item.summary || '暂无简介' }}</p>
-            <div class="mt-auto pt-4 border-t border-slate-700/50 flex items-center justify-between">
+            <h3 class="text-base font-bold line-clamp-2 mb-2 group-hover:text-indigo-400 transition-colors" :class="['theme-anime-title']">{{ item.name_cn || item.name }}</h3>
+            <p class="text-xs line-clamp-3 mb-4 leading-relaxed" :class="['theme-anime-summary']">{{ item.summary || '暂无简介' }}</p>
+            <div class="mt-auto pt-4 border-t flex items-center justify-between" :class="['theme-anime-divider']">
               <span class="text-yellow-500 font-black text-sm">★ {{ getBangumiScore(item) }}</span>
-              <span class="text-[10px] text-slate-500 theme-text-muted uppercase">{{ followedBgmIds.has(item.id) ? '已收藏到库' : '未收藏' }}</span>
+              <span class="text-[10px] uppercase" :class="['theme-anime-status']">{{ followedBgmIds.has(item.id) ? '已收藏到库' : '未收藏' }}</span>
             </div>
           </div>
         </NuxtLink>
@@ -121,43 +132,78 @@
     <!-- 替换为 社区番剧库（简化） -->
     <div v-else>
       <div class="flex items-center gap-4 mb-6">
-        <h2 class="text-2xl font-bold text-white">社区番剧库</h2>
-        <div class="h-px flex-1 bg-slate-800"></div>
-        <NuxtLink to="/" class="text-sm text-indigo-400 hover:underline">返回首页</NuxtLink>
+        <h2 class="text-2xl font-bold" :class="['theme-text-main']">社区番剧库</h2>
+        <div class="h-px flex-1" :class="['theme-stat-divider']"></div>
+        <NuxtLink to="/" class="text-sm" :class="['theme-text-link']">返回首页</NuxtLink>
       </div>
 
       <!-- 本地筛选与分类控制 -->
-      <div class="flex flex-col md:flex-row items-center gap-4 mb-6">
-        <div class="flex items-center gap-2 flex-wrap">
-          <button
-            v-for="tab in statusTabs"
-            :key="tab.value"
-            @click="activeStatus = tab.value"
-            class="px-4 py-2 rounded-2xl border transition-all"
-            :class="activeStatus === tab.value ? 'theme-btn-filter-active' : 'theme-btn-filter'"
-          >
-            {{ tab.label }}
-          </button>
+      <div class="flex flex-col gap-4 mb-6">
+        <!-- 第一排：状态、年份、搜索、排序 -->
+        <div class="flex flex-col md:flex-row items-start md:items-center gap-4">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="text-sm font-semibold" :class="['theme-text-muted']">状态</span>
+            <button
+              v-for="tab in statusTabs"
+              :key="tab.value"
+              @click="activeStatus = tab.value"
+              class="px-4 py-2 rounded-2xl border transition-all text-sm font-medium"
+              :class="activeStatus === tab.value ? 'theme-btn-filter-active' : 'theme-btn-filter'"
+            >
+              {{ tab.label }}
+            </button>
+          </div>
+
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="text-sm font-semibold" :class="['theme-text-muted']">年份</span>
+            <select v-model="selectedYear" class="px-3 py-2 rounded-2xl text-sm" :class="['theme-select']">
+              <option :value="undefined">全部年份</option>
+              <option v-for="year in yearOptions" :key="year" :value="year">{{ year }}年</option>
+            </select>
+          </div>
+
+          <div class="flex-1"></div>
+
+          <div class="flex items-center gap-3 w-full md:w-auto">
+            <input v-model="searchKeyword" @keyup.enter="handleSearch" placeholder="筛选本地番剧..." class="px-4 py-2 rounded-2xl text-sm flex-1 md:w-48" :class="['theme-input']" />
+            <select v-model="sortBy" class="px-3 py-2 rounded-2xl text-sm" :class="['theme-select']">
+              <option value="default">默认排序</option>
+              <option value="rating">按综合评分</option>
+              <option value="year">按年份</option>
+            </select>
+            <select v-model.number="pageSize" class="px-3 py-2 rounded-2xl text-sm hidden sm:inline-block" :class="['theme-select']">
+              <option :value="10">每页 10 条</option>
+              <option :value="20">每页 20 条</option>
+              <option :value="30">每页 30 条</option>
+            </select>
+            <button @click="resetFilter" class="px-3 py-2 rounded-2xl text-sm" :class="['theme-btn-secondary']">重置</button>
+          </div>
         </div>
 
-        <div class="ml-auto flex items-center gap-3">
-          <input v-model="searchKeyword" @keyup.enter="handleSearch" placeholder="筛选本地番剧..." class="px-4 py-2 rounded-2xl text-sm" :class="['theme-input']" />
-          <select v-model="sortBy" class="px-3 py-2 rounded-2xl text-sm" :class="['theme-select']">
-            <option value="default">默认排序</option>
-            <option value="rating">按综合评分</option>
-            <option value="year">按年份</option>
-          </select>
-          <select v-model.number="pageSize" class="px-3 py-2 rounded-2xl text-sm" :class="['theme-select']">
-            <option :value="10">每页 10 条</option>
-            <option :value="20">每页 20 条</option>
-            <option :value="30">每页 30 条</option>
-          </select>
-          <button @click="resetFilter" class="px-3 py-2 rounded-2xl text-sm" :class="['theme-btn-secondary']">重置</button>
+        <!-- 第二排：类型筛选 -->
+        <div class="flex flex-wrap items-center gap-3">
+          <span class="text-sm font-semibold" :class="['theme-text-muted']">类型</span>
+          <button
+            @click="clearAllGenres"
+            class="px-4 py-2 rounded-2xl border transition-all text-sm font-medium"
+            :class="selectedGenres.length === 0 ? 'theme-btn-filter-active' : 'theme-btn-filter'"
+          >
+            全部
+          </button>
+          <button
+            v-for="genre in genreTags"
+            :key="genre"
+            @click="toggleGenre(genre)"
+            class="px-4 py-2 rounded-2xl border transition-all text-sm font-medium"
+            :class="selectedGenres.includes(genre) ? 'theme-btn-filter-active' : 'theme-btn-filter'"
+          >
+            {{ genre }}
+          </button>
         </div>
       </div>
 
       <div v-if="animeStore.listLoading || loading" class="grid grid-cols-2 lg:grid-cols-5 gap-6">
-        <div v-for="i in 10" :key="i" class="aspect-[3/4] bg-slate-800 rounded-3xl animate-pulse"></div>
+        <div v-for="i in 10" :key="i" class="aspect-[3/4] bg-slate-800 dark:bg-slate-800 rounded-3xl animate-pulse" :class="['theme-card-loading']"></div>
       </div>
 
       <div v-else class="grid grid-cols-2 lg:grid-cols-5 gap-6">
@@ -165,7 +211,8 @@
           v-for="anime in pagedFilteredAnimes"
           :key="anime.id"
           :to="`/anime/${anime.id}`"
-          class="group relative aspect-[3/4] rounded-3xl overflow-hidden bg-slate-800 border border-slate-700/50 hover:border-indigo-500 transition-all duration-300"
+          class="group relative aspect-[3/4] rounded-3xl overflow-hidden transition-all duration-300"
+          :class="['theme-anime-card']"
         >
           <div class="relative w-full h-full">
             <img v-if="anime.coverUrl" :src="anime.coverUrl" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="eager" />
@@ -185,7 +232,8 @@
         <button
           @click="goToPage(currentPage - 1)"
           :disabled="currentPage === 1"
-          class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700/50 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          class="px-3 py-2 rounded-xl border text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          :class="['theme-btn-filter']"
         >
           上一页
         </button>
@@ -194,14 +242,15 @@
           :key="`page-${page}`"
           @click="goToPage(page)"
           class="min-w-10 h-10 rounded-xl border text-sm font-bold transition-all"
-          :class="currentPage === page ? 'bg-indigo-600 border-indigo-500 text-white' : 'bg-slate-800 border-slate-700/50 text-slate-300 hover:border-indigo-500/60'"
+          :class="currentPage === page ? 'theme-btn-filter-active' : 'theme-btn-filter'"
         >
           {{ page }}
         </button>
         <button
           @click="goToPage(currentPage + 1)"
           :disabled="currentPage === totalPages"
-          class="px-3 py-2 rounded-xl bg-slate-800 border border-slate-700/50 text-sm disabled:opacity-40 disabled:cursor-not-allowed"
+          class="px-3 py-2 rounded-xl border text-sm disabled:opacity-40 disabled:cursor-not-allowed transition-all"
+          :class="['theme-btn-filter']"
         >
           下一页
         </button>
@@ -250,6 +299,8 @@ const searchKeyword = ref('')
 const debouncedSearchKeyword = ref('')
 const sortBy = ref<'default' | 'rating' | 'year'>('default')
 const activeStatus = ref<'all' | 0 | 1 | 2>('all')
+const selectedYear = ref<number | undefined>()
+const selectedGenres = ref<string[]>([])
 const currentPage = ref(1)
 const pageSize = ref(20)
 let librarySearchDebounceTimer: ReturnType<typeof setTimeout> | null = null
@@ -260,6 +311,17 @@ const statusTabs = [
   { label: '已完结', value: 1 as const },
   { label: '待播', value: 2 as const },
 ]
+
+const genreTags = ['热血', '异世界', '治愈', '搞笑', '恋爱', '战斗', '科幻', '奇幻', '悬疑', '日常']
+
+const currentYear = new Date().getFullYear()
+const yearOptions = computed(() => {
+  const years = []
+  for (let y = currentYear; y >= 2000; y--) {
+    years.push(y)
+  }
+  return years
+})
 
 const pagedFilteredAnimes = computed(() => animeStore.animeList)
 const totalPages = computed(() => Math.max(1, libraryPagination.value.pages || 1))
@@ -275,9 +337,24 @@ const visiblePages = computed(() => {
   return Array.from({ length: end - adjustedStart + 1 }, (_, i) => adjustedStart + i)
 })
 
+const toggleGenre = (genre: string) => {
+  const index = selectedGenres.value.indexOf(genre)
+  if (index === -1) {
+    selectedGenres.value.push(genre)
+  } else {
+    selectedGenres.value.splice(index, 1)
+  }
+}
+
+const clearAllGenres = () => {
+  selectedGenres.value = []
+}
+
 const resetFilter = () => {
   searchKeyword.value = ''
   activeStatus.value = 'all'
+  selectedYear.value = undefined
+  selectedGenres.value = []
   sortBy.value = 'default'
   currentPage.value = 1
 }
@@ -352,6 +429,8 @@ const loadLibraryPage = async () => {
     pageSize: pageSize.value,
     title: debouncedSearchKeyword.value.trim() || undefined,
     status: activeStatus.value === 'all' ? undefined : activeStatus.value,
+    publishYear: selectedYear.value,
+    genres: selectedGenres.value.length > 0 ? selectedGenres.value : undefined,
     sortBy: sortBy.value
   })
 }
@@ -365,9 +444,13 @@ watch(searchKeyword, (value) => {
   }, 300)
 })
 
-watch([currentPage, pageSize, sortBy, activeStatus], async () => {
+watch([currentPage, pageSize, sortBy, activeStatus, selectedYear], async () => {
   await loadLibraryPage()
 })
+
+watch(selectedGenres, async () => {
+  await loadLibraryPage()
+}, { deep: true })
 
 watch(debouncedSearchKeyword, async () => {
   await loadLibraryPage()
@@ -518,5 +601,12 @@ const handleToggleFollow = async (bgmId: number) => {
     console.error('Follow failed', e)
     appStore.showMessage('操作失败，请检查网络', 'error')
   }
+}
+
+const clearSearch = () => {
+  bgmSearchKeyword.value = ''
+  bgmResults.value = []
+  suggestions.value = []
+  showSuggestions.value = false
 }
 </script>

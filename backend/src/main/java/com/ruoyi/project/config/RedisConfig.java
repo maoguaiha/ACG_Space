@@ -26,8 +26,8 @@ import java.nio.charset.StandardCharsets;
 public class RedisConfig {
 
     @Bean("acgRedisTemplate")
-    public RedisTemplate<Object, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
-        RedisTemplate<Object, Object> template = new RedisTemplate<>();
+    public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, Object> template = new RedisTemplate<>();
         template.setConnectionFactory(connectionFactory);
 
         // 使用内联的 Fastjson2 序列化器（仅依赖 fastjson2 核心包）
@@ -55,13 +55,14 @@ public class RedisConfig {
      */
     static class Fastjson2RedisSerializer implements RedisSerializer<Object> {
 
+        private static final String ALLOWED_PACKAGE_PREFIX = "com.ruoyi.project.";
+
         @Override
         public byte[] serialize(Object object) throws SerializationException {
             if (object == null) {
                 return new byte[0];
             }
             try {
-                // 写入 @type 字段，反序列化时可还原具体类型
                 return JSON.toJSONBytes(object, JSONWriter.Feature.WriteClassName);
             } catch (Exception e) {
                 throw new SerializationException("Fastjson2 序列化失败: " + e.getMessage(), e);
@@ -69,15 +70,12 @@ public class RedisConfig {
         }
 
         @Override
-        @SuppressWarnings("deprecation") // SupportAutoType 在 fastjson2 中已废弃，但目前无等价的无配置替代方案
+        @SuppressWarnings("deprecation")
         public Object deserialize(byte[] bytes) throws SerializationException {
             if (bytes == null || bytes.length == 0) {
                 return null;
             }
             try {
-                // SupportAutoType 用于还原 @type 字段所记录的具体类型
-                // 已知废弃：未来版本可通过 JSONFactory.getDefaultObjectReaderProvider()
-                //           .addAutoTypeAccept("com.ruoyi.project.") 替代
                 return JSON.parseObject(
                         new String(bytes, StandardCharsets.UTF_8),
                         Object.class,

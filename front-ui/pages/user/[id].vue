@@ -30,11 +30,13 @@
           <div class="flex flex-col md:flex-row items-center md:items-start gap-8">
             <!-- 头像 -->
             <div class="relative group">
-              <div class="absolute -inset-1 rounded-full opacity-50 blur-lg group-hover:opacity-75 transition-opacity duration-300" :class="['theme-avatar-glow']"></div>
+              <div v-if="!showCropper" class="absolute -inset-1 rounded-full opacity-50 blur-lg group-hover:opacity-75 transition-opacity duration-300" :class="['theme-avatar-glow']"></div>
               <AvatarUploader
                 v-if="profile.isSelf"
                 v-model="newAvatar"
                 @update:modelValue="handleAvatarUpdate"
+                @cropper-show="showCropper = true"
+                @cropper-hide="showCropper = false"
               />
               <div v-else class="relative w-28 h-28 md:w-32 md:h-32 rounded-full overflow-hidden ring-4" :class="['theme-avatar-ring']">
                 <img v-if="profile.avatar" :src="profile.avatar" class="w-full h-full object-cover" />
@@ -68,7 +70,7 @@
               </div>
               <p v-else class="text-sm mb-4 max-w-md mx-auto md:mx-0 theme-text-muted">{{ profile.bio || '这个人很懒，什么都没写…' }}</p>
 
-              <!-- 积分 & 头衔 -->
+              <!-- 积分 & 头衔 & VIP -->
               <div class="flex items-center justify-center md:justify-start gap-3 mb-5">
                 <span class="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl border" :class="['theme-badge-points']">
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/></svg>
@@ -78,6 +80,24 @@
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/></svg>
                   {{ getTitle(profile.points || 0) }}
                 </span>
+                <span v-if="profile.vipStatus && profile.vipStatus > 0"
+                  class="inline-flex items-center gap-1.5 text-sm px-4 py-2 rounded-xl border"
+                  :class="profile.vipStatus === 2 ? 'bg-gradient-to-r from-amber-500 to-orange-500 border-amber-500/50 text-white' : 'bg-gradient-to-r from-yellow-400 to-amber-400 border-yellow-400/50 text-white'">
+                  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="M12 2L15.09 8.26L22 9.27L17 14.14L18.18 21.02L12 17.77L5.82 21.02L7 14.14L2 9.27L8.91 8.26L12 2Z"/></svg>
+                  {{ profile.vipStatus === 2 ? 'SVIP' : 'VIP' }}
+                </span>
+              </div>
+
+              <!-- 等级进度条 -->
+              <div class="flex items-center justify-center md:justify-start gap-3 mb-5">
+                <div class="flex items-center gap-2">
+                  <span class="text-sm font-medium theme-text-main">Lv.{{ profile.userLevel || 1 }}</span>
+                  <div class="w-32 h-2 bg-slate-700 rounded-full overflow-hidden">
+                    <div class="h-full bg-gradient-to-r from-indigo-500 to-purple-500 rounded-full transition-all"
+                      :style="{ width: `${Math.min(100, ((profile.levelExperience || 0) / ((profile.userLevel || 1) * 500)) * 100)}%` }"></div>
+                  </div>
+                  <span class="text-xs theme-text-muted">{{ profile.levelExperience || 0 }}/{{ (profile.userLevel || 1) * 500 }}</span>
+                </div>
               </div>
 
               <!-- 粉丝/关注（可点击） -->
@@ -231,6 +251,51 @@
               </NuxtLink>
             </div>
           </div>
+
+          <!-- 点赞历史 -->
+          <div v-if="activeTab === 'likes'">
+            <div v-if="likesLoading" class="space-y-4">
+              <div v-for="i in 4" :key="i" class="animate-pulse bg-slate-800/50 rounded-2xl p-4">
+                <div class="flex items-center gap-4">
+                  <div class="w-16 h-20 bg-slate-700 rounded-lg"></div>
+                  <div class="flex-1">
+                    <div class="h-4 bg-slate-700 rounded w-3/4 mb-2"></div>
+                    <div class="h-3 bg-slate-700 rounded w-1/2"></div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else-if="likes.length === 0" class="text-center py-12 text-slate-500">
+              {{ profile.isSelf ? '你还没有点赞过任何评论' : '该用户还没有点赞过任何评论' }}
+            </div>
+            <div v-else class="space-y-3">
+              <NuxtLink v-for="like in likes" :key="like.id"
+                :to="like.type === 1 ? '/anime/' + like.targetId : '/article/' + like.targetId"
+                class="block">
+                <div class="rounded-2xl border p-4 transition-colors" :class="['theme-card', 'theme-card-hover']">
+                  <div class="flex items-center gap-3">
+                    <img v-if="like.targetCover" :src="like.targetCover" class="w-16 h-20 object-cover rounded-lg" />
+                    <div v-else class="w-16 h-20 bg-slate-700 rounded-lg flex items-center justify-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="text-slate-500"><rect x="3" y="3" width="18" height="18" rx="2" ry="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                    </div>
+                    <div class="flex-1 min-w-0">
+                      <p class="text-sm font-medium" :class="['theme-text-muted']">点赞了 {{ like.type === 1 ? '番剧' : '文章' }}评论</p>
+                      <p class="text-base truncate" :class="['theme-text-main']">{{ like.targetTitle }}</p>
+                      <p class="text-xs mt-1" :class="['theme-text-muted']">{{ formatDate(like.createTime) }}</p>
+                    </div>
+                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" class="text-red-500"><path d="M12 21.35l-1.45-1.32C5.4 15.36 2 12.28 2 8.5 2 5.42 4.42 3 7.5 3c1.74 0 3.41.81 4.5 2.09C13.09 3.81 14.76 3 16.5 3 19.58 3 22 5.42 22 8.5c0 3.78-3.4 6.86-8.55 11.54L12 21.35z"/></svg>
+                  </div>
+                </div>
+              </NuxtLink>
+            </div>
+            <div v-if="likesPages > 1" class="flex justify-center gap-2 mt-6">
+              <button @click="loadLikes(likesPage - 1)" :disabled="likesPage === 1"
+                class="px-3 py-2 rounded-xl bg-slate-700/50 text-sm disabled:opacity-40">上一页</button>
+              <span class="px-3 py-2 text-sm text-slate-400">{{ likesPage }} / {{ likesPages }}</span>
+              <button @click="loadLikes(likesPage + 1)" :disabled="likesPage === likesPages"
+                class="px-3 py-2 rounded-xl bg-slate-700/50 text-sm disabled:opacity-40">下一页</button>
+            </div>
+          </div>
         </div>
       </div>
     </template>
@@ -303,7 +368,7 @@
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from '~/stores/user'
-import { fetchUserProfile, updateUserProfile, toggleFollowUser, searchArticles, fetchUserFollows, fetchUserFollowers, fetchUserFollowing, fetchUserArticles, fetchUserComments, type UserProfile, type ArticleListItem, type UserCommentItem } from '~/composables/useApi'
+import { fetchUserProfile, updateUserProfile, toggleFollowUser, searchArticles, fetchUserFollows, fetchUserFollowers, fetchUserFollowing, fetchUserArticles, fetchUserComments, fetchUserLikes, type UserProfile, type ArticleListItem, type UserCommentItem, type UserLikeHistoryItem } from '~/composables/useApi'
 import AvatarUploader from '~/components/AvatarUploader.vue'
 
 const route = useRoute()
@@ -319,6 +384,7 @@ const tabs = [
   { key: 'articles', label: '他的文章' },
   { key: 'comments', label: '他的评论' },
   { key: 'follows', label: '他的追番' },
+  { key: 'likes', label: '点赞历史' },
 ]
 
 // 编辑资料
@@ -343,6 +409,12 @@ const followsLoading = ref(false)
 // 评论列表
 const comments = ref<UserCommentItem[]>([])
 const commentsLoading = ref(false)
+
+// 点赞历史列表
+const likes = ref<UserLikeHistoryItem[]>([])
+const likesLoading = ref(false)
+const likesPage = ref(1)
+const likesPages = ref(1)
 
 // 关注/粉丝列表弹窗
 const showUserListDialog = ref(false)
@@ -423,6 +495,22 @@ async function loadComments(page = 1) {
     comments.value = []
   } finally {
     commentsLoading.value = false
+  }
+}
+
+async function loadLikes(page = 1) {
+  if (!profile.value) return
+  likesLoading.value = true
+  likesPage.value = page
+  try {
+    const res = await fetchUserLikes(String(profile.value.id), page, 20)
+    likes.value = res.records || []
+    likesPages.value = res.pages || 1
+  } catch (e) {
+    console.error('加载点赞历史失败:', e)
+    likes.value = []
+  } finally {
+    likesLoading.value = false
   }
 }
 
@@ -534,6 +622,7 @@ watch(activeTab, (tab) => {
   if (tab === 'articles') loadArticles()
   if (tab === 'follows') loadFollows()
   if (tab === 'comments') loadComments()
+  if (tab === 'likes') loadLikes()
 })
 
 onMounted(async () => {

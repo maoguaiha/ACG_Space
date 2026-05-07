@@ -16,4 +16,11 @@ public interface IBizMessageService {
     void markAsRead(Long userId, Long otherUserId);
 
     Integer getUnreadCount(Long userId);
+
+    /**
+     * 领取注册积分奖励
+     * @param userId 用户ID
+     * @return 是否领取成功
+     */
+    boolean claimRegistrationBonus(Long userId);
 }

@@ -135,7 +135,7 @@
           <el-input v-model="editForm.summary" type="textarea" :rows="2" placeholder="请输入文章摘要" />
         </el-form-item>
         <el-form-item label="封面图片" prop="coverUrl">
-          <CoverImageUploader v-model="editForm.coverUrl" />
+          <ImagePickerDialog v-model="editForm.coverUrl" aspect-ratio="16/9" />
         </el-form-item>
         <el-form-item label="文章分类" prop="category">
           <el-select v-model="editForm.category" placeholder="请选择分类" style="width: 100%;">
@@ -189,7 +189,7 @@
 import { ref, reactive, onMounted } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
-import CoverImageUploader from '@/components/CoverImageUploader.vue'
+import ImagePickerDialog from '@/components/ImagePickerDialog.vue'
 import AdminTagSelector from '@/components/AdminTagSelector.vue'
 import AdminRichEditor from '@/components/AdminRichEditor.vue'
 

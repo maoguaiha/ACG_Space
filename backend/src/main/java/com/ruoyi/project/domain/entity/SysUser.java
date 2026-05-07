@@ -58,4 +58,16 @@ public class SysUser extends BaseEntity {
 
     /** 关注数 */
     private Integer followingCount;
+
+    /** VIP状态 (0=无VIP,1=VIP,2=SVIP) */
+    private Integer vipStatus;
+
+    /** VIP到期时间 */
+    private java.time.LocalDateTime vipExpireTime;
+
+    /** 用户等级 (1-100) */
+    private Integer userLevel;
+
+    /** 当前经验值 */
+    private Integer levelExperience;
 }

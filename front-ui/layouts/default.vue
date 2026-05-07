@@ -17,6 +17,9 @@
           <NuxtLink to="/anime" class="hover:text-indigo-400 transition-colors" active-class="active-link">番剧库</NuxtLink>
           <NuxtLink to="/follows" class="hover:text-indigo-400 transition-colors" active-class="active-link">我的追番</NuxtLink>
           <NuxtLink to="/community" class="hover:text-indigo-400 transition-colors" active-class="active-link">社区</NuxtLink>
+          <NuxtLink to="/gacha" class="hover:text-amber-400 transition-colors" active-class="active-link text-amber-400">抽赏</NuxtLink>
+          <NuxtLink to="/assets" class="hover:text-amber-400 transition-colors" active-class="active-link text-amber-400">背包</NuxtLink>
+          <NuxtLink to="/market" class="hover:text-amber-400 transition-colors" active-class="active-link text-amber-400">集市</NuxtLink>
         </nav>
 
         <div class="flex items-center gap-6">
@@ -1346,6 +1349,140 @@ const handleLogout = () => {
 .theme-btn-disabled {
   opacity: 0.5 !important;
   cursor: not-allowed !important;
+}
+
+/* === 番剧库搜索结果卡片样式 === */
+.theme-dark .theme-anime-card {
+  background-color: rgba(30, 41, 59, 0.6);
+  border-color: #334155;
+}
+.theme-dark .theme-anime-card:hover {
+  border-color: rgba(99, 102, 241, 0.5);
+}
+.theme-light .theme-anime-card {
+  background-color: rgba(255, 255, 255, 0.9);
+  border-color: #e2e8f0;
+}
+.theme-light .theme-anime-card:hover {
+  border-color: rgba(79, 70, 229, 0.4);
+}
+.theme-pink .theme-anime-card {
+  background-color: rgba(255, 255, 255, 0.85);
+  border-color: rgba(236, 72, 153, 0.3);
+}
+.theme-pink .theme-anime-card:hover {
+  border-color: rgba(236, 72, 153, 0.5);
+}
+
+/* 番剧卡片标题 */
+.theme-dark .theme-anime-title {
+  color: #f8fafc;
+}
+.theme-light .theme-anime-title {
+  color: #1e293b;
+}
+.theme-pink .theme-anime-title {
+  color: #831843;
+}
+
+/* 番剧卡片简介 */
+.theme-dark .theme-anime-summary {
+  color: #94a3b8;
+}
+.theme-light .theme-anime-summary {
+  color: #64748b;
+}
+.theme-pink .theme-anime-summary {
+  color: #be185d;
+}
+
+/* 番剧卡片底部边框 */
+.theme-dark .theme-anime-divider {
+  border-color: #334155;
+}
+.theme-light .theme-anime-divider {
+  border-color: #e2e8f0;
+}
+.theme-pink .theme-anime-divider {
+  border-color: rgba(236, 72, 153, 0.2);
+}
+
+/* 番剧卡片状态文字 */
+.theme-dark .theme-anime-status {
+  color: #64748b;
+}
+.theme-light .theme-anime-status {
+  color: #94a3b8;
+}
+.theme-pink .theme-anime-status {
+  color: #db2777;
+}
+
+/* === 链接文字链接 */
+.theme-dark .theme-text-link {
+  color: #818cf8;
+}
+.theme-light .theme-text-link {
+  color: #4f46e5;
+}
+.theme-pink .theme-text-link {
+  color: #db2777;
+}
+.theme-text-link:hover {
+  text-decoration: underline;
+}
+
+/* === 加载卡片 */
+.theme-dark .theme-card-loading {
+  background-color: #1e293b;
+}
+.theme-light .theme-card-loading {
+  background-color: #e2e8f0;
+}
+.theme-pink .theme-card-loading {
+  background-color: #fbcfe8;
+}
+
+/* === 筛选按钮样式 === */
+.theme-dark .theme-btn-filter {
+  background-color: rgba(30, 41, 59, 0.8);
+  border-color: #475569;
+  color: #cbd5e1;
+}
+.theme-dark .theme-btn-filter:hover {
+  border-color: #64748b;
+}
+.theme-light .theme-btn-filter {
+  background-color: #f1f5f9;
+  border-color: #e2e8f0;
+  color: #475569;
+}
+.theme-light .theme-btn-filter:hover {
+  border-color: #cbd5e1;
+}
+.theme-pink .theme-btn-filter {
+  background-color: rgba(236, 72, 159, 0.1);
+  border-color: rgba(236, 72, 159, 0.3);
+  color: #be185d;
+}
+.theme-pink .theme-btn-filter:hover {
+  border-color: rgba(236, 72, 159, 0.5);
+}
+
+.theme-dark .theme-btn-filter-active {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  border-color: #6366f1;
+  color: #f8fafc;
+}
+.theme-light .theme-btn-filter-active {
+  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  border-color: #4f46e5;
+  color: #f8fafc;
+}
+.theme-pink .theme-btn-filter-active {
+  background: linear-gradient(135deg, #ec4899, #f472b6);
+  border-color: #ec4899;
+  color: #f8fafc;
 }
 
 /* === 大尺寸点赞/点踩按钮 === */

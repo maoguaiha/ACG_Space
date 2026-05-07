@@ -128,6 +128,8 @@ export interface AnimeLibraryPageQuery {
   pageSize: number
   title?: string
   status?: 0 | 1 | 2
+  publishYear?: number
+  genres?: string[]
   sortBy?: 'default' | 'rating' | 'year'
 }
 
@@ -138,6 +140,8 @@ export function fetchAnimeLibraryPage(query: AnimeLibraryPageQuery) {
   params.set('pageSize', String(query.pageSize))
   if (query.title) params.set('title', query.title)
   if (query.status !== undefined) params.set('status', String(query.status))
+  if (query.publishYear !== undefined) params.set('publishYear', String(query.publishYear))
+  if (query.genres && query.genres.length > 0) params.set('genres', query.genres.join(','))
   if (query.sortBy) params.set('sortBy', query.sortBy)
   return apiFetch<PageResult<BizAnime>>(`/anime/library/page?${params.toString()}`)
 }
@@ -482,6 +486,10 @@ export interface UserProfile {
   points: number
   followerCount: number
   followingCount: number
+  vipStatus: number
+  vipExpireTime: string
+  userLevel: number
+  levelExperience: number
   isSelf: boolean
   isFollowed: boolean
 }
@@ -547,6 +555,21 @@ export function fetchUserFollows(userId: string, pageNum = 1, pageSize = 10) {
   return apiFetch<any[]>(`/user/${userId}/follows?pageNum=${pageNum}&pageSize=${pageSize}`)
 }
 
+/** 用户点赞历史项 */
+export interface UserLikeHistoryItem {
+  id: string
+  type: number // 1-番剧评论点赞，2-文章评论点赞
+  targetId: string
+  targetTitle: string
+  targetCover: string
+  createTime: string
+}
+
+/** 查看某用户的点赞历史 */
+export function fetchUserLikes(userId: string, pageNum = 1, pageSize = 20) {
+  return apiFetch<PageResult<UserLikeHistoryItem>>(`/user/${userId}/likes?pageNum=${pageNum}&pageSize=${pageSize}`)
+}
+
 // ============ 私信相关 ============
 
 export interface MessageVO {
@@ -600,4 +623,9 @@ export function markMessagesRead(userId: string) {
 /** 获取未读消息数 */
 export function fetchUnreadCount() {
   return apiFetch<number>('/message/unread')
+}
+
+/** 领取注册积分奖励 */
+export function claimRegistrationBonus() {
+  return apiFetch<any>('/message/claim-bonus', { method: 'POST' })
 }

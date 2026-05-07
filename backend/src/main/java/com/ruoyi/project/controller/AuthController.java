@@ -52,4 +52,16 @@ public class AuthController {
         }
         return Result.success(userService.getById(userId));
     }
+
+    /**
+     * 补发注册积分私信给所有已注册用户
+     */
+    @PostMapping("/send-bonus-to-existing")
+    public Result<Map<String, Object>> sendBonusToExistingUsers() {
+        int count = userService.sendBonusMessageToExistingUsers();
+        Map<String, Object> result = new HashMap<>();
+        result.put("count", count);
+        result.put("message", "补发完成，共发送 " + count + " 条私信");
+        return Result.success(result);
+    }
 }

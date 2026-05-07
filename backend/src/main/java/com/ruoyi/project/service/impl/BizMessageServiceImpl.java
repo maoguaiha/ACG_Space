@@ -28,6 +28,7 @@ public class BizMessageServiceImpl implements IBizMessageService {
 
     private final BizMessageMapper messageMapper;
     private final SysUserMapper userMapper;
+    private final BizUserPointsLogServiceImpl pointsLogService;
 
     @Override
     @Transactional
@@ -175,5 +176,12 @@ public class BizMessageServiceImpl implements IBizMessageService {
         wrapper.eq(BizMessage::getToUserId, userId)
             .eq(BizMessage::getIsRead, false);
         return Math.toIntExact(messageMapper.selectCount(wrapper));
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public boolean claimRegistrationBonus(Long userId) {
+        pointsLogService.awardRegistrationBonus(userId);
+        return true;
     }
 }

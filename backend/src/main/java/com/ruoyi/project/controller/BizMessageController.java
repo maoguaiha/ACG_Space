@@ -6,12 +6,15 @@ import com.ruoyi.project.domain.dto.MessageSendDTO;
 import com.ruoyi.project.domain.vo.ConversationVO;
 import com.ruoyi.project.domain.vo.MessageVO;
 import com.ruoyi.project.service.IBizMessageService;
+import com.ruoyi.project.service.IBizUserPointsLogService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/api/message")
@@ -19,6 +22,7 @@ import java.util.List;
 public class BizMessageController {
 
     private final IBizMessageService messageService;
+    private final IBizUserPointsLogService pointsLogService;
 
     @PostMapping("/send")
     public Result<?> sendMessage(@Validated @RequestBody MessageSendDTO dto) {
@@ -59,5 +63,27 @@ public class BizMessageController {
         Long userId = SecurityUtils.getUserId();
         Integer count = messageService.getUnreadCount(userId);
         return Result.success(count);
+    }
+
+    @PostMapping("/claim-bonus")
+    public Result<?> claimRegistrationBonus() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error("用户未登录");
+        }
+        try {
+            boolean success = messageService.claimRegistrationBonus(userId);
+            int currentPoints = pointsLogService.getUserPoints(userId);
+            Map<String, Object> result = new HashMap<>();
+            if (success) {
+                result.put("message", "领取成功，已获得2600积分");
+            } else {
+                result.put("message", "您已领取过积分，无需重复领取");
+            }
+            result.put("points", currentPoints);
+            return Result.success(result);
+        } catch (Exception e) {
+            return Result.error(e.getMessage());
+        }
     }
 }

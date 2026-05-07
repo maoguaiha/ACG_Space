@@ -16,8 +16,55 @@ mybatis-plus:
       logic-delete-value: 2 # 逻辑删除值
       logic-not-delete-value: 0 # 逻辑未删除值
 
+logging:
+  file:
+    name: logs/acg-space-backend.log
+  level:
+    root: INFO
+    com.ruoyi.project: DEBUG
+    com.ruoyi.project.common.exception: ERROR
+
 # 自定义 Bangumi API 配置
 bangumi:
   api:
     base-url: https://api.bgm.tv
     user-agent: "AcgSpace/1.0 (https://github.com/your-repo)" # 根据 bgm.tv 要求必须包含 User-Agent
+
+# Resilience4j 熔断、限流配置
+resilience4j:
+  circuitbreaker:
+    configs:
+      default:
+        register-health-indicator: true
+        sliding-window-type: COUNT_BASED
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        permitted-number-of-calls-in-half-open-state: 3
+        automatic-transition-from-open-to-half-open-enabled: true
+        wait-duration-in-open-state: 10s
+        failure-rate-threshold: 50
+        event-consumer-buffer-size: 10
+    instances:
+      gachaService:
+        base-config: default
+      marketService:
+        base-config: default
+      synthesizeService:
+        base-config: default
+  ratelimiter:
+    configs:
+      default:
+        limit-for-period: 10
+        limit-refresh-period: 1s
+        timeout-duration: 0
+        event-consumer-buffer-size: 10
+    instances:
+      gachaDraw:
+        limit-for-period: 5
+        limit-refresh-period: 1s
+      marketBuy:
+        limit-for-period: 3
+        limit-refresh-period: 1s
+      synthesizeDo:
+        limit-for-period: 2
+        limit-refresh-period: 1s

@@ -167,3 +167,32 @@ CREATE TABLE `biz_article_comment` (
   KEY `idx_article_id` (`article_id`),
   KEY `idx_user_id` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章评论表';
+
+-- ----------------------------
+-- 8. RocketMQ事务日志回查表
+-- ----------------------------
+DROP TABLE IF EXISTS `biz_transaction_log`;
+CREATE TABLE `biz_transaction_log` (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `transaction_id` varchar(64) NOT NULL COMMENT 'RocketMQ事务消息ID',
+  `topic` varchar(128) NOT NULL COMMENT '消息主题',
+  `tag` varchar(128) DEFAULT NULL COMMENT '消息标签',
+  `status` tinyint(4) NOT NULL COMMENT '事务状态 (0准备中 1提交 2回滚)',
+  `business_type` varchar(50) DEFAULT NULL COMMENT '业务类型 (TRADE_BUY, TRADE_SELL等)',
+  `business_data` text COMMENT '业务数据JSON',
+  `check_count` int(11) DEFAULT '0' COMMENT '回查次数',
+  `last_check_time` datetime DEFAULT NULL COMMENT '最后回查时间',
+  `error_message` text COMMENT '错误信息',
+
+  -- 若依通用字段
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint(4) DEFAULT '0' COMMENT '删除标志',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_transaction_id` (`transaction_id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_create_time` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='RocketMQ事务日志回查表';

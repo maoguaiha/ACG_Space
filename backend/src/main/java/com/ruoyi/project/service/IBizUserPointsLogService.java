@@ -11,4 +11,11 @@ public interface IBizUserPointsLogService extends IService<BizUserPointsLog> {
      * @param commentId 评论ID (用于防重)
      */
     void addPointsForComment(Long userId, Long commentId);
+    
+    /**
+     * 获取用户积分
+     * @param userId 用户ID
+     * @return 用户当前积分
+     */
+    int getUserPoints(Long userId);
 }

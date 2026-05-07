@@ -36,6 +36,8 @@ public class BizAnimeController {
             @RequestParam(defaultValue = "20") long pageSize,
             @RequestParam(required = false) String title,
             @RequestParam(required = false) Integer status,
+            @RequestParam(required = false) Integer publishYear,
+            @RequestParam(required = false) String genres,
             @RequestParam(defaultValue = "default") String sortBy) {
         LambdaQueryWrapper<BizAnime> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BizAnime::getDelFlag, 0);
@@ -45,6 +47,17 @@ public class BizAnimeController {
         }
         if (status != null) {
             wrapper.eq(BizAnime::getStatus, status);
+        }
+        if (publishYear != null) {
+            wrapper.eq(BizAnime::getPublishYear, publishYear);
+        }
+        if (genres != null && !genres.isBlank()) {
+            String[] genreArray = genres.split(",");
+            for (String genre : genreArray) {
+                if (!genre.isBlank()) {
+                    wrapper.like(BizAnime::getGenre, genre.trim());
+                }
+            }
         }
 
         if ("rating".equalsIgnoreCase(sortBy)) {
@@ -188,5 +201,14 @@ public class BizAnimeController {
     public Result<java.util.List<BizAnime>> importFromBangumi(@RequestBody java.util.List<Integer> bgmIds) {
         java.util.List<BizAnime> list = animeService.importFromBangumi(bgmIds);
         return Result.success(list);
+    }
+
+    /**
+     * 批量更新所有番剧的类型信息（从 Bangumi 重新获取）
+     */
+    @PostMapping("/sync/genres")
+    public Result<Integer> syncAllGenres() {
+        int count = animeService.batchUpdateGenresFromBangumi();
+        return Result.success(count);
     }
 }

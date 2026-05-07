@@ -82,6 +82,8 @@ const props = defineProps<{
 
 const emit = defineEmits<{
   'update:modelValue': [value: string]
+  'cropper-show': []
+  'cropper-hide': []
 }>()
 
 const fileInputRef = ref<HTMLInputElement>()
@@ -145,6 +147,7 @@ const handleCopyImage = async () => {
           originalImage = img
           resetImagePosition()
           showCropper.value = true
+          emit('cropper-show')
           setTimeout(drawCanvas, 50)
         }
         img.src = text
@@ -173,6 +176,7 @@ const loadImageForCropper = (file: File) => {
       originalImage = img
       resetImagePosition()
       showCropper.value = true
+      emit('cropper-show')
       setTimeout(drawCanvas, 50)
     }
     img.src = e.target?.result as string
@@ -270,6 +274,7 @@ const editImage = () => {
       originalImage = img
       resetImagePosition()
       showCropper.value = true
+      emit('cropper-show')
       setTimeout(drawCanvas, 50)
     }
     img.src = previewUrl.value
@@ -278,6 +283,7 @@ const editImage = () => {
 
 const cancelCrop = () => {
   showCropper.value = false
+  emit('cropper-hide')
   if (!previewUrl.value) {
     originalImage = null
   }
@@ -313,6 +319,7 @@ const confirmCrop = () => {
   previewUrl.value = dataUrl
   emit('update:modelValue', dataUrl)
   showCropper.value = false
+  emit('cropper-hide')
 }
 
 const removeAvatar = () => {
@@ -480,6 +487,7 @@ const removeAvatar = () => {
   justify-content: center;
   align-items: center;
   padding: 16px;
+  position: relative;
 }
 
 .circle-mask {
@@ -487,12 +495,17 @@ const removeAvatar = () => {
   height: 300px;
   border-radius: 50%;
   overflow: hidden;
-  box-shadow: 0 0 0 3px #6366f1;
+  border: 3px solid #6366f1;
+  position: relative;
+  z-index: 1;
 }
 
 .circle-mask canvas {
   cursor: move;
   max-width: 100%;
+  position: relative;
+  z-index: 1;
+  pointer-events: auto;
 }
 
 .cropper-toolbar {

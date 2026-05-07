@@ -29,6 +29,28 @@
           <el-icon><ChatDotRound /></el-icon>
           <span>评论审核</span>
         </el-menu-item>
+        <el-menu-item index="/user">
+          <el-icon><User /></el-icon>
+          <span>用户管理</span>
+        </el-menu-item>
+        <el-divider border-style="dashed" />
+        <div class="menu-section-title">V2.0 数字资产</div>
+        <el-menu-item index="/item">
+          <el-icon><Box /></el-icon>
+          <span>商品图鉴</span>
+        </el-menu-item>
+        <el-menu-item index="/gacha">
+          <el-icon><Present /></el-icon>
+          <span>抽赏配置</span>
+        </el-menu-item>
+        <el-menu-item index="/transaction">
+          <el-icon><Wallet /></el-icon>
+          <span>交易监控</span>
+        </el-menu-item>
+        <el-menu-item index="/delivery">
+          <el-icon><Van /></el-icon>
+          <span>物流调度</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     
@@ -99,9 +121,23 @@ const currentTitle = computed(() => route.meta.title as string)
   border-right: none;
 }
 
+.menu-section-title {
+  padding: 10px 20px;
+  font-size: 12px;
+  color: #6b7280;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
 :deep(.el-menu-item.is-active) {
   background-color: #374151;
   border-left: 4px solid #409eff;
+}
+
+:deep(.el-divider) {
+  margin: 8px 0;
+  border-color: #374151;
 }
 
 .header {

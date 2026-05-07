@@ -17,4 +17,10 @@ public interface ISysUserService extends IService<SysUser> {
      * 注册
      */
     void register(SysUser user);
+
+    /**
+     * 补发注册积分私信给所有已注册用户
+     * @return 补发成功的用户数量
+     */
+    int sendBonusMessageToExistingUsers();
 }

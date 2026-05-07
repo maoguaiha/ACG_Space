@@ -14,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.format.DateTimeParseException;
+import java.util.List;
 
 
 @Slf4j
@@ -88,6 +89,22 @@ public class BizAnimeServiceImpl extends ServiceImpl<BizAnimeMapper, BizAnime> i
             anime.setRating(ratingObj.getBigDecimal("score"));
         }
 
+        // 提取类型标签（从 tags 字段）
+        com.alibaba.fastjson2.JSONArray tags = bgmData.getJSONArray("tags");
+        if (tags != null && !tags.isEmpty()) {
+            StringBuilder genreBuilder = new StringBuilder();
+            for (int i = 0; i < tags.size(); i++) {
+                JSONObject tag = tags.getJSONObject(i);
+                if (tag != null && tag.getString("name") != null) {
+                    if (i > 0) {
+                        genreBuilder.append(",");
+                    }
+                    genreBuilder.append(tag.getString("name"));
+                }
+            }
+            anime.setGenre(genreBuilder.toString());
+        }
+
         // 4. 保存或更新数据库
         try {
             this.saveOrUpdate(anime);
@@ -129,6 +146,57 @@ public class BizAnimeServiceImpl extends ServiceImpl<BizAnimeMapper, BizAnime> i
             }
         }
         return imported;
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public int batchUpdateGenresFromBangumi() {
+        log.info("开始批量更新所有番剧的类型信息");
+        
+        // 获取所有已同步的番剧（有 bgmId 的）
+        List<BizAnime> allAnime = this.list(new LambdaQueryWrapper<BizAnime>()
+                .eq(BizAnime::getDelFlag, 0)
+                .isNotNull(BizAnime::getBgmId));
+        
+        int updatedCount = 0;
+        int failedCount = 0;
+        
+        for (BizAnime anime : allAnime) {
+            Integer bgmId = anime.getBgmId();
+            if (bgmId == null) continue;
+            
+            try {
+                JSONObject bgmData = bangumiApiClient.getSubjectDetails(bgmId);
+                if (bgmData != null) {
+                    // 提取类型标签
+                    com.alibaba.fastjson2.JSONArray tags = bgmData.getJSONArray("tags");
+                    if (tags != null && !tags.isEmpty()) {
+                        StringBuilder genreBuilder = new StringBuilder();
+                        for (int i = 0; i < tags.size(); i++) {
+                            JSONObject tag = tags.getJSONObject(i);
+                            if (tag != null && tag.getString("name") != null) {
+                                if (i > 0) {
+                                    genreBuilder.append(",");
+                                }
+                                genreBuilder.append(tag.getString("name"));
+                            }
+                        }
+                        String newGenre = genreBuilder.toString();
+                        if (!newGenre.equals(anime.getGenre())) {
+                            anime.setGenre(newGenre);
+                            this.updateById(anime);
+                            updatedCount++;
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                log.warn("更新番剧 {} (bgmId: {}) 的类型信息失败: {}", anime.getTitle(), bgmId, e.getMessage());
+                failedCount++;
+            }
+        }
+        
+        log.info("批量更新类型信息完成，成功: {}, 失败: {}", updatedCount, failedCount);
+        return updatedCount;
     }
 
     /**

@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "vite",
     "build": "vue-tsc -b && vite build",
-    "preview": "vite preview"
+    "preview": "vite preview",
+    "lint": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts",
+    "lint:fix": "eslint . --ext .vue,.js,.jsx,.cjs,.mjs,.ts,.tsx,.cts,.mts --fix",
+    "typecheck": "vue-tsc --noEmit",
+    "format": "prettier --write ."
   },
   "dependencies": {
     "@element-plus/icons-vue": "^2.3.2",
@@ -23,6 +27,12 @@
     "@vue/tsconfig": "^0.9.1",
     "typescript": "~6.0.2",
     "vite": "^8.0.10",
-    "vue-tsc": "^3.2.7"
+    "vue-tsc": "^3.2.7",
+    "eslint": "^8.57.0",
+    "eslint-plugin-vue": "^9.23.0",
+    "@typescript-eslint/eslint-plugin": "^7.18.0",
+    "@typescript-eslint/parser": "^7.18.0",
+    "prettier": "^3.2.5",
+    "eslint-config-prettier": "^9.1.0"
   }
 }

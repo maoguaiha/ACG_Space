@@ -30,4 +30,10 @@ public interface IBizAnimeService extends IService<BizAnime> {
      * @return 导入或更新后的番剧列表
      */
     java.util.List<BizAnime> importFromBangumi(java.util.List<Integer> bgmIds);
+
+    /**
+     * 批量更新所有番剧的类型信息（从 Bangumi 重新获取）
+     * @return 更新的番剧数量
+     */
+    int batchUpdateGenresFromBangumi();
 }
