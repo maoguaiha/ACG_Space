@@ -20,6 +20,9 @@ ACG Space V2.0 版本，新增数字资产系统和 O2O 核销系统
 | 跳蚤市场 | /pages/market/index.vue | ✅ 已完成 | |
 | 记忆工坊 | /pages/workshop/index.vue | ✅ 已完成 | 后端合成API已实现 |
 | 地址管理 | /pages/address/index.vue | ✅ 已完成 | |
+| 兑换中心 | /components/gacha/Redeem.vue | ✅ 已完成 | UR碎片/积分兑换实物商品 |
+| 订单列表 | /pages/orders/index.vue | ✅ 已完成 | 查看兑换订单与物流信息 |
+| 用户主页 | /pages/user/[id].vue | ✅ 已完成 | 新增订单入口 |
 
 ### 2. 管理端页面 (✅ 已完成)
 | 页面 | 路径 | 状态 |
@@ -29,6 +32,8 @@ ACG Space V2.0 版本，新增数字资产系统和 O2O 核销系统
 | 交易监控 | /views/transaction/index.vue | ✅ 已完成 |
 | 物流调度 | /views/delivery/index.vue | ✅ 已完成 |
 | 风控中心 | /views/risk-control/index.vue | ✅ 已完成 |
+| 兑换商品管理 | /views/redeem-product/index.vue | ✅ 已完成 |
+| 兑换订单管理 | /views/redeem-order/index.vue | ✅ 已完成 |
 
 ### 3. 数据库设计 (✅ 已完成)
 - [x] 物品/商品表 (biz_item)
@@ -39,6 +44,9 @@ ACG Space V2.0 版本，新增数字资产系统和 O2O 核销系统
 - [x] O2O 核销订单表 (biz_delivery_order)
 - [x] 用户地址表 (biz_user_address)
 - [x] 事务日志回查表 (biz_transaction_log) - ✅ 已添加
+- [x] 兑换商品表 (biz_redeem_product) - ✅ 已添加
+- [x] 兑换订单表 (biz_redeem_order) - ✅ 已添加并扩展字段
+- [x] 用户碎片表 (biz_user_fragment) - ✅ 已添加
 
 ### 4. 后端 API (✅ 已完成)
 - [x] 物品管理 API (ItemController)
@@ -48,6 +56,10 @@ ACG Space V2.0 版本，新增数字资产系统和 O2O 核销系统
 - [x] 地址管理 API (AddressController)
 - [x] 积分 API (PointsController) - ✅ 新增
 - [x] 合成 API (SynthesizeController) - ✅ 新增
+- [x] 碎片 API (FragmentController) - ✅ 新增
+- [x] 兑换商品 API (BizRedeemProductController / BizAdminRedeemProductController) - ✅ 新增
+- [x] 兑换订单 API (BizRedeemController) - ✅ 新增
+- [x] 交易监控 API (BizTransactionLogController) - ✅ 新增
 
 ### 5. 前端 API 服务层 (✅ 已完成)
 - [x] useV2Api.ts - V2.0 API 统一封装

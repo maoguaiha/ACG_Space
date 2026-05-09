@@ -289,7 +289,7 @@
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { marketApi, type MarketItem } from '~/composables/useV2Api'
+import { marketApi, gachaApi, type MarketItem } from '~/composables/useV2Api'
 import { useAuthGuard } from '~/composables/useAuthGuard'
 
 const { requireAuth } = useAuthGuard()
@@ -380,6 +380,7 @@ async function fetchListings() {
 
 onMounted(() => {
   fetchListings()
+  fetchUserPoints()
 })
 
 // Listing Detail Modal
@@ -440,8 +441,32 @@ function handleBuy() {
   const authorized = requireAuth()
   if (!authorized) return
   if (!canBuy.value) return
-  alert('购买成功！')
-  closeListingDetail()
+  if (!selectedListing.value) return
+
+  if (!confirm(`确认花费 ${selectedListing.value.price.toLocaleString()} 积分购买 "${selectedListing.value.name}" 吗？`)) {
+    return
+  }
+
+  marketApi.buy(Number(selectedListing.value.id))
+    .then(() => {
+      alert('购买成功！')
+      closeListingDetail()
+      fetchListings()
+      fetchUserPoints()
+    })
+    .catch((e: any) => {
+      alert(e.message || '购买失败')
+      console.error('handleBuy error:', e)
+    })
+}
+
+async function fetchUserPoints() {
+  try {
+    const points = await gachaApi.fetchUserPoints()
+    userPoints.value = points
+  } catch (e) {
+    console.error('加载用户积分失败', e)
+  }
 }
 
 function loadMore() {

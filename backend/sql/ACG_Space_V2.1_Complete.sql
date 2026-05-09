@@ -1,8 +1,9 @@
 -- =====================================================
 -- ACG Space 完整数据库迁移脚本
--- 版本: V2.1 (修复版)
--- 日期: 2026-05-08
--- 说明: 包含所有功能模块的数据库结构和数据
+-- 版本: V2.1 (最终版)
+-- 日期: 2026-05-09
+-- 说明: 包含所有功能模块的完整数据库结构和初始化数据
+-- 特性: 支持重复执行不报错（幂等性）
 -- =====================================================
 
 SET NAMES utf8mb4;
@@ -12,7 +13,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 -- 第一部分：基础表结构
 -- =====================================================
 
--- 用户表 (sys_user 已存在，通过存储过程安全添加字段，实现 IF NOT EXISTS 效果)
+-- 用户表 (sys_user 已存在，通过存储过程安全添加字段)
 DROP PROCEDURE IF EXISTS `SafeAddSysUserColumns`;
 DELIMITER //
 CREATE PROCEDURE `SafeAddSysUserColumns`()
@@ -31,17 +32,13 @@ BEGIN
 END //
 DELIMITER ;
 
--- 执行存储过程
 CALL `SafeAddSysUserColumns`();
--- 清理存储过程，保持数据库整洁
 DROP PROCEDURE IF EXISTS `SafeAddSysUserColumns`;
-
 
 -- =====================================================
 -- 第二部分：动漫模块
 -- =====================================================
 
--- 动漫表
 CREATE TABLE IF NOT EXISTS `biz_anime` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `bgm_id` int(11) DEFAULT NULL COMMENT 'Bangumi ID',
@@ -70,7 +67,6 @@ CREATE TABLE IF NOT EXISTS `biz_anime` (
 -- 第三部分：文章模块
 -- =====================================================
 
--- 文章表
 CREATE TABLE IF NOT EXISTS `biz_article` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -90,7 +86,6 @@ CREATE TABLE IF NOT EXISTS `biz_article` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章表';
 
--- 评论表
 CREATE TABLE IF NOT EXISTS `biz_comment` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -111,7 +106,6 @@ CREATE TABLE IF NOT EXISTS `biz_comment` (
 -- 第四部分：抽赏模块
 -- =====================================================
 
--- 物品表
 CREATE TABLE IF NOT EXISTS `biz_item` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `name` varchar(100) NOT NULL COMMENT '物品名称',
@@ -127,7 +121,6 @@ CREATE TABLE IF NOT EXISTS `biz_item` (
   KEY `idx_rarity` (`rarity`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='物品表';
 
--- 奖池表
 CREATE TABLE IF NOT EXISTS `biz_gacha_pool` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `name` varchar(100) NOT NULL COMMENT '奖池名称',
@@ -149,7 +142,6 @@ CREATE TABLE IF NOT EXISTS `biz_gacha_pool` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖池表';
 
--- 奖池物品关联表
 CREATE TABLE IF NOT EXISTS `biz_gacha_pool_item` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `pool_id` bigint(20) NOT NULL COMMENT '奖池ID',
@@ -163,7 +155,6 @@ CREATE TABLE IF NOT EXISTS `biz_gacha_pool_item` (
   KEY `idx_item_id` (`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖池物品关联表';
 
--- 抽奖记录表
 CREATE TABLE IF NOT EXISTS `biz_gacha_record` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -186,7 +177,6 @@ CREATE TABLE IF NOT EXISTS `biz_gacha_record` (
 -- 第五部分：用户资产模块
 -- =====================================================
 
--- 用户资产表
 CREATE TABLE IF NOT EXISTS `biz_user_asset` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -210,7 +200,6 @@ CREATE TABLE IF NOT EXISTS `biz_user_asset` (
   KEY `idx_item_id` (`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户资产表';
 
--- 用户积分日志表
 CREATE TABLE IF NOT EXISTS `biz_user_points_log` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -229,7 +218,6 @@ CREATE TABLE IF NOT EXISTS `biz_user_points_log` (
 -- 第六部分：集市模块（已废弃，保留表结构）
 -- =====================================================
 
--- 集市商品表
 CREATE TABLE IF NOT EXISTS `biz_market_item` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -286,16 +274,21 @@ CREATE TABLE IF NOT EXISTS `biz_synthesize_rule` (
   KEY `idx_source_rarity` (`source_rarity`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='合成规则表';
 
--- 兑换订单表
+-- 兑换订单表（包含商品相关字段）
 CREATE TABLE IF NOT EXISTS `biz_redeem_order` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `order_no` varchar(64) NOT NULL COMMENT '订单编号',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-  `asset_id` bigint(20) NOT NULL COMMENT '资产ID',
-  `item_id` bigint(20) NOT NULL COMMENT '物品ID',
-  `item_name` varchar(100) NOT NULL COMMENT '物品名称',
-  `item_image` varchar(500) DEFAULT NULL COMMENT '物品图片',
-  `item_rarity` varchar(10) DEFAULT NULL COMMENT '物品稀有度',
+  `asset_id` bigint(20) DEFAULT NULL COMMENT '资产ID（兼容旧字段）',
+  `item_id` bigint(20) DEFAULT NULL COMMENT '物品ID（兼容旧字段）',
+  `item_name` varchar(100) DEFAULT NULL COMMENT '物品名称（兼容旧字段）',
+  `item_image` varchar(500) DEFAULT NULL COMMENT '物品图片（兼容旧字段）',
+  `item_rarity` varchar(10) DEFAULT NULL COMMENT '物品稀有度（兼容旧字段）',
+  `product_id` bigint(20) DEFAULT NULL COMMENT '商品ID',
+  `product_name` varchar(200) DEFAULT NULL COMMENT '商品名称',
+  `product_image` longtext DEFAULT NULL COMMENT '商品图片',
+  `ur_fragment_cost` int(11) DEFAULT 0 COMMENT '消耗UR碎片数量',
+  `points_cost` int(11) DEFAULT 0 COMMENT '消耗积分数量',
   `receiver` varchar(50) NOT NULL COMMENT '收货人',
   `phone` varchar(20) NOT NULL COMMENT '电话',
   `province` varchar(50) DEFAULT NULL COMMENT '省',
@@ -318,6 +311,29 @@ CREATE TABLE IF NOT EXISTS `biz_redeem_order` (
   KEY `idx_user_id` (`user_id`),
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='兑换订单表';
+
+-- 兑换实物商品表
+CREATE TABLE IF NOT EXISTS `biz_redeem_product` (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `name` varchar(100) NOT NULL COMMENT '商品名称',
+  `image` longtext DEFAULT NULL COMMENT '商品图片',
+  `description` text COMMENT '商品描述',
+  `ur_fragment_cost` int(11) DEFAULT 0 COMMENT '所需UR碎片数量',
+  `points_cost` int(11) DEFAULT 0 COMMENT '所需积分数量',
+  `stock` int(11) DEFAULT 0 COMMENT '库存数量',
+  `exchanged_count` int(11) DEFAULT 0 COMMENT '已兑换数量',
+  `status` tinyint(4) DEFAULT 1 COMMENT '状态 (0=下架 1=上架)',
+  `sort_order` int(11) DEFAULT 0 COMMENT '排序',
+  `create_by` varchar(64) DEFAULT '' COMMENT '创建者',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  `update_by` varchar(64) DEFAULT '' COMMENT '更新者',
+  `update_time` datetime DEFAULT NULL COMMENT '更新时间',
+  `remark` varchar(500) DEFAULT NULL COMMENT '备注',
+  `del_flag` tinyint(4) DEFAULT 0 COMMENT '删除标志',
+  PRIMARY KEY (`id`),
+  KEY `idx_status` (`status`),
+  KEY `idx_sort_order` (`sort_order`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='兑换实物商品表';
 
 -- 充值订单表
 CREATE TABLE IF NOT EXISTS `biz_recharge_order` (
@@ -343,7 +359,7 @@ CREATE TABLE IF NOT EXISTS `biz_recharge_order` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='充值订单表';
 
 -- =====================================================
--- 第八部分：初始化数据
+-- 第八部分：初始化数据（幂等性：重复执行不报错）
 -- =====================================================
 
 -- 初始化合成规则
@@ -362,29 +378,31 @@ WHERE NOT EXISTS (SELECT 1 FROM `biz_synthesize_rule` WHERE `id` = 3);
 SET FOREIGN_KEY_CHECKS = 1;
 
 -- =====================================================
--- 迁移完成说明
+-- 迁移完成
 -- =====================================================
+-- 
+-- 表清单（共 17 张表）：
+-- 1. sys_user (系统用户表 - 已存在，仅添加字段)
+-- 2. biz_anime (动漫信息表)
+-- 3. biz_article (文章表)
+-- 4. biz_comment (评论表)
+-- 5. biz_item (物品表)
+-- 6. biz_gacha_pool (奖池表)
+-- 7. biz_gacha_pool_item (奖池物品关联表)
+-- 8. biz_gacha_record (抽奖记录表)
+-- 9. biz_user_asset (用户资产表)
+-- 10. biz_user_points_log (用户积分日志表)
+-- 11. biz_market_item (集市商品表 - 已废弃)
+-- 12. biz_user_fragment (用户碎片表)
+-- 13. biz_synthesize_rule (合成规则表)
+-- 14. biz_redeem_order (兑换订单表)
+-- 15. biz_redeem_product (兑换实物商品表)
+-- 16. biz_recharge_order (充值订单表)
 --
--- 表分类：
--- 1. 基础模块: sys_user
--- 2. 动漫模块: biz_anime
--- 3. 文章模块: biz_article, biz_comment
--- 4. 抽赏模块: biz_item, biz_gacha_pool, biz_gacha_pool_item, biz_gacha_record
--- 5. 资产模块: biz_user_asset, biz_user_points_log
--- 6. 集市模块: biz_market_item (已废弃)
--- 7. V2.1新增: biz_user_fragment, biz_synthesize_rule, biz_redeem_order, biz_recharge_order
+-- 使用说明：
+-- 1. 本脚本支持重复执行，不会产生错误
+-- 2. 使用 MySQL 客户端执行：source /path/to/ACG_Space_V2.1_Complete.sql
+-- 3. 或使用数据库管理工具（如 Navicat、DBeaver）直接运行
+-- 4. 执行前请确保已创建数据库：CREATE DATABASE acg_space DEFAULT CHARACTER SET utf8mb4;
 --
 -- =====================================================
--- 使用数据库管理工具执行
-ALTER TABLE `biz_user_fragment`
-   ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注' AFTER `update_by`;
-
--- 更新现有的 SR→SSR 规则（将 is_physical 从 1 改为 0，因为 SSR 不是最终实物）
-UPDATE `biz_synthesize_rule` SET `is_physical` = 0 WHERE `id` = 2;
-
--- 插入新的 SSR→UR 规则
-INSERT INTO `biz_synthesize_rule` (`id`, `source_rarity`, `source_count`, `target_rarity`, `target_count`, `is_physical`, `status`, `create_time`, `update_time`, `del_flag`)
-VALUES (3, 'SSR', 10, 'UR', 1, 1, 1, NOW(), NOW(), 0);
-
--- 更新现有的第一条合成规则，将 N 改为 R
-UPDATE `biz_synthesize_rule` SET `source_rarity` = 'R' WHERE `id` = 1;

@@ -16,14 +16,33 @@
         @change="handleFileSelect"
         style="display: none"
       />
-      <div class="upload-placeholder" @click="triggerFileSelect" @paste="handlePaste">
+      <div class="upload-placeholder" @click="showUploadDialog = true">
         <el-icon class="upload-icon"><Plus /></el-icon>
         <div class="upload-text">
-          <span>点击选择图片</span>
-          <span class="upload-hint">或 Ctrl+V 粘贴图片</span>
+          <span>点击上传图片</span>
         </div>
       </div>
     </div>
+
+    <el-dialog
+      v-model="showUploadDialog"
+      title="选择图片来源"
+      width="400px"
+      :close-on-click-modal="false"
+    >
+      <div class="upload-dialog-content">
+        <div class="upload-option" @click="triggerFileSelect">
+          <el-icon :size="32" color="#409eff"><Upload /></el-icon>
+          <span class="option-label">本地上传</span>
+          <span class="option-desc">从电脑选择图片</span>
+        </div>
+        <div class="upload-option" @click="handlePasteClick">
+          <el-icon :size="32" color="#67c23a"><CopyDocument /></el-icon>
+          <span class="option-label">粘贴图像</span>
+          <span class="option-desc">Ctrl+V 粘贴剪贴板图片</span>
+        </div>
+      </div>
+    </el-dialog>
 
     <div v-if="showCropper" class="cropper-wrapper">
       <div class="cropper-header">
@@ -45,8 +64,8 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch, onMounted } from 'vue'
-import { Plus } from '@element-plus/icons-vue'
+import { ref, watch, onMounted, onUnmounted } from 'vue'
+import { Plus, Upload, CopyDocument } from '@element-plus/icons-vue'
 import { ElMessage } from 'element-plus'
 
 const props = defineProps<{
@@ -61,6 +80,7 @@ const fileInputRef = ref<HTMLInputElement>()
 const canvasRef = ref<HTMLCanvasElement>()
 const previewUrl = ref(props.modelValue || '')
 const showCropper = ref(false)
+const showUploadDialog = ref(false)
 const zoomLevel = ref(100)
 
 let originalImage: HTMLImageElement | null = null
@@ -80,6 +100,7 @@ watch(() => props.modelValue, (val) => {
 })
 
 const triggerFileSelect = () => {
+  showUploadDialog.value = false
   fileInputRef.value?.click()
 }
 
@@ -92,7 +113,18 @@ const handleFileSelect = (event: Event) => {
   input.value = ''
 }
 
+const handlePasteClick = () => {
+  showUploadDialog.value = false
+  ElMessage.info('已就绪，请在任意输入框按 Ctrl+V 粘贴图片')
+  // 聚焦到文件输入框以确保能接收粘贴事件
+  setTimeout(() => {
+    fileInputRef.value?.focus()
+  }, 100)
+}
+
 const handlePaste = (event: ClipboardEvent) => {
+  if (showCropper.value) return
+
   const items = event.clipboardData?.items
   if (!items) return
 
@@ -100,7 +132,9 @@ const handlePaste = (event: ClipboardEvent) => {
     if (item.type.startsWith('image/')) {
       const file = item.getAsFile()
       if (file) {
+        showUploadDialog.value = false
         loadImageForCropper(file)
+        event.preventDefault()
       }
       break
     }
@@ -280,6 +314,11 @@ onMounted(() => {
   if (canvasRef.value) {
     canvasCtx = canvasRef.value.getContext('2d')
   }
+  document.addEventListener('paste', handlePaste)
+})
+
+onUnmounted(() => {
+  document.removeEventListener('paste', handlePaste)
 })
 </script>
 
@@ -340,6 +379,41 @@ onMounted(() => {
 
 .upload-placeholder:hover {
   border-color: #409eff;
+}
+
+.upload-dialog-content {
+  display: flex;
+  gap: 16px;
+  justify-content: center;
+}
+
+.upload-option {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 24px 32px;
+  border: 2px solid #e4e7ed;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: all 0.3s;
+}
+
+.upload-option:hover {
+  border-color: #409eff;
+  background-color: #f5f7fa;
+  transform: translateY(-2px);
+}
+
+.option-label {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.option-desc {
+  font-size: 12px;
+  color: #909399;
 }
 
 .upload-icon {

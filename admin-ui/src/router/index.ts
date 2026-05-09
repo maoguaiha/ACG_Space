@@ -1,7 +1,7 @@
 import { createRouter, createWebHistory } from 'vue-router'
 import type { RouteRecordRaw } from 'vue-router'
 import AdminLayout from '../layout/AdminLayout.vue'
-import { Box, Present, Wallet, Van } from '@element-plus/icons-vue'
+import { Box, Present, Wallet, Van, ShoppingCart } from '@element-plus/icons-vue'
 
 const routes: RouteRecordRaw[] = [
   {
@@ -74,6 +74,12 @@ const routes: RouteRecordRaw[] = [
         name: 'DeliveryManage',
         component: () => import('../views/delivery/index.vue'),
         meta: { title: '物流调度', icon: Van }
+      },
+      {
+        path: 'redeem-product',
+        name: 'RedeemProductManage',
+        component: () => import('../views/redeem-product/index.vue'),
+        meta: { title: '兑换商品管理', icon: ShoppingCart }
       },
       {
         path: 'risk-control',

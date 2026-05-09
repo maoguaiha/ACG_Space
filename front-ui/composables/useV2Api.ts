@@ -96,10 +96,19 @@ async function v2Fetch<T>(
   options?: Parameters<typeof $fetch>[1]
 ): Promise<T> {
   const baseUrl = getBaseUrl()
+  const userStore = useUserStore()
+  
   const result = await $fetch<{ code: number; msg: string; data: T }>(`${baseUrl}${path}`, {
     ...options,
     headers: {
-      ...options?.headers
+      ...options?.headers,
+      ...(userStore.token ? { 'Authorization': `Bearer ${userStore.token}` } : {})
+    },
+    onResponseError({ response }) {
+      console.error(`[V2 API Error] ${path} -> ${response.status}: ${response._data?.msg}`)
+      if (response.status === 401) {
+        userStore.logout() // Token 失效，退出登录
+      }
     }
   })
   if (result.code !== 200) {

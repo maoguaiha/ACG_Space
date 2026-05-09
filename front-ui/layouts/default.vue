@@ -18,8 +18,6 @@
           <NuxtLink to="/follows" class="hover:text-indigo-400 transition-colors" active-class="active-link">我的追番</NuxtLink>
           <NuxtLink to="/community" class="hover:text-indigo-400 transition-colors" active-class="active-link">社区</NuxtLink>
           <NuxtLink to="/gacha" class="hover:text-amber-400 transition-colors" active-class="active-link text-amber-400">抽赏</NuxtLink>
-          <NuxtLink to="/assets" class="hover:text-amber-400 transition-colors" active-class="active-link text-amber-400">背包</NuxtLink>
-          <NuxtLink to="/market" class="hover:text-amber-400 transition-colors" active-class="active-link text-amber-400">集市</NuxtLink>
         </nav>
 
         <div class="flex items-center gap-6">

@@ -51,6 +51,10 @@
           <el-icon><Van /></el-icon>
           <span>物流调度</span>
         </el-menu-item>
+        <el-menu-item index="/redeem-product">
+          <el-icon><ShoppingCart /></el-icon>
+          <span>兑换商品</span>
+        </el-menu-item>
       </el-menu>
     </el-aside>
     

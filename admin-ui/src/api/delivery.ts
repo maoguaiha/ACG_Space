@@ -1,24 +1,29 @@
 import axios from 'axios'
 
-const baseUrl = '/api'
+const baseUrl = '/api/admin/redeem'
 
 export interface DeliveryOrder {
   id?: number
-  orderId: string
-  userId: number
+  orderNo?: string
+  userId?: number
   userName?: string
   userAvatar?: string
-  assetId: number
-  itemId: number
-  itemName: string
+  assetId?: number
+  itemId?: number
+  itemName?: string
   itemImage?: string
   itemRarity?: string
-  receiver: string
-  phone: string
-  address: string
-  expressCompany?: string
-  expressNo?: string
-  remark?: string
+  productId?: number
+  productName?: string
+  productImage?: string
+  receiver?: string
+  phone?: string
+  province?: string
+  city?: string
+  district?: string
+  address?: string
+  logisticsCompany?: string
+  logisticsNo?: string
   status?: number
   shipTime?: string
   completeTime?: string
@@ -41,39 +46,34 @@ export interface DeliveryStats {
 }
 
 export interface ShipRequest {
-  orderId: string
-  expressCompany: string
-  expressNo: string
-  remark?: string
+  orderId: number
+  logisticsCompany: string
+  logisticsNo: string
 }
 
 export const deliveryApi = {
   page(params: {
     pageNum: number
     pageSize: number
-    orderId?: string
+    orderNo?: string
     status?: number
   }) {
-    return axios.get<{ data: DeliveryPageResult }>(`${baseUrl}/delivery/page`, { params })
+    return axios.get<{ data: DeliveryPageResult }>(`${baseUrl}/orders`, { params })
   },
 
   getStats() {
-    return axios.get<{ data: DeliveryStats }>(`${baseUrl}/delivery/stats`)
+    return axios.get<{ data: DeliveryStats }>(`${baseUrl}/stats`)
   },
 
-  getByOrderId(orderId: string) {
-    return axios.get<{ data: DeliveryOrder }>(`${baseUrl}/delivery/${orderId}`)
+  getById(id: number) {
+    return axios.get<{ data: DeliveryOrder }>(`${baseUrl}/order/${id}`)
   },
 
   ship(data: ShipRequest) {
-    return axios.post(`${baseUrl}/delivery/ship`, data)
+    return axios.post(`${baseUrl}/ship`, data)
   },
 
-  complete(orderId: string) {
-    return axios.post(`${baseUrl}/delivery/${orderId}/complete`)
-  },
-
-  cancel(orderId: string) {
-    return axios.post(`${baseUrl}/delivery/${orderId}/cancel`)
+  complete(id: number) {
+    return axios.post(`${baseUrl}/complete/${id}`)
   }
 }

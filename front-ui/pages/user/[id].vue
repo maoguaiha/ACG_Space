@@ -116,6 +116,11 @@
               <!-- 操作按钮 -->
               <div class="flex items-center justify-center md:justify-start gap-3">
                 <template v-if="profile.isSelf">
+                  <NuxtLink to="/orders"
+                    class="px-6 py-2.5 text-sm font-medium rounded-xl transition-all shadow-lg flex items-center gap-2" :class="['theme-btn-secondary']">
+                    <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 2L3 6v14a2 2 0 002 2h14a2 2 0 002-2V6l-3-4z"/><line x1="3" y1="6" x2="21" y2="6"/><path d="M16 10a4 4 0 01-8 0"/></svg>
+                    我的订单
+                  </NuxtLink>
                   <button @click="showEditDialog = true"
                     class="px-6 py-2.5 text-sm font-medium rounded-xl transition-all shadow-lg" :class="['theme-btn-primary']">
                     编辑资料

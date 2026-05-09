@@ -102,7 +102,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, nextTick, watch } from 'vue'
+import { ref, onMounted, onUnmounted, nextTick, watch } from 'vue'
 import { useUserStore } from '~/stores/user'
 import { fetchConversation, sendMessage as apiSendMessage, markMessagesRead, fetchUserProfile, claimRegistrationBonus, type MessageVO } from '~/composables/useApi'
 
@@ -115,6 +115,7 @@ const loading = ref(true)
 const sending = ref(false)
 const inputMessage = ref('')
 const messageListRef = ref<HTMLElement>()
+const isClaimingBonus = ref(false)
 
 function getCurrentUserId(): string {
   return String(userStore.userInfo?.id || '')
@@ -122,30 +123,43 @@ function getCurrentUserId(): string {
 
 function formatMessage(content: string): string {
   if (!content) return ''
-  // 将 [领取积分] 替换为可点击的按钮
   return content.replace(/\[领取积分\]/g, '<span class="claim-bonus-btn inline-block px-4 py-1.5 bg-gradient-to-r from-pink-500 to-purple-500 text-white text-sm font-medium rounded-full hover:opacity-80 transition-opacity ml-1 cursor-pointer">领取积分</span>')
 }
 
 async function handleClaimBonus() {
+  if (isClaimingBonus.value) {
+    console.log('正在领取中，请勿重复点击')
+    return
+  }
+  
+  isClaimingBonus.value = true
   try {
-    await claimRegistrationBonus()
-    alert('领取成功！获得2600积分')
-    window.location.href = '/gacha'
-  } catch (e) {
+    const result = await claimRegistrationBonus()
+    console.log('领取积分返回结果:', result)
+    
+    const message = result.message || '领取成功'
+    const points = result.points
+    
+    if (message.includes('已领取过') || message.includes('无需重复')) {
+      alert(`提示：${message}\n当前积分：${points}`)
+    } else {
+      alert(`${message}\n当前积分余额：${points} 积分`)
+      window.location.href = '/gacha'
+    }
+  } catch (e: any) {
     console.error('领取积分失败:', e)
-    alert('领取积分失败，请稍后重试')
+    alert(e.message || '领取积分失败，请稍后重试')
+  } finally {
+    isClaimingBonus.value = false
   }
 }
 
-// 事件委托处理领取积分按钮点击
-function setupClaimBonusHandler() {
-  document.addEventListener('click', async (e) => {
-    const target = e.target as HTMLElement
-    if (target.classList.contains('claim-bonus-btn')) {
-      e.preventDefault()
-      await handleClaimBonus()
-    }
-  })
+async function claimBonusClickHandler(e: Event) {
+  const target = e.target as HTMLElement
+  if (target.classList.contains('claim-bonus-btn')) {
+    e.preventDefault()
+    await handleClaimBonus()
+  }
 }
 
 if (!userStore.isLoggedIn) {
@@ -224,10 +238,14 @@ async function sendMessage() {
 }
 
 onMounted(async () => {
-  setupClaimBonusHandler()
+  document.addEventListener('click', claimBonusClickHandler)
   await loadProfile()
   await loadMessages()
   await markRead()
+})
+
+onUnmounted(() => {
+  document.removeEventListener('click', claimBonusClickHandler)
 })
 
 watch(() => route.params.userId, async () => {

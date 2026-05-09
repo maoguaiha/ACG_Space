@@ -100,7 +100,7 @@
       <el-table :data="deliveryList" v-loading="loading" border style="width: 100%">
         <el-table-column label="订单号" width="200" align="center">
           <template #default="scope">
-            <span class="font-mono text-sm">{{ scope.row.orderId }}</span>
+            <span class="font-mono text-sm">{{ scope.row.orderNo }}</span>
           </template>
         </el-table-column>
         <el-table-column label="用户" width="120" align="center">
@@ -141,9 +141,9 @@
         </el-table-column>
         <el-table-column label="快递信息" min-width="150" align="center">
           <template #default="scope">
-            <div v-if="scope.row.expressCompany">
-              <p class="text-sm font-medium">{{ scope.row.expressCompany }}</p>
-              <p class="text-xs text-gray-500 font-mono">{{ scope.row.expressNo }}</p>
+            <div v-if="scope.row.logisticsCompany">
+              <p class="text-sm font-medium">{{ scope.row.logisticsCompany }}</p>
+              <p class="text-xs text-gray-500 font-mono">{{ scope.row.logisticsNo }}</p>
             </div>
             <span v-else class="text-gray-400 text-sm">-</span>
           </template>
@@ -203,8 +203,8 @@
         <el-form-item label="收货地址">
           <el-input v-model="shipForm.address" type="textarea" disabled :rows="2" />
         </el-form-item>
-        <el-form-item label="快递公司" prop="expressCompany">
-          <el-select v-model="shipForm.expressCompany" placeholder="请选择快递公司" style="width: 100%">
+        <el-form-item label="快递公司" prop="logisticsCompany">
+          <el-select v-model="shipForm.logisticsCompany" placeholder="请选择快递公司" style="width: 100%">
             <el-option label="顺丰速运" value="顺丰速运" />
             <el-option label="中通快递" value="中通快递" />
             <el-option label="圆通快递" value="圆通快递" />
@@ -214,11 +214,8 @@
             <el-option label="邮政EMS" value="邮政EMS" />
           </el-select>
         </el-form-item>
-        <el-form-item label="快递单号" prop="expressNo">
-          <el-input v-model="shipForm.expressNo" placeholder="请输入快递单号" />
-        </el-form-item>
-        <el-form-item label="备注">
-          <el-input v-model="shipForm.remark" type="textarea" :rows="2" placeholder="可选填备注信息" />
+        <el-form-item label="快递单号" prop="logisticsNo">
+          <el-input v-model="shipForm.logisticsNo" placeholder="请输入快递单号" />
         </el-form-item>
       </el-form>
       <template #footer>
@@ -235,7 +232,7 @@
     >
       <div v-if="currentDelivery">
         <el-descriptions :column="2" border>
-          <el-descriptions-item label="订单号">{{ currentDelivery.orderId }}</el-descriptions-item>
+          <el-descriptions-item label="订单号">{{ currentDelivery.orderNo }}</el-descriptions-item>
           <el-descriptions-item label="状态">
             <el-tag :type="getStatusType(currentDelivery.status)">{{ getStatusLabel(currentDelivery.status) }}</el-tag>
           </el-descriptions-item>
@@ -253,27 +250,10 @@
           <el-descriptions-item label="发货时间">{{ currentDelivery.shipTime || '-' }}</el-descriptions-item>
           <el-descriptions-item label="完成时间">{{ currentDelivery.completeTime || '-' }}</el-descriptions-item>
           <el-descriptions-item label="快递公司" :span="2">
-            {{ currentDelivery.expressCompany || '-' }}
-            <span v-if="currentDelivery.expressNo" class="ml-2 font-mono">{{ currentDelivery.expressNo }}</span>
+            {{ currentDelivery.logisticsCompany || '-' }}
+            <span v-if="currentDelivery.logisticsNo" class="ml-2 font-mono">{{ currentDelivery.logisticsNo }}</span>
           </el-descriptions-item>
-          <el-descriptions-item label="备注" :span="2">{{ currentDelivery.remark || '-' }}</el-descriptions-item>
         </el-descriptions>
-
-        <!-- 物流时间线 -->
-        <div v-if="currentDelivery?.status !== 0 && currentDelivery?.status !== 3" class="mt-4">
-          <h4 class="font-bold mb-3">物流轨迹</h4>
-          <el-timeline>
-            <el-timeline-item
-              v-for="(item, index) in currentDelivery.tracking"
-              :key="index"
-              :timestamp="item.time"
-              :type="index === 0 ? 'primary' : ''"
-              :hollow="index !== 0"
-            >
-              {{ item.content }}
-            </el-timeline-item>
-          </el-timeline>
-        </div>
       </div>
 
       <template #footer>
@@ -297,7 +277,6 @@ import { deliveryApi, type DeliveryOrder } from '@/api/delivery'
 
 interface Delivery extends DeliveryOrder {
   userAvatar?: string
-  tracking: Array<{ time: string, content: string }>
 }
 
 const loading = ref(false)
@@ -320,23 +299,21 @@ const pendingCount = computed(() => stats.value.pending)
 const queryParams = reactive({
   pageNum: 1,
   pageSize: 10,
-  orderId: '',
-  status: undefined as number | undefined,
-  dateRange: [] as string[]
+  status: undefined as number | undefined
 })
 
 const shipForm = reactive({
+  orderId: 0,
   receiver: '',
   phone: '',
   address: '',
-  expressCompany: '',
-  expressNo: '',
-  remark: ''
+  logisticsCompany: '',
+  logisticsNo: ''
 })
 
 const shipRules: FormRules = {
-  expressCompany: [{ required: true, message: '请选择快递公司', trigger: 'change' }],
-  expressNo: [{ required: true, message: '请输入快递单号', trigger: 'blur' }]
+  logisticsCompany: [{ required: true, message: '请选择快递公司', trigger: 'change' }],
+  logisticsNo: [{ required: true, message: '请输入快递单号', trigger: 'blur' }]
 }
 
 // Mock Data - 已移除
@@ -347,13 +324,11 @@ async function getList() {
     const res = await deliveryApi.page({
       pageNum: queryParams.pageNum,
       pageSize: queryParams.pageSize,
-      orderId: queryParams.orderId || undefined,
       status: queryParams.status ?? undefined
     })
     deliveryList.value = res.data.data.records.map((item: DeliveryOrder) => ({
       ...item,
-      userAvatar: item.userAvatar || `https://picsum.photos/seed/${item.userId}/100/100`,
-      tracking: []
+      userAvatar: item.userAvatar || `https://picsum.photos/seed/${item.userId}/100/100`
     })) as Delivery[]
     total.value = res.data.data.total
   } catch (error) {
@@ -378,22 +353,18 @@ function handleQuery() {
 }
 
 function resetQuery() {
-  queryParams.orderId = ''
   queryParams.status = undefined
-  queryParams.dateRange = []
   handleQuery()
 }
 
 function handleShip(row: Delivery) {
   currentDelivery.value = row
-  Object.assign(shipForm, {
-    receiver: row.receiver,
-    phone: row.phone,
-    address: row.address,
-    expressCompany: '',
-    expressNo: '',
-    remark: ''
-  })
+  shipForm.orderId = row.id || 0
+  shipForm.receiver = row.receiver || ''
+  shipForm.phone = row.phone || ''
+  shipForm.address = row.address || ''
+  shipForm.logisticsCompany = ''
+  shipForm.logisticsNo = ''
   shipDialogVisible.value = true
 }
 
@@ -407,10 +378,9 @@ async function submitShip() {
     if (valid && currentDelivery.value) {
       try {
         await deliveryApi.ship({
-          orderId: currentDelivery.value.orderId,
-          expressCompany: shipForm.expressCompany,
-          expressNo: shipForm.expressNo,
-          remark: shipForm.remark
+          orderId: shipForm.orderId,
+          logisticsCompany: shipForm.logisticsCompany,
+          logisticsNo: shipForm.logisticsNo
         })
         ElMessage.success('发货成功')
         shipDialogVisible.value = false
@@ -424,9 +394,9 @@ async function submitShip() {
 }
 
 async function handleComplete() {
-  if (!currentDelivery.value) return
+  if (!currentDelivery.value?.id) return
   try {
-    await deliveryApi.complete(currentDelivery.value.orderId)
+    await deliveryApi.complete(currentDelivery.value.id)
     ElMessage.success('已确认收货')
     detailVisible.value = false
     getList()

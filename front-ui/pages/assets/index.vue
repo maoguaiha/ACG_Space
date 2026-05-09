@@ -20,7 +20,18 @@
           </div>
 
           <!-- Stats Cards -->
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+          <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-8">
+            <div class="bg-gradient-to-br from-amber-500/10 to-orange-500/10 backdrop-blur-sm rounded-2xl p-4 border border-amber-500/20">
+              <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+                  <span class="text-lg">💰</span>
+                </div>
+                <div>
+                  <p class="text-amber-400/80 text-xs">剩余积分</p>
+                  <p class="text-xl font-bold text-amber-400">{{ userPoints.toLocaleString() }}</p>
+                </div>
+              </div>
+            </div>
             <div class="bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/50">
               <div class="flex items-center gap-3">
                 <div class="w-10 h-10 rounded-xl bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
@@ -303,13 +314,6 @@
                 >
                   上架出售
                 </button>
-                <button
-                  v-if="selectedAsset?.status === 'listing'"
-                  class="w-full py-3 rounded-xl font-bold bg-rose-500/20 text-rose-400 border border-rose-500/30 cursor-not-allowed"
-                  disabled
-                >
-                  出售中（无法操作）
-                </button>
               </div>
             </div>
           </div>
@@ -475,15 +479,104 @@
         </div>
       </transition>
     </Teleport>
+
+    <!-- List For Sale Modal -->
+    <Teleport to="body">
+      <transition
+        enter-active-class="transition ease-out duration-300"
+        enter-from-class="opacity-0 scale-95"
+        enter-to-class="opacity-100 scale-100"
+        leave-active-class="transition ease-in duration-200"
+        leave-from-class="opacity-100 scale-100"
+        leave-to-class="opacity-0 scale-95"
+      >
+        <div v-if="showListForSale" class="fixed inset-0 z-[100] flex items-center justify-center p-4" @click="closeListForSale">
+          <div class="absolute inset-0 bg-slate-900/90 backdrop-blur-sm"></div>
+
+          <div class="relative z-10 w-full max-w-md bg-slate-800/90 backdrop-blur-xl rounded-3xl border border-slate-700/50 overflow-hidden" @click.stop>
+            <div class="p-6">
+              <div class="text-center mb-6">
+                <span class="text-5xl mb-4 block">🏪</span>
+                <h3 class="text-xl font-black text-white mb-2">上架出售</h3>
+                <p class="text-slate-400 text-sm">将资产上架到跳蚤市场，官方收取 1% 手续费</p>
+              </div>
+
+              <!-- Asset Preview -->
+              <div class="flex items-center gap-4 bg-slate-900/50 rounded-2xl p-4 mb-6">
+                <div class="w-16 h-16 rounded-xl overflow-hidden">
+                  <img :src="selectedAsset?.image" class="w-full h-full object-cover" />
+                </div>
+                <div>
+                  <h4 class="font-bold text-white">{{ selectedAsset?.name }}</h4>
+                  <p class="text-sm text-slate-400">{{ selectedAsset?.rarity }} · {{ selectedAsset?.type }}</p>
+                </div>
+              </div>
+
+              <!-- Price Input -->
+              <div class="space-y-4 mb-6">
+                <div>
+                  <label class="block text-sm text-slate-400 mb-2">出售价格（积分）</label>
+                  <input v-model.number="listForm.price" type="number" min="1" class="w-full px-4 py-3 rounded-xl bg-slate-900/50 border border-slate-700 text-white placeholder-slate-500 focus:border-amber-500 focus:outline-none transition-colors" placeholder="请输入出售价格" />
+                </div>
+                <!-- Fee Preview -->
+                <div v-if="listForm.price && listForm.price > 0" class="bg-amber-500/10 border border-amber-500/20 rounded-xl p-4">
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-400 text-sm">出售价格</span>
+                    <span class="text-white font-medium">💰 {{ listForm.price.toLocaleString() }}</span>
+                  </div>
+                  <div class="flex items-center justify-between mb-2">
+                    <span class="text-slate-400 text-sm">手续费 (1%)</span>
+                    <span class="text-rose-400 font-medium">-💰 {{ Math.ceil(listForm.price * 0.01) }}</span>
+                  </div>
+                  <div class="h-px bg-slate-700/50 my-2"></div>
+                  <div class="flex items-center justify-between">
+                    <span class="text-slate-400 text-sm">实际到手</span>
+                    <span class="text-emerald-400 font-bold">💰 {{ (listForm.price - Math.ceil(listForm.price * 0.01)).toLocaleString() }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- Actions -->
+              <div class="flex gap-3">
+                <button
+                  @click="closeListForSale"
+                  class="flex-1 py-3 rounded-xl font-bold bg-slate-700 text-white hover:bg-slate-600 transition-colors"
+                >
+                  取消
+                </button>
+                <button
+                  @click="handleListForSale"
+                  :disabled="!canSubmitList"
+                  class="flex-1 py-3 rounded-xl font-bold bg-gradient-to-r from-amber-500 to-orange-500 text-white shadow-lg hover:shadow-amber-500/30 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  确认上架
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </transition>
+    </Teleport>
   </div>
 </template>
 
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
-import { assetApi, type UserAsset } from '~/composables/useV2Api'
+import { assetApi, marketApi, gachaApi, type UserAsset } from '~/composables/useV2Api'
 import { useAuthGuard } from '~/composables/useAuthGuard'
 
 const { requireAuth } = useAuthGuard()
+
+const userPoints = ref(0)
+
+async function fetchUserPoints() {
+  try {
+    const points = await gachaApi.fetchUserPoints()
+    userPoints.value = points
+  } catch (e) {
+    console.error('加载用户积分失败', e)
+  }
+}
 
 interface Asset {
   id: string
@@ -492,7 +585,7 @@ interface Asset {
   rarity: string
   image: string
   source: string
-  status: 'normal' | 'listing' | 'synthesizing' | 'redeeming' | 'redeemed'
+  status: 'normal' | 'locked' | 'used' | 'synthesized'
   acquiredAt: string
   assetId: number
 }
@@ -521,10 +614,9 @@ const errorAssets = ref('')
 
 function mapUserAssetToAsset(userAsset: UserAsset): Asset {
   let status: Asset['status'] = 'normal'
-  if (userAsset.status === 1) status = 'listing'
-  else if (userAsset.status === 2) status = 'synthesizing'
-  else if (userAsset.status === 3) status = 'redeeming'
-  else if (userAsset.status === 4) status = 'redeemed'
+  if (userAsset.status === 2) status = 'locked'
+  else if (userAsset.status === 3) status = 'used'
+  else if (userAsset.status === 4) status = 'synthesized'
 
   return {
     id: String(userAsset.id),
@@ -555,6 +647,7 @@ async function fetchAssets() {
 
 onMounted(() => {
   fetchAssets()
+  fetchUserPoints()
 })
 
 // Stats
@@ -650,11 +743,42 @@ function handleRedeem() {
   closeRedeem()
 }
 
+// List For Sale Modal
+const showListForSale = ref(false)
+const listForm = ref({
+  price: 0
+})
+
+const canSubmitList = computed(() => {
+  return listForm.value.price && listForm.value.price > 0
+})
+
 function openListForSale(asset: Asset | null) {
   const authorized = requireAuth()
   if (!authorized) return
   closeAssetDetail()
-  alert('前往上架页面...')
+  listForm.value.price = 0
+  showListForSale.value = true
+}
+
+function closeListForSale() {
+  showListForSale.value = false
+  listForm.value.price = 0
+}
+
+async function handleListForSale() {
+  if (!selectedAsset.value || !canSubmitList.value) return
+  
+  try {
+    await marketApi.listAsset(selectedAsset.value.assetId, listForm.value.price)
+    alert('上架成功！')
+    closeListForSale()
+    // 刷新背包列表
+    await fetchAssets()
+  } catch (e: any) {
+    alert(e.message || '上架失败')
+    console.error('handleListForSale error:', e)
+  }
 }
 
 // Helper Functions
@@ -690,20 +814,18 @@ function getRarityTextClass(rarity: string): string {
 
 function getStatusBadgeClass(status: string): string {
   const classes: Record<string, string> = {
-    'listing': 'bg-amber-500/20 text-amber-400',
-    'synthesizing': 'bg-purple-500/20 text-purple-400',
-    'redeeming': 'bg-emerald-500/20 text-emerald-400',
-    'redeemed': 'bg-slate-500/20 text-slate-400'
+    'locked': 'bg-purple-500/20 text-purple-400',
+    'used': 'bg-slate-500/20 text-slate-400',
+    'synthesized': 'bg-emerald-500/20 text-emerald-400'
   }
   return classes[status] || ''
 }
 
 function getStatusTextClass(status: string): string {
   const classes: Record<string, string> = {
-    'listing': 'text-amber-400',
-    'synthesizing': 'text-purple-400',
-    'redeeming': 'text-emerald-400',
-    'redeemed': 'text-slate-400'
+    'locked': 'text-purple-400',
+    'used': 'text-slate-400',
+    'synthesized': 'text-emerald-400'
   }
   return classes[status] || ''
 }
@@ -711,10 +833,9 @@ function getStatusTextClass(status: string): string {
 function getStatusText(status: string): string {
   const texts: Record<string, string> = {
     'normal': '正常',
-    'listing': '出售中',
-    'synthesizing': '合成锁定',
-    'redeeming': '核销中',
-    'redeemed': '已核销'
+    'locked': '锁定',
+    'used': '已使用',
+    'synthesized': '已合成'
   }
   return texts[status] || status
 }
