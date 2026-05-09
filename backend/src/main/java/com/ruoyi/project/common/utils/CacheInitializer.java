@@ -55,15 +55,33 @@ public class CacheInitializer implements ApplicationRunner {
 
     /**
      * 初始化用户积分
+     * 仅在Redis中不存在该用户的积分时才从数据库加载,避免覆盖已有积分
      */
     private void initUserPoints() {
         List<SysUser> users = userService.list(new LambdaQueryWrapper<SysUser>()
                 .eq(SysUser::getDelFlag, 0));
         
+        int initializedCount = 0;
+        int skippedCount = 0;
+        
         for (SysUser user : users) {
-            luaScriptExecutor.setUserPoints(user.getId(), user.getPoints());
+            // 检查Redis中是否已有该用户的积分
+            int currentPoints = luaScriptExecutor.getUserPoints(user.getId());
+            
+            // 如果Redis中积分为0(不存在),则从数据库初始化
+            if (currentPoints == 0) {
+                Integer dbPoints = user.getPoints();
+                if (dbPoints == null) {
+                    dbPoints = 0;
+                }
+                luaScriptExecutor.setUserPoints(user.getId(), dbPoints);
+                initializedCount++;
+            } else {
+                // Redis中已有积分,跳过初始化
+                skippedCount++;
+            }
         }
         
-        log.info("初始化用户积分完成，共{}个用户", users.size());
+        log.info("初始化用户积分完成,新初始化: {}个, 跳过(已有积分): {}个", initializedCount, skippedCount);
     }
 }

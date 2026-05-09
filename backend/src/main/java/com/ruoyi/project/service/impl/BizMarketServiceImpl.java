@@ -12,6 +12,7 @@ import com.ruoyi.project.mapper.BizTransactionMapper;
 import com.ruoyi.project.mapper.BizUserAssetMapper;
 import com.ruoyi.project.service.IBizMarketService;
 import com.ruoyi.project.service.IBizTransactionService;
+import com.ruoyi.project.service.IBizUserPointsLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -34,6 +35,7 @@ public class BizMarketServiceImpl extends ServiceImpl<BizMarketItemMapper, BizMa
     private final BizUserAssetMapper userAssetMapper;
     private final BizTransactionMapper transactionMapper;
     private final IBizTransactionService transactionService;
+    private final IBizUserPointsLogService pointsLogService;
 
     @Override
     public Page<MarketItemVO> pageItems(long pageNum, long pageSize, String itemName, String itemType,
@@ -147,6 +149,15 @@ public class BizMarketServiceImpl extends ServiceImpl<BizMarketItemMapper, BizMa
         int sellerAmount = marketItem.getPrice() - fee;
 
         String orderId = generateOrderId();
+
+        // 扣减买家积分
+        boolean buyerDeducted = pointsLogService.deductPoints(buyerId, marketItem.getPrice(), "MARKET_BUY", orderId);
+        if (!buyerDeducted) {
+            throw new RuntimeException("积分不足，购买失败");
+        }
+
+        // 给卖家加积分（扣除手续费后）
+        pointsLogService.addPoints(marketItem.getSellerId(), sellerAmount, "MARKET_SELL", orderId);
 
         BizTransaction transaction = new BizTransaction();
         transaction.setOrderId(orderId);

@@ -23,6 +23,7 @@ logging:
     root: INFO
     com.ruoyi.project: DEBUG
     com.ruoyi.project.common.exception: ERROR
+    com.baomidou.mybatisplus: DEBUG
 
 # 自定义 Bangumi API 配置
 bangumi:

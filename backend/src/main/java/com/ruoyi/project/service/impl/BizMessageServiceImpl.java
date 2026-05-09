@@ -181,7 +181,6 @@ public class BizMessageServiceImpl implements IBizMessageService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean claimRegistrationBonus(Long userId) {
-        pointsLogService.awardRegistrationBonus(userId);
-        return true;
+        return pointsLogService.awardRegistrationBonus(userId);
     }
 }

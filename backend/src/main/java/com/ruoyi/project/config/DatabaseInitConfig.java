@@ -20,6 +20,7 @@ public class DatabaseInitConfig implements ApplicationRunner {
     @Override
     public void run(ApplicationArguments args) {
         modifyImageColumn();
+        modifyGachaRecordResultItemsColumn();
     }
 
     private void modifyImageColumn() {
@@ -50,6 +51,23 @@ public class DatabaseInitConfig implements ApplicationRunner {
             }
         } catch (Exception e) {
             log.warn("修改表结构时发生异常，可能已经修改过或权限不足: {}", e.getMessage());
+        }
+    }
+
+    private void modifyGachaRecordResultItemsColumn() {
+        try {
+            String checkSql = "SELECT COLUMN_TYPE FROM INFORMATION_SCHEMA.COLUMNS " +
+                    "WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_record' AND COLUMN_NAME = 'result_items'";
+            String currentType = jdbcTemplate.queryForObject(checkSql, String.class);
+            log.info("当前 biz_gacha_record.result_items 列类型: {}", currentType);
+
+            if (currentType != null && currentType.toUpperCase().contains("VARCHAR")) {
+                String alterSql = "ALTER TABLE `biz_gacha_record` MODIFY COLUMN `result_items` LONGTEXT COMMENT '抽赏结果 (JSON数组)'";
+                jdbcTemplate.execute(alterSql);
+                log.info("biz_gacha_record.result_items 列已修改为 LONGTEXT");
+            }
+        } catch (Exception e) {
+            log.warn("修改 result_items 列时发生异常: {}", e.getMessage());
         }
     }
 }

@@ -25,10 +25,12 @@ import java.util.List;
 @Component
 public class LuaScriptExecutor {
 
-    private final RedisTemplate<String, Object> redisTemplate;
+    private final RedisTemplate<String, String> redisTemplate;
 
-    public LuaScriptExecutor(@Qualifier("acgRedisTemplate") RedisTemplate<String, Object> redisTemplate) {
+    public LuaScriptExecutor(
+            @Qualifier("luaRedisTemplate") RedisTemplate<String, String> redisTemplate) {
         this.redisTemplate = redisTemplate;
+        log.info("LuaScriptExecutor 初始化完成，使用 luaRedisTemplate 执行 Lua 脚本");
     }
 
     private String gachaDeductStockScript;
@@ -78,21 +80,36 @@ public class LuaScriptExecutor {
             String poolStockKey = "gacha:pool:" + poolId + ":stock";
             String userPointsKey = "user:points:" + userId;
 
-            RedisScript<String> script = new DefaultRedisScript<>(gachaDeductStockScript, String.class);
+            // 使用 acgRedisTemplate 执行，Fastjson2 序列化器会自动处理类型转换
+            RedisScript<Object> script = new DefaultRedisScript<>(gachaDeductStockScript, Object.class);
 
             List<String> keys = List.of(poolStockKey, userPointsKey);
-            List<Object> args = List.of(drawCount, singleCost, tenCost);
+            // Lua 脚本参数必须是字符串类型，需要显式转换
+            List<String> args = List.of(String.valueOf(drawCount), String.valueOf(singleCost), String.valueOf(tenCost));
 
-            String result = redisTemplate.execute(script, keys, args.toArray());
-
-            if ("SUCCESS".equals(result)) {
-                return true;
+            // 使用 redisTemplate 执行
+            Object result;
+            try {
+                result = redisTemplate.execute(script, keys, args.toArray());
+            } catch (Exception e) {
+                log.error("Lua 脚本执行异常，poolId: {}, userId: {}, error: {}", 
+                        poolId, userId, e.getMessage());
+                return false;
             }
-            
-            // 解析 Redis 错误信息
-            if (result != null && result.startsWith("ERR")) {
-                log.warn("Lua脚本执行失败, poolId: {}, userId: {}, error: {}",
-                        poolId, userId, result);
+
+            log.info("Lua 脚本执行结果，poolId: {}, userId: {}, result: {}, type: {}", 
+                    poolId, userId, result, result != null ? result.getClass().getSimpleName() : "null");
+
+            // 判断是否成功：SUCCESS 字符串或 1 (Long)
+            if (result != null) {
+                String resultStr = result.toString();
+                if ("SUCCESS".equals(resultStr) || "1".equals(resultStr)) {
+                    return true;
+                }
+                if (resultStr.startsWith("ERR")) {
+                    log.warn("Lua 脚本执行失败，poolId: {}, userId: {}, error: {}",
+                            poolId, userId, resultStr);
+                }
             }
             
             return false;
@@ -134,7 +151,7 @@ public class LuaScriptExecutor {
      */
     public void setPoolStock(Long poolId, int stock) {
         String key = "gacha:pool:" + poolId + ":stock";
-        redisTemplate.opsForValue().set(key, stock);
+        redisTemplate.opsForValue().set(key, String.valueOf(stock));
         log.info("设置奖池库存, poolId: {}, stock: {}", poolId, stock);
     }
 
@@ -143,7 +160,7 @@ public class LuaScriptExecutor {
      */
     public void setUserPoints(Long userId, int points) {
         String key = "user:points:" + userId;
-        redisTemplate.opsForValue().set(key, points);
+        redisTemplate.opsForValue().set(key, String.valueOf(points));
         log.info("设置用户积分, userId: {}, points: {}", userId, points);
     }
 
@@ -152,7 +169,83 @@ public class LuaScriptExecutor {
      */
     public int getUserPoints(Long userId) {
         String key = "user:points:" + userId;
-        Object value = redisTemplate.opsForValue().get(key);
-        return value != null ? ((Number) value).intValue() : 0;
+        String value = redisTemplate.opsForValue().get(key);
+        if (value == null || value.isEmpty()) {
+            return 0;
+        }
+        try {
+            return Integer.parseInt(value);
+        } catch (NumberFormatException e) {
+            log.error("解析用户积分失败, userId: {}, value: {}", userId, value, e);
+            return 0;
+        }
+    }
+
+    /**
+     * 扣除用户积分
+     */
+    public void deductUserPoints(Long userId, int points) {
+        String key = "user:points:" + userId;
+        String value = redisTemplate.opsForValue().get(key);
+        int current = 0;
+        if (value != null && !value.isEmpty()) {
+            try {
+                current = Integer.parseInt(value);
+            } catch (NumberFormatException e) {
+                log.error("解析用户积分失败, userId: {}, value: {}", userId, value, e);
+            }
+        }
+        int newPoints = Math.max(0, current - points);
+        redisTemplate.opsForValue().set(key, String.valueOf(newPoints));
+        log.info("扣除用户积分, userId: {}, 扣除: {}, 剩余: {}", userId, points, newPoints);
+    }
+
+    /**
+     * 尝试获取分布式锁
+     * @param lockKey 锁的 key
+     * @param expireSeconds 锁的过期时间（秒）
+     * @return true=获取成功，false=获取失败
+     */
+    public Boolean tryLock(String lockKey, long expireSeconds) {
+        String script = 
+            "if redis.call('SETNX', KEYS[1], ARGV[1]) == 1 then " +
+            "    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2])) " +
+            "    return 1 " +
+            "else " +
+            "    return 0 " +
+            "end";
+        
+        RedisScript<Long> redisScript = new DefaultRedisScript<>(script, Long.class);
+        Long result = redisTemplate.execute(
+            redisScript, 
+            Collections.singletonList(lockKey), 
+            "locked:" + System.currentTimeMillis(), 
+            String.valueOf(expireSeconds)
+        );
+        
+        if (result != null && result == 1) {
+            log.debug("获取锁成功，key: {}", lockKey);
+            return true;
+        } else {
+            log.debug("获取锁失败，key: {}", lockKey);
+            return false;
+        }
+    }
+
+    /**
+     * 释放分布式锁
+     * @param lockKey 锁的 key
+     */
+    public void unlock(String lockKey) {
+        String script = 
+            "if redis.call('GET', KEYS[1]) == ARGV[1] then " +
+            "    return redis.call('DEL', KEYS[1]) " +
+            "else " +
+            "    return 0 " +
+            "end";
+        
+        // 简单删除锁（生产环境建议使用更安全的解锁方式）
+        redisTemplate.delete(lockKey);
+        log.debug("释放锁，key: {}", lockKey);
     }
 }

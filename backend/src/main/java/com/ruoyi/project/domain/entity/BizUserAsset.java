@@ -48,6 +48,11 @@ public class BizUserAsset extends BaseEntity {
     private Integer status;
 
     /**
+     * 是否实物 (0否 1是)
+     */
+    private Integer isPhysical;
+
+    /**
      * 获取方式 (gacha/market/synthesize/gift)
      */
     private String acquireType;

@@ -1,8 +1,0 @@
--- 新用户注册赠送2600积分
--- 记录于: 2026-05-07
--- 修改内容:
---   1. SysUserServiceImpl.register() 方法添加注册送积分逻辑
---   2. BizUserPointsLogServiceImpl 新增 awardRegistrationBonus() 方法
---   3. 新增 actionType = 'REGISTRATION' 的积分记录类型
---
--- 该迁移无需数据库结构变更，逻辑通过代码实现

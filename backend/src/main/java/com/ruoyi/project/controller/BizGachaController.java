@@ -20,6 +20,7 @@ import com.ruoyi.project.service.IBizGachaPoolService;
 import com.ruoyi.project.service.IBizGachaRecordService;
 import com.ruoyi.project.service.IBizItemService;
 import com.ruoyi.project.service.IBizUserAssetService;
+import com.ruoyi.project.service.IBizUserFragmentService;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -43,6 +44,7 @@ public class BizGachaController {
     private final IBizGachaRecordService gachaRecordService;
     private final IBizItemService itemService;
     private final IBizUserAssetService assetService;
+    private final IBizUserFragmentService fragmentService;
     private final BizGachaPoolItemMapper poolItemMapper;
     private final LuaScriptExecutor luaScriptExecutor;
 
@@ -308,6 +310,28 @@ public class BizGachaController {
             }
         }
 
+        if (userDrawCount >= 70) {
+            boolean hasSSR = items.stream().anyMatch(item -> "SSR".equals(item.getRarity()));
+            if (!hasSSR) {
+                guaranteed = true;
+                guaranteedRarity = "SSR";
+                BizItem ssrItem = rollItem(poolId, "SSR");
+                if (ssrItem != null) {
+                    DrawItem drawItem = new DrawItem();
+                    drawItem.setId(ssrItem.getId());
+                    drawItem.setName(ssrItem.getName());
+                    drawItem.setImage(ssrItem.getImage());
+                    drawItem.setRarity("SSR");
+                    drawItem.setType(ssrItem.getType());
+                    if (!items.isEmpty()) {
+                        items.set(items.size() - 1, drawItem);
+                    } else {
+                        items.add(drawItem);
+                    }
+                }
+            }
+        }
+
         // 更新MySQL库存（异步，最终一致性）
         gachaPoolService.decrementStock(poolId, count);
 
@@ -322,10 +346,14 @@ public class BizGachaController {
         record.setStatus(1);
         gachaRecordService.saveRecord(record);
 
+        int fragmentCount = ThreadLocalRandom.current().nextInt(1, 100);
+        fragmentService.addFragment(userId, fragmentCount, "GACHA", record.getId().toString());
+
         DrawResult result = new DrawResult();
         result.setRecords(items);
         result.setIsGuaranteed(guaranteed);
         result.setGuaranteedRarity(guaranteedRarity);
+        result.setFragmentCount(fragmentCount);
         return Result.success(result);
     }
 
@@ -351,6 +379,7 @@ public class BizGachaController {
         asset.setAssetKey(userId + "_" + item.getId() + "_" + System.currentTimeMillis());
         asset.setQuantity(1);
         asset.setStatus(1);
+        asset.setIsPhysical(0);
         asset.setAcquireType("gacha");
         asset.setAcquireSourceId(poolId.toString());
         asset.setItemName(item.getName());
@@ -381,11 +410,11 @@ public class BizGachaController {
             }
         }
 
-        if (roll < 5) {
+        if (roll < 3) {
             return "SSR";
-        } else if (roll < 50) {
+        } else if (roll < 23) {
             return "SR";
-        } else if (roll < 200) {
+        } else if (roll < 223) {
             return "R";
         } else {
             return "N";
@@ -437,5 +466,6 @@ public class BizGachaController {
         private List<DrawItem> records;
         private Boolean isGuaranteed;
         private String guaranteedRarity;
+        private Integer fragmentCount;
     }
 }

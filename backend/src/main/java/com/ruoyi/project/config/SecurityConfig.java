@@ -49,7 +49,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/article/**", "/api/comment/**", "/api/follow/list").permitAll()
                 .requestMatchers("/api/user/*/profile", "/api/user/*/articles", "/api/user/*/comments", "/api/user/*/follows", "/api/user/*/likes", "/api/user/search", "/api/user/follow/status").permitAll()
                 .requestMatchers("/error").permitAll()
-                .requestMatchers("/api/item/**", "/api/gacha/**", "/api/transaction/**", "/api/delivery/**", "/api/asset/**", "/api/market/**", "/api/address/**", "/api/synthesize/**", "/api/points/**", "/api/message/**").permitAll()
+                .requestMatchers("/api/item/**", "/api/gacha/**", "/api/transaction/**", "/api/delivery/**", "/api/asset/**", "/api/market/**", "/api/address/**", "/api/points/**", "/api/message/**", "/api/fragment/**", "/api/redeem/**", "/api/recharge/**", "/api/synthesize/**", "/api/redeem-product/**", "/api/admin/redeem-product/**", "/api/admin/redeem/**").permitAll()
                 .anyRequest().authenticated()
             )
             .httpBasic(AbstractHttpConfigurer::disable)

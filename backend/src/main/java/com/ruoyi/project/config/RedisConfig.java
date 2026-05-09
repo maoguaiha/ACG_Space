@@ -48,6 +48,27 @@ public class RedisConfig {
     }
 
     /**
+     * 专门用于 Lua 脚本执行的 Redis 模板
+     * 使用纯 String 序列化，避免 Fastjson2 反序列化纯字符串失败
+     */
+    @Bean("luaRedisTemplate")
+    public RedisTemplate<String, String> luaRedisTemplate(RedisConnectionFactory connectionFactory) {
+        RedisTemplate<String, String> template = new RedisTemplate<>();
+        template.setConnectionFactory(connectionFactory);
+
+        StringRedisSerializer stringRedisSerializer = new StringRedisSerializer();
+
+        // 全部使用 String 序列化
+        template.setKeySerializer(stringRedisSerializer);
+        template.setHashKeySerializer(stringRedisSerializer);
+        template.setValueSerializer(stringRedisSerializer);
+        template.setHashValueSerializer(stringRedisSerializer);
+
+        template.afterPropertiesSet();
+        return template;
+    }
+
+    /**
      * 内联 Fastjson2 Redis 序列化器
      * 直接使用 fastjson2 核心包的 JSON.toJSONBytes / JSON.parseObject，
      * 无需依赖任何扩展包，兼容性最佳。
