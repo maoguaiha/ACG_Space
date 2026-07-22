@@ -43,7 +43,7 @@ class CoreBusinessFlowTest {
     private SysUserMapper userMapper;
 
     @Autowired
-    private BizUserPointsLogService pointsLogService;
+    private IBizUserPointsLogService pointsLogService;
 
     @Autowired
     private IBizMarketService marketService;
