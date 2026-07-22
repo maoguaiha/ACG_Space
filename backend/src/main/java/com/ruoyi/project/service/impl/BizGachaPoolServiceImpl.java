@@ -10,6 +10,8 @@ import com.ruoyi.project.mapper.BizGachaPoolMapper;
 import com.ruoyi.project.service.IBizGachaPoolService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -39,6 +41,7 @@ public class BizGachaPoolServiceImpl extends ServiceImpl<BizGachaPoolMapper, Biz
     }
 
     @Override
+    @Cacheable(value = "activePools", key = "'gacha:active'", unless = "#result == null || #result.isEmpty()")
     public JSONArray getActivePools() {
         LocalDateTime now = LocalDateTime.now();
         LambdaQueryWrapper<BizGachaPool> wrapper = new LambdaQueryWrapper<>();
@@ -75,6 +78,7 @@ public class BizGachaPoolServiceImpl extends ServiceImpl<BizGachaPoolMapper, Biz
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "activePools", key = "'gacha:active'")
     public boolean createPool(BizGachaPool pool) {
         pool.setDelFlag(0);
         pool.setStatus(0);
@@ -86,6 +90,7 @@ public class BizGachaPoolServiceImpl extends ServiceImpl<BizGachaPoolMapper, Biz
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "activePools", key = "'gacha:active'")
     public boolean updatePool(BizGachaPool pool) {
         pool.setUpdateTime(LocalDateTime.now());
         return this.updateById(pool);
@@ -93,6 +98,7 @@ public class BizGachaPoolServiceImpl extends ServiceImpl<BizGachaPoolMapper, Biz
 
     @Override
     @Transactional(rollbackFor = Exception.class)
+    @CacheEvict(value = "activePools", key = "'gacha:active'")
     public boolean endPool(Long id) {
         BizGachaPool pool = this.getById(id);
         if (pool == null) {

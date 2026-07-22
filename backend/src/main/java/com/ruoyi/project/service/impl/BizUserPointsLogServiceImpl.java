@@ -47,8 +47,8 @@ public class BizUserPointsLogServiceImpl extends ServiceImpl<BizUserPointsLogMap
 
         // 1. 先尝试获取分布式锁（防止并发领取）
         String lockKey = "lock:registration:bonus:" + userId;
-        Boolean locked = luaScriptExecutor.tryLock(lockKey, 10); // 10 秒超时
-        if (locked == null || !locked) {
+        String lockValue = luaScriptExecutor.tryLock(lockKey, 10); // 10 秒超时，返回唯一锁值
+        if (lockValue == null) {
             log.warn("获取锁失败，可能正在领取中，userId: {}", userId);
             return false;
         }
@@ -95,8 +95,8 @@ public class BizUserPointsLogServiceImpl extends ServiceImpl<BizUserPointsLogMap
             log.info("注册赠送积分成功，userId: {}, points: {}", userId, POINTS_FOR_REGISTRATION);
             return true;
         } finally {
-            // 3. 释放锁
-            luaScriptExecutor.unlock(lockKey);
+            // 3. 释放锁（带锁值，只删自己的锁）
+            luaScriptExecutor.unlock(lockKey, lockValue);
             log.info("释放锁，userId: {}", userId);
         }
     }

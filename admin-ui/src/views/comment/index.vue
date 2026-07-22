@@ -46,8 +46,6 @@
         :page-sizes="[10, 20, 50, 100]"
         :total="total"
         layout="total, sizes, prev, pager, next, jumper"
-        @size-change="handleSearch"
-        @current-change="handleSearch"
       />
     </el-card>
 
@@ -75,7 +73,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch } from 'vue'
 import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
@@ -112,7 +110,7 @@ const fetchData = async () => {
     })
     if (data.code === 200) {
       tableData.value = data.data.records
-      total.value = data.data.total
+      total.value = Number(data.data.total) || 0
     }
   } catch (error) {
     console.error('获取评论数据失败', error)
@@ -121,12 +119,24 @@ const fetchData = async () => {
 }
 
 const handleSearch = () => {
-  fetchData()
+  if (queryForm.value.pageNum === 1) {
+    fetchData()
+  } else {
+    queryForm.value.pageNum = 1
+  }
 }
+
+watch(() => queryForm.value.pageNum, () => fetchData())
+watch(() => queryForm.value.pageSize, () => {
+  if (queryForm.value.pageNum === 1) {
+    fetchData()
+  } else {
+    queryForm.value.pageNum = 1
+  }
+})
 
 const handleReset = () => {
   queryForm.value.keyword = ''
-  queryForm.value.pageNum = 1
   handleSearch()
 }
 

@@ -27,8 +27,9 @@ public class BizItemController {
             @RequestParam(defaultValue = "10") long pageSize,
             @RequestParam(required = false) String name,
             @RequestParam(required = false) String rarity,
-            @RequestParam(required = false) String type) {
-        Page<BizItem> page = itemService.pageItems(pageNum, pageSize, name, rarity, type);
+            @RequestParam(required = false) String type,
+            @RequestParam(required = false) String itemKey) {
+        Page<BizItem> page = itemService.pageItems(pageNum, pageSize, name, rarity, type, itemKey);
         return Result.success(page);
     }
 

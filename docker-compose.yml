@@ -1,39 +1,73 @@
-version: '3.8'
-
 services:
+  # 0. Backend 应用服务
+  backend:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: acg_backend
+    ports:
+      - "18083:18083"
+    environment:
+      DB_HOST: mysql
+      DB_PORT: "3306"
+      DB_NAME: acg_space
+      DB_USER: root
+      DB_PWD: "123456"
+      REDIS_HOST: redis
+      REDIS_PORT: "6379"
+      ROCKETMQ_NAMESRV: rmqnamesrv:9876
+      TOKEN_SECRET: acgspace_production_secret_change_me_2026
+      TOKEN_EXPIRE: "1440"
+      SPRING_PROFILES_ACTIVE: dev
+      TZ: Asia/Shanghai
+    depends_on:
+      mysql:
+        condition: service_started
+      redis:
+        condition: service_started
+      rmqnamesrv:
+        condition: service_started
+      rmqbroker:
+        condition: service_started
+    restart: unless-stopped
+
   # 1. MySQL 服务 (自带建表)
   mysql:
-    image: mysql:8.0.33
+    image: mysql:8.0
     container_name: acg_mysql
     ports:
-      - "3306:3306"
+      - "13306:3306"  # 宿主机端口；3306 被 Windows 动态保留范围(3272-3371)占用，改映射到 13306
     environment:
       MYSQL_ROOT_PASSWORD: "123456" # 与 application-dev.yml 中的密码强对应
       MYSQL_DATABASE: "acg_space"   # Docker 会在首次启动时自动创建此库
       TZ: Asia/Shanghai
     volumes:
-      # 杀手锏：将我们之前写好的 SQL 挂载进去，MySQL 首次启动时会自动执行它完成建表！
-      - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/init.sql
+      # 按文件名顺序执行：先建基础表 sys_user，再跑迁移脚本
+      - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
+      - ./backend/sql/ACG_Space_V2.1_Complete.sql:/docker-entrypoint-initdb.d/02-migration.sql
+      - ./backend/sql/ACG_Space_V2.2_Fix.sql:/docker-entrypoint-initdb.d/03-fix.sql
+      # 命名数据卷：避免 docker compose down/up 重建时丢失业务数据（原匿名卷易丢失）
+      - mysql_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
 
   # 2. Redis 缓存服务
   redis:
-    image: redis:7.0.11
+    image: redis:7-alpine
     container_name: acg_redis
     ports:
       - "6379:6379"
 
   # 3. RocketMQ NameServer (路由中心)
   rmqnamesrv:
-    image: apache/rocketmq:4.9.6
+    image: apache/rocketmq:5.2.0
     container_name: acg_rmqnamesrv
     ports:
       - "9876:9876"
-    command: sh mqnamesrv
+    command: nameserver
 
   # 4. RocketMQ Broker (消息存储与转发)
   rmqbroker:
-    image: apache/rocketmq:4.9.6
+    image: apache/rocketmq:5.2.0
     container_name: acg_rmqbroker
     ports:
       - "10909:10909"
@@ -44,5 +78,13 @@ services:
       - rmqnamesrv
     volumes:
       # 挂载自定义配置文件，解决宿主机与 Docker 网络无法通信的经典大坑
-      - ./broker.conf:/opt/rocketmq/conf/broker.conf
-    command: sh mqbroker -n rmqnamesrv:9876 -c /opt/rocketmq/conf/broker.conf
+      - ./broker.conf:/home/rocketmq/rocketmq-5.2.0/conf/broker.conf
+    command: broker -n rmqnamesrv:9876 -c /home/rocketmq/rocketmq-5.2.0/conf/broker.conf
+
+# 命名数据卷：业务数据落在此卷，docker compose down/up 重建容器不会丢失；
+# 注意仅 docker compose down -v 才会删除（仍会清，但命名卷不会被 docker volume prune 误清）。
+volumes:
+  mysql_data:
+    name: acg_mysql_data
+    external: true
+

@@ -12,6 +12,9 @@ import org.springframework.data.redis.core.RedisTemplate;
 import org.springframework.stereotype.Component;
 import org.springframework.web.method.HandlerMethod;
 import org.springframework.web.servlet.HandlerInterceptor;
+import org.springframework.web.util.ContentCachingRequestWrapper;
+
+import java.nio.charset.StandardCharsets;
 
 /**
  * 幂等性拦截器
@@ -111,18 +114,19 @@ public class IdempotentInterceptor implements HandlerInterceptor {
     }
 
     /**
-     * 获取请求体内容
+     * 获取请求体内容（支持重复读取）
+     * <p>
+     * 依赖 ContentCachingFilter 将请求包装为 ContentCachingRequestWrapper，
+     * 通过 getContentAsByteArray() 安全读取缓存副本，不消耗原始 InputStream。
+     * </p>
      */
     private String getRequestBody(HttpServletRequest request) {
         try {
-            request.setCharacterEncoding("UTF-8");
-            // 读取请求体（使用 ByteArrayInputStream 包装以支持重复读取）
-            byte[] bodyBytes = request.getInputStream().readAllBytes();
-            if (bodyBytes.length > 0) {
-                String body = new String(bodyBytes, java.nio.charset.StandardCharsets.UTF_8);
-                // 将读取的内容重新设置到请求中，以便后续过滤器/控制器继续使用
-                request.setAttribute("requestBody", body);
-                return body;
+            if (request instanceof ContentCachingRequestWrapper wrapper) {
+                byte[] bodyBytes = wrapper.getContentAsByteArray();
+                if (bodyBytes.length > 0) {
+                    return new String(bodyBytes, StandardCharsets.UTF_8);
+                }
             }
         } catch (Exception e) {
             log.debug("读取请求体失败: {}", e.getMessage());

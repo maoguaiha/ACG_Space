@@ -8,6 +8,7 @@ import com.ruoyi.project.service.IBizUserFragmentService;
 import com.ruoyi.project.service.IBizUserPointsLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,9 +30,26 @@ public class BizUserFragmentServiceImpl extends ServiceImpl<BizUserFragmentMappe
         return fragment != null ? fragment.getQuantity() : 0;
     }
 
+    /**
+     * 异步添加碎片（接口层，只负责异步调度）
+     * <p>
+     * 警告：@Async 和 @Transactional 不能放在同一个方法上。
+     * 原因：@Async 在新线程执行，原线程的事务上下文不会传递，
+     * 导致新线程中的 DB 操作没有事务保护。
+     * 正确做法：@Async 只做调度 → 委托给带 @Transactional 的私有方法。
+     * </p>
+     */
     @Override
+    @Async
+    public void addFragment(Long userId, int count, String bizType, String bizRefId) {
+        doAddFragment(userId, count, bizType, bizRefId);
+    }
+
+    /**
+     * 实际的碎片添加逻辑（在新线程中拥有独立事务）
+     */
     @Transactional(rollbackFor = Exception.class)
-    public boolean addFragment(Long userId, int count, String bizType, String bizRefId) {
+    void doAddFragment(Long userId, int count, String bizType, String bizRefId) {
         BizUserFragment fragment = getOne(new LambdaQueryWrapper<BizUserFragment>()
                 .eq(BizUserFragment::getUserId, userId)
                 .eq(BizUserFragment::getFragmentType, "normal")
@@ -45,11 +63,11 @@ public class BizUserFragmentServiceImpl extends ServiceImpl<BizUserFragmentMappe
             fragment.setCreateTime(LocalDateTime.now());
             fragment.setUpdateTime(LocalDateTime.now());
             fragment.setDelFlag(0);
-            return save(fragment);
+            save(fragment);
         } else {
             fragment.setQuantity(fragment.getQuantity() + count);
             fragment.setUpdateTime(LocalDateTime.now());
-            return updateById(fragment);
+            updateById(fragment);
         }
     }
 

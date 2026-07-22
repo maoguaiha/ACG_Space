@@ -244,11 +244,11 @@ function getStatusType(status: number | undefined): string {
 function getRarityType(rarity: string): string {
   const types: Record<string, string> = {
     SSR: 'warning',
-    SR: 'purple',
-    R: '',
+    SR: 'danger',
+    R: 'primary',
     N: 'info'
   }
-  return types[rarity] || ''
+  return types[rarity] || 'info'
 }
 
 function formatTime(time: string | undefined): string {

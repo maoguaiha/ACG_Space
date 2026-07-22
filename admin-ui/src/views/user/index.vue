@@ -67,8 +67,6 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          @size-change="getList"
-          @current-change="getList"
         />
       </div>
     </el-card>
@@ -162,7 +160,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -204,7 +202,7 @@ const getList = async () => {
     if (queryParams.username) params.username = queryParams.username
     if (queryParams.nickname) params.nickname = queryParams.nickname
 
-    const res = await axios.get('http://localhost:8080/api/admin/user/page', { params })
+    const res = await axios.get('/api/admin/user/page', { params })
     if (res.data && res.data.code === 200) {
       const pageData = res.data.data || {}
       userList.value = pageData.records || []
@@ -224,9 +222,21 @@ const getList = async () => {
 }
 
 const handleQuery = () => {
-  queryParams.pageNum = 1
-  getList()
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
 }
+
+watch(() => queryParams.pageNum, () => getList())
+watch(() => queryParams.pageSize, () => {
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
+})
 
 const resetQuery = () => {
   queryParams.username = ''
@@ -317,7 +327,7 @@ const submitEdit = async () => {
       levelExperience: editForm.levelExperience,
       points: editForm.points
     }
-    const res = await axios.put(`http://localhost:8080/api/admin/user/vip/${editForm.id}`, data)
+    const res = await axios.put(`/api/admin/user/vip/${editForm.id}`, data)
     if (res.data && res.data.code === 200) {
       ElMessage.success('修改成功！')
       editDialogVisible.value = false
@@ -339,7 +349,7 @@ const handleDelete = (row: UserItem) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res = await axios.delete(`http://localhost:8080/api/admin/user/${row.id}`)
+      const res = await axios.delete(`/api/admin/user/${row.id}`)
       if (res.data && res.data.code === 200) {
         ElMessage.success('删除成功！')
         getList()

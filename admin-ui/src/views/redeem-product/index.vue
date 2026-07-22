@@ -92,8 +92,6 @@
           :total="total"
           :page-sizes="[10, 20, 50]"
           layout="total, sizes, prev, pager, next"
-          @size-change="handleQuery"
-          @current-change="handleQuery"
         />
       </div>
     </el-card>
@@ -143,7 +141,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue'
 import { listProducts, createProduct, updateProduct, deleteProduct } from '@/api/redeem-product'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -208,7 +206,7 @@ async function fetchList() {
     console.log('记录数:', res.data?.data?.records?.length || 0)
     console.log('总数:', res.data?.data?.total || 0)
     productList.value = res.data?.data?.records || []
-    total.value = res.data?.data?.total || 0
+    total.value = Number(res.data?.data?.total) || 0
     console.log('productList:', productList.value)
     console.log('=== 兑换商品列表查询结束 ===')
   } catch (e: any) {
@@ -221,14 +219,26 @@ async function fetchList() {
 }
 
 function handleQuery() {
-  fetchList()
+  if (queryParams.pageNum === 1) {
+    fetchList()
+  } else {
+    queryParams.pageNum = 1
+  }
 }
+
+watch(() => queryParams.pageNum, () => fetchList())
+watch(() => queryParams.pageSize, () => {
+  if (queryParams.pageNum === 1) {
+    fetchList()
+  } else {
+    queryParams.pageNum = 1
+  }
+})
 
 function resetQuery() {
   queryParams.name = ''
   queryParams.status = undefined
-  queryParams.pageNum = 1
-  fetchList()
+  handleQuery()
 }
 
 function handleAdd() {

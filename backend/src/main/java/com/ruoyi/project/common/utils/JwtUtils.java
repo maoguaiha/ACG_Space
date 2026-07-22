@@ -18,7 +18,7 @@ import java.util.Map;
 @Component
 public class JwtUtils {
 
-    @Value("${token.secret:acgspace_secret_key_12345678901234567890}")
+    @Value("${token.secret}")
     private String secret;
 
     @Value("${token.expireTime:1440}") // 默认 24 小时

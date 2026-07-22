@@ -36,4 +36,21 @@ public interface IBizAnimeService extends IService<BizAnime> {
      * @return 更新的番剧数量
      */
     int batchUpdateGenresFromBangumi();
+
+    /**
+     * 获取首页轮播推荐番剧列表 (featured=1)，带 Redis 缓存
+     * @return 推荐番剧列表
+     */
+    java.util.List<BizAnime> getFeaturedAnime();
+
+    /**
+     * 获取全量番剧列表，带 Redis 缓存
+     * @return 番剧列表
+     */
+    java.util.List<BizAnime> getAllAnimeList();
+
+    /**
+     * 分页获取番剧列表，带 Redis 缓存
+     */
+    com.baomidou.mybatisplus.extension.plugins.pagination.Page<BizAnime> getAnimePage(int page, int size);
 }

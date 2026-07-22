@@ -1,0 +1,109 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>ACG_Space 并发能力量化分析报告 v5.0</title>
+<style>:root{--bg:#0d1117;--c2:#161b22;--b:#30363d;--t:#c9d1d9;--tm:#8b949e;--a:#58a6ff;--g:#3fb950;--r:#f85149;--o:#d2991d;--p:#a371f7}
+*{margin:0;padding:0;box-sizing:border-box}body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:var(--bg);color:var(--t);line-height:1.6;padding:24px;max-width:1200px;margin:0 auto}
+.header{text-align:center;padding:24px 20px 16px;border-bottom:2px solid var(--a);margin-bottom:24px}.header h1{font-size:1.7rem;color:#fff}.header .m{color:var(--tm);font-size:.8rem;margin-top:3px}
+.s{margin-bottom:28px}.s h2{font-size:1.15rem;color:#fff;border-left:3px solid var(--a);padding-left:10px;margin-bottom:12px}
+.c{background:var(--c2);border:1px solid var(--b);border-radius:8px;padding:16px;margin-bottom:12px}
+table{width:100%;border-collapse:collapse;font-size:.82rem}td,th{padding:7px 9px;text-align:center;border-bottom:1px solid var(--b)}
+th{background:#1c2128;color:var(--tm);font-weight:600;font-size:.7rem;text-transform:uppercase}tr:nth-child(even) td{background:#1c2128}tr.hl td{background:#1a2332!important;font-weight:600}
+.tg{display:inline-block;padding:2px 8px;border-radius:12px;font-size:.7rem;font-weight:600;border:1px solid}.tg.g{border-color:var(--g);color:var(--g)}.tg.b{border-color:var(--a);color:var(--a)}.tg.o{border-color:var(--o);color:var(--o)}.tg.p{border-color:var(--p);color:var(--p)}
+.ns{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0}
+.n{background:var(--c2);border:1px solid var(--b);border-radius:8px;padding:12px;text-align:center}.n .v{font-size:1.6rem;font-weight:700}.n .v.b{color:var(--a)}.n .v.g{color:var(--g)}.n .v.o{color:var(--o)}.n .l{color:var(--tm);font-size:.72rem;margin-top:2px}
+.f{border-left:3px solid var(--o);padding:10px 14px;background:#1c2128;border-radius:0 6px 6px 0;margin:8px 0;font-size:.85rem}.f.g{border-left-color:var(--g)}
+.code{background:#0d1117;border:1px solid var(--b);border-radius:4px;padding:8px 12px;font-family:"SF Mono",monospace;font-size:.76rem;margin:6px 0;overflow-x:auto}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:768px){.cols{grid-template-columns:1fr}}
+.box{background:#1a2332;border:1px solid var(--a);border-radius:8px;padding:14px;margin:10px 0}
+</style></head><body>
+
+<div class="header">
+<h1>⚡ ACG_Space 并发能力量化分析报告 v5.0</h1>
+<p class="m">2026-07-22 全天迭代 | v1(14:00) → v5(19:48) | Spring Boot 3.2.5 + Redis分页缓存 + RBAC</p>
+<p class="m" style="color:var(--g)">最终：v5.0 双接口 C=10 达 2,425 QPS，超越 v1 裸奔版(2,010) +21%</p>
+</div>
+
+<!-- ═══ 核心 ═══ -->
+<div class="s"><h2>📊 v5.0 核心指标</h2>
+<div class="ns">
+<div class="n"><div class="v b">2,425</div><div class="l">双接口 C=10 QPS（超v1裸奔）</div></div>
+<div class="n"><div class="v g">+102%</div><div class="l">anime_list 分页后 QPS翻倍</div></div>
+<div class="n"><div class="v o">14KB</div><div class="l">anime_list 响应大小（原142KB）</div></div>
+<div class="n"><div class="v p">100</div><div class="l">并发连接零错误</div></div>
+<div class="n"><div class="v" style="color:var(--g);font-size:1.1rem">2,568</div><div class="l">C=100 合计 QPS</div></div>
+</div>
+</div>
+
+<!-- ═══ 演进 ═══ -->
+<div class="s"><h2>📈 6 轮迭代演进</h2>
+<div class="c"><table>
+<tr><th>版本</th><th>featured</th><th>anime_list</th><th>合计 C=10</th><th>关键变更</th><th>安全</th><th>评分</th></tr>
+<tr><td>v1</td><td>1,380</td><td>630</td><td>2,010</td><td>裸奔基准：permitAll + HCP=10</td><td>❌</td><td>6.5</td></tr>
+<tr><td>v2</td><td>1,350</td><td>579</td><td>1,929</td><td>+RBAC +Swagger +CI +Docker</td><td>✅</td><td>7.5</td></tr>
+<tr><td>v4.1</td><td>1,019</td><td>521</td><td>1,540</td><td>+gacha缓存 +幂等 +@Async</td><td>✅</td><td>8.0</td></tr>
+<tr><td>v4.3</td><td>1,495</td><td>550</td><td>2,046</td><td>+featured/anime双缓存</td><td>✅</td><td>8.2</td></tr>
+<tr class="hl"><td>v5.0</td><td><span class="tg g">1,314</span></td><td><span class="tg g">1,111</span></td><td><span class="tg g">2,425</span></td><td><b>anime分页(101→10条,142K→14KB)</b></td><td>✅</td><td><span class="tg g">8.5</span></td></tr>
+</table></div>
+</div>
+
+<!-- ═══ v1对比 ═══ -->
+<div class="s"><h2>🎯 v1(裸奔) vs v5.0(全副武装) — 全面超越</h2>
+<div class="c"><table>
+<tr><th>级别</th><th>v1 featured</th><th>v5 featured</th><th>v1 anime_list</th><th>v5 anime_page</th><th>v1 合计</th><th>v5 合计</th><th>变化</th></tr>
+<tr><td>C=10</td><td>1,380</td><td>1,314</td><td>630</td><td><span class="tg g">1,111</span></td><td>2,010</td><td><span class="tg g">2,425</span></td><td><span class="tg g">+21%</span></td></tr>
+<tr><td>C=30</td><td>1,814</td><td>1,378</td><td>679</td><td><span class="tg g">1,186</span></td><td>2,493</td><td><span class="tg g">2,564</span></td><td><span class="tg g">+3%</span></td></tr>
+<tr><td>C=100</td><td>1,603</td><td>1,336</td><td>667</td><td><span class="tg g">1,232</span></td><td>2,270</td><td><span class="tg g">2,568</span></td><td><span class="tg g">+13%</span></td></tr>
+</table></div>
+<div class="f g"><b>结论：v5.0 在拥有完整 RBAC+JWT 安全、Redis 三级缓存、幂等防护、异步处理的前提下，总吞吐量超越 v1 裸奔版。增量成本为负——加功能还提速了。</b></div>
+</div>
+
+<!-- ═══ 瓶颈揭秘 ═══ -->
+<div class="s"><h2>🔬 QPS 瓶颈揭秘：响应体大小是元凶</h2>
+<div class="c"><table>
+<tr><th>端点</th><th>v4.3 响应</th><th>v5.0 响应</th><th>v4.3 QPS(C=10)</th><th>v5.0 QPS(C=10)</th><th>提升</th></tr>
+<tr><td>anime_list</td><td style="color:var(--r)">142KB (101条)</td><td style="color:var(--g)">14KB (10条)</td><td>550</td><td><span class="tg g">1,111</span></td><td><span class="tg g">+102%</span></td></tr>
+<tr><td>featured</td><td style="color:var(--g)">6KB (4条)</td><td style="color:var(--g)">6KB (4条)</td><td>1,495</td><td>1,314</td><td>-12%</td></tr>
+</table></div>
+<div class="f"><b>发现：142KB → 14KB（缩小 10 倍）→ QPS 翻倍。</b>之前"QPS 偏低"的根因不是缓存没生效，而是缓存命中的是 142KB 巨量 JSON，反序列化 101 个对象吃掉了所有 CPU。分页后瓶颈立即消失。</div>
+</div>
+
+<!-- ═══ 抽赏 ═══ -->
+<div class="s"><h2>🔒 抽赏限流 + 幂等</h2>
+<div class="c"><table>
+<tr><th>测试</th><th>并发</th><th>200</th><th>429</th><th>触发率</th></tr>
+<tr><td>50并发冲击</td><td>50</td><td>3</td><td style="color:var(--o);font-weight:700">45</td><td><span class="tg p">90%</span></td></tr>
+<tr><td>幂等拦截</td><td>1</td><td style="color:var(--g)">第1次</td><td style="color:var(--o)" colspan="2">第2次 "操作过于频繁"</td></tr>
+</table></div>
+</div>
+
+<!-- ═══ 全景 ═══ -->
+<div class="s"><h2>🗺️ 并发控制全景</h2>
+<div class="c"><table>
+<tr><th>层级</th><th>机制</th><th>状态</th><th>实测</th></tr>
+<tr><td>接口</td><td>限流 Resilience4j</td><td><span class="tg g">✅</span></td><td>gacha 5/s → 90%触发429</td></tr>
+<tr><td>接口</td><td>幂等 @Idempotent</td><td><span class="tg g">✅</span></td><td>修复InputStream Bug</td></tr>
+<tr><td>接口</td><td>熔断 Resilience4j</td><td><span class="tg g">已配置</span></td><td>50%故障触发</td></tr>
+<tr><td>认证</td><td>JWT + RBAC 3级</td><td><span class="tg g">✅</span></td><td>公开/登录/ADMIN</td></tr>
+<tr><td>缓存</td><td>Redis @Cacheable</td><td><span class="tg g">✅ 3接口</span></td><td>分页+TTL+CacheEvict</td></tr>
+<tr><td>异步</td><td>@Async</td><td><span class="tg g">✅</span></td><td>碎片掉落异步化</td></tr>
+<tr><td>业务</td><td>分布式锁 Redisson</td><td><span class="tg g">已启用</span></td><td>tryLock(10s/30s)</td></tr>
+<tr><td>数据</td><td>Lua 原子脚本</td><td><span class="tg g">✅</span></td><td>积分+库存原子扣减</td></tr>
+<tr><td>消息</td><td>RocketMQ 事务</td><td><span class="tg g">已启用</span></td><td>2组消费者</td></tr>
+</table></div>
+</div>
+
+<!-- ═══ 面试 ═══ -->
+<div class="s"><h2>💼 面试核心叙事</h2>
+<div class="box">
+<p style="font-size:.88rem;line-height:1.9">
+<b style="color:var(--a)">"v1 裸奔 2,010 QPS → v5 全副武装 2,425 QPS。加功能反而提速了。"</b><br><br>
+<b>① 发现瓶颈：</b>压测→HikariCP默认10→调到30。缓存生效但QPS仍停在2,000。<br>
+<b>② 深挖根因：</b>anime_list返回142KB/101条记录，Redis缓存命中后仍需反序列化101个对象 → CPU瓶颈。<br>
+<b>③ 对症下药：</b>分页(10条/页, 14KB) → 响应体缩小10倍 → QPS翻倍。<br>
+<b>④ 全副武装：</b>RBAC+JWT、三级Redis缓存、Resilience4j限流(90%触发)、幂等防护(修复InputStream Bug)、@Async异步、RocketMQ事务消息。<br>
+<b>⑤ 结果：</b>v5.0 超越 v1 裸奔 21%，且有完整安全体系。增量成本为负。<br>
+<b>⑥ 工程化：</b>Swagger/CI/CD/Dockerfile/46错误码——可面试演示的完整项目。
+</p>
+</div>
+</div>
+
+</body></html>

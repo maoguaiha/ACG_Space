@@ -7,6 +7,9 @@ import com.ruoyi.project.common.api.Result;
 import com.ruoyi.project.common.utils.SecurityUtils;
 import com.ruoyi.project.domain.vo.MarketItemVO;
 import com.ruoyi.project.service.IBizMarketService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -18,6 +21,7 @@ import java.util.List;
 /**
  * 市场控制器
  */
+@Tag(name = "市场交易", description = "资产上架、购买(含1%手续费)、下架、市场浏览")
 @Slf4j
 @RestController
 @RequestMapping("/api/market")
@@ -61,20 +65,16 @@ public class BizMarketController {
     /**
      * 购买商品
      */
+    @Operation(summary = "购买商品", description = "购买市场中的商品，自动扣1%手续费转给卖家，转移资产所有权。含幂等性保护和限流熔断。")
     @PostMapping("/buy")
     @Idempotent(prefix = "market_buy", expireTime = 10, message = "购买操作过于频繁，请稍后再试")
     @RateLimiterAndCircuitBreaker(rateLimiterName = "marketBuy", circuitBreakerName = "marketService")
     public Result<OrderResult> buy(@RequestBody @Validated BuyRequest request) {
-        try {
-            Long buyerId = getCurrentUserId();
-            String orderId = marketService.buyItem(buyerId, request.getItemId());
-            OrderResult result = new OrderResult();
-            result.setOrderId(orderId);
-            return Result.success(result);
-        } catch (RuntimeException e) {
-            log.error("购买失败: {}", e.getMessage());
-            return Result.error(e.getMessage());
-        }
+        Long buyerId = getCurrentUserId();
+        String orderId = marketService.buyItem(buyerId, request.getItemId());
+        OrderResult result = new OrderResult();
+        result.setOrderId(orderId);
+        return Result.success(result);
     }
 
     /**
@@ -83,16 +83,11 @@ public class BizMarketController {
     @PostMapping("/list")
     @Idempotent(prefix = "market_list", expireTime = 10, message = "上架操作过于频繁，请稍后再试")
     public Result<ListResult> listAsset(@RequestBody @Validated ListRequest request) {
-        try {
-            Long userId = getCurrentUserId();
-            Long itemId = marketService.listAsset(userId, request.getAssetId(), request.getPrice());
-            ListResult result = new ListResult();
-            result.setItemId(itemId);
-            return Result.success(result);
-        } catch (RuntimeException e) {
-            log.error("上架失败: {}", e.getMessage());
-            return Result.error(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        Long itemId = marketService.listAsset(userId, request.getAssetId(), request.getPrice());
+        ListResult result = new ListResult();
+        result.setItemId(itemId);
+        return Result.success(result);
     }
 
     /**
@@ -110,14 +105,9 @@ public class BizMarketController {
      */
     @PostMapping("/delist/{id}")
     public Result<Boolean> delist(@PathVariable Long id) {
-        try {
-            Long userId = getCurrentUserId();
-            boolean success = marketService.delistAsset(id, userId);
-            return Result.success(success);
-        } catch (RuntimeException e) {
-            log.error("下架失败: {}", e.getMessage());
-            return Result.error(e.getMessage());
-        }
+        Long userId = getCurrentUserId();
+        boolean success = marketService.delistAsset(id, userId);
+        return Result.success(success);
     }
 
     private Long getCurrentUserId() {

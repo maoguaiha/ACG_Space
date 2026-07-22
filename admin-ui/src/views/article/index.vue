@@ -120,8 +120,6 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          @size-change="getList"
-          @current-change="getList"
         />
       </div>
     </el-card>
@@ -186,7 +184,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 import ImagePickerDialog from '@/components/ImagePickerDialog.vue'
@@ -232,7 +230,7 @@ const getList = async () => {
     if (queryParams.category) params.category = queryParams.category
     if (queryParams.status !== undefined) params.status = queryParams.status
 
-    const res = await axios.get('http://localhost:8080/api/article/list', { params })
+    const res = await axios.get('/api/article/list', { params })
     if (res.data && res.data.code === 200) {
       const pageData = res.data.data || {}
       articleList.value = pageData.records || []
@@ -254,9 +252,21 @@ const getList = async () => {
 }
 
 const handleQuery = () => {
-  queryParams.pageNum = 1
-  getList()
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
 }
+
+watch(() => queryParams.pageNum, () => getList())
+watch(() => queryParams.pageSize, () => {
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
+})
 
 const resetQuery = () => {
   queryParams.title = ''
@@ -319,7 +329,7 @@ const submitEdit = async () => {
   }
   editing.value = true
   try {
-    const url = editForm.id ? 'http://localhost:8080/api/article' : 'http://localhost:8080/api/article'
+    const url = editForm.id ? '/api/article' : '/api/article'
     const method = editForm.id ? 'put' : 'post'
     const res = await axios[method](url, editForm)
     if (res.data && res.data.code === 200) {
@@ -338,7 +348,7 @@ const submitEdit = async () => {
 
 const handleDelete = async (id: number) => {
   try {
-    const res = await axios.delete(`http://localhost:8080/api/article/${id}`)
+    const res = await axios.delete(`/api/article/${id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success('删除成功！')
       getList()
@@ -352,7 +362,7 @@ const handleDelete = async (id: number) => {
 
 const handleToggleFeatured = async (row: any) => {
   try {
-    const res = await axios.put(`http://localhost:8080/api/article/featured/${row.id}`)
+    const res = await axios.put(`/api/article/featured/${row.id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success(row.isFeatured === 1 ? '已取消推荐' : '已设为推荐')
       getList()
@@ -366,7 +376,7 @@ const handleToggleFeatured = async (row: any) => {
 
 const handleApprove = async (row: any) => {
   try {
-    const res = await axios.put('http://localhost:8080/api/article/admin/review', { id: row.id, approve: true })
+    const res = await axios.put('/api/article/admin/review', { id: row.id, approve: true })
     if (res.data && res.data.code === 200) {
       ElMessage.success('审核通过')
       getList()
@@ -386,7 +396,7 @@ const handleReject = async (row: any) => {
       inputPlaceholder: '请输入原因...'
     })
     if (rejectReason === undefined) return
-    const res = await axios.put('http://localhost:8080/api/article/admin/review', { id: row.id, approve: false, rejectReason })
+    const res = await axios.put('/api/article/admin/review', { id: row.id, approve: false, rejectReason })
     if (res.data && res.data.code === 200) {
       ElMessage.success('已驳回')
       getList()

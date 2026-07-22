@@ -24,7 +24,7 @@ const list = ref<any[]>([])
 
 async function fetchList() {
   try {
-    const res = await axios.get('http://localhost:8080/api/article/admin/reviewList')
+    const res = await axios.get('/api/article/admin/reviewList')
     list.value = res.data?.data?.records || []
   } catch (e) {
     ElMessage.error('获取待审核列表失败')
@@ -33,7 +33,7 @@ async function fetchList() {
 
 async function approve(row: any) {
   try {
-    await axios.put('http://localhost:8080/api/article/admin/review', { id: row.id, approve: true })
+    await axios.put('/api/article/admin/review', { id: row.id, approve: true })
     ElMessage.success('已通过')
     fetchList()
   } catch (e) {
@@ -47,7 +47,7 @@ async function reject(row: any) {
       confirmButtonText: '提交',
       cancelButtonText: '取消'
     })
-    await axios.put('http://localhost:8080/api/article/admin/review', { id: row.id, approve: false, rejectReason: value })
+    await axios.put('/api/article/admin/review', { id: row.id, approve: false, rejectReason: value })
     ElMessage.success('已驳回')
     fetchList()
   } catch (e) {

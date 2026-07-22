@@ -1,0 +1,52 @@
+mysql: [Warning] Using a password on the command line interface can be insecure.
+info
+=== biz_redeem_product ===
+Field	Type	Null	Key	Default	Extra
+id	bigint	NO	PRI	NULL	
+name	varchar(100)	NO		NULL	
+image	longtext	YES		NULL	
+description	text	YES		NULL	
+ur_fragment_cost	int	YES		0	
+points_cost	int	YES		0	
+stock	int	YES		0	
+exchanged_count	int	YES		0	
+status	tinyint	YES	MUL	1	
+sort_order	int	YES	MUL	0	
+create_by	varchar(64)	YES			
+create_time	datetime	YES		NULL	
+update_by	varchar(64)	YES			
+update_time	datetime	YES		NULL	
+remark	varchar(500)	YES		NULL	
+del_flag	tinyint	YES		0	
+info
+=== biz_synthesize_recipe ===
+Field	Type	Null	Key	Default	Extra
+id	bigint	NO	PRI	NULL	
+name	varchar(100)	NO		NULL	
+description	text	YES		NULL	
+result_item_id	bigint	NO	MUL	NULL	
+result_quantity	int	YES		1	
+cost_type	varchar(20)	YES		materials	
+cost_items	text	YES		NULL	
+cost_points	int	YES		0	
+success_rate	int	YES		100	
+status	int	YES		1	
+create_by	varchar(64)	YES		NULL	
+create_time	datetime	YES		NULL	
+update_by	varchar(64)	YES		NULL	
+update_time	datetime	YES		NULL	
+remark	varchar(500)	YES		NULL	
+del_flag	tinyint	YES		0	
+info
+=== biz_gacha_pool_item (check missing cols) ===
+Field	Type	Null	Key	Default	Extra
+id	bigint	NO	PRI	NULL	
+pool_id	bigint	NO	MUL	NULL	
+item_id	bigint	NO	MUL	NULL	
+weight	int	YES		1	
+create_time	datetime	YES		NULL	
+update_time	datetime	YES		NULL	
+del_flag	tinyint	YES		0	
+create_by	varchar(64)	YES		NULL	
+update_by	varchar(64)	YES		NULL	
+remark	varchar(500)	YES		NULL	

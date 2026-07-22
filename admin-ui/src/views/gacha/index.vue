@@ -115,8 +115,6 @@
           :page-sizes="[8, 16, 24, 32]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          @size-change="getList"
-          @current-change="getList"
         />
       </div>
     </el-card>
@@ -201,7 +199,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Search, Refresh, Edit, Setting, Close, Clock } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -256,7 +254,7 @@ async function getList() {
       status: queryParams.status ?? undefined
     })
     poolList.value = res.data.data.records
-    total.value = res.data.data.total
+    total.value = Number(res.data.data.total) || 0
   } catch (error) {
     ElMessage.error('获取奖池列表失败')
   } finally {
@@ -265,9 +263,21 @@ async function getList() {
 }
 
 function handleQuery() {
-  queryParams.pageNum = 1
-  getList()
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
 }
+
+watch(() => queryParams.pageNum, () => getList())
+watch(() => queryParams.pageSize, () => {
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
+})
 
 function resetQuery() {
   queryParams.name = ''

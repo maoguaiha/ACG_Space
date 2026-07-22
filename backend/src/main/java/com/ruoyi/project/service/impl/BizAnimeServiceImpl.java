@@ -2,6 +2,7 @@ package com.ruoyi.project.service.impl;
 
 import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.project.domain.entity.BizAnime;
 import com.ruoyi.project.integration.BangumiApiClient;
@@ -9,6 +10,7 @@ import com.ruoyi.project.mapper.BizAnimeMapper;
 import com.ruoyi.project.service.IBizAnimeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -227,5 +229,29 @@ public class BizAnimeServiceImpl extends ServiceImpl<BizAnimeMapper, BizAnime> i
 
         // 其余情况默认连载中
         return 0;
+    }
+
+    @Override
+    @Cacheable(value = "anime:featured", key = "'list'", unless = "#result == null || #result.isEmpty()")
+    public List<BizAnime> getFeaturedAnime() {
+        return this.list(new LambdaQueryWrapper<BizAnime>()
+                .eq(BizAnime::getFeatured, 1)
+                .orderByDesc(BizAnime::getCreateTime));
+    }
+
+    @Override
+    @Cacheable(value = "anime:list", key = "'all'", unless = "#result == null || #result.isEmpty()")
+    public List<BizAnime> getAllAnimeList() {
+        return this.list(new LambdaQueryWrapper<BizAnime>()
+                .orderByDesc(BizAnime::getFeatured)
+                .orderByDesc(BizAnime::getCreateTime));
+    }
+
+    @Override
+    @Cacheable(value = "anime:page", key = "'p' + #page + ':s' + #size", unless = "#result == null || #result.getRecords() == null || #result.getRecords().isEmpty()")
+    public Page<BizAnime> getAnimePage(int page, int size) {
+        return this.page(new Page<>(page, size), new LambdaQueryWrapper<BizAnime>()
+                .orderByDesc(BizAnime::getFeatured)
+                .orderByDesc(BizAnime::getCreateTime));
     }
 }

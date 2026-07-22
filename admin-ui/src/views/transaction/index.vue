@@ -168,8 +168,6 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          @size-change="getList"
-          @current-change="getList"
         />
       </div>
     </el-card>
@@ -262,7 +260,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Search, Refresh, View, Van, Clock, SuccessFilled, Box } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -313,7 +311,7 @@ async function getList() {
       status: queryParams.status ?? undefined
     })
     orderList.value = res.data.data.records
-    total.value = res.data.data.total
+    total.value = Number(res.data.data.total) || 0
   } catch (error) {
     ElMessage.error('获取订单列表失败')
   } finally {
@@ -331,9 +329,21 @@ async function getStats() {
 }
 
 function handleQuery() {
-  queryParams.pageNum = 1
-  getList()
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
 }
+
+watch(() => queryParams.pageNum, () => getList())
+watch(() => queryParams.pageSize, () => {
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
+})
 
 function resetQuery() {
   queryParams.orderNo = ''
@@ -413,11 +423,11 @@ function getStatusType(status: number | undefined): string {
 function getRarityType(rarity: string): string {
   const types: Record<string, string> = {
     SSR: 'warning',
-    SR: 'purple',
-    R: '',
+    SR: 'danger',
+    R: 'primary',
     N: 'info'
   }
-  return types[rarity] || ''
+  return types[rarity] || 'info'
 }
 
 onMounted(() => {

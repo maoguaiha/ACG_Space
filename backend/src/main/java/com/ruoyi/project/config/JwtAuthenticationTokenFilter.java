@@ -15,15 +15,36 @@ import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Set;
 
 /**
  * JWT 认证过滤器
+ * 
+ * 性能优化：shouldNotFilter 跳过公开接口，减少无效 JWT 解析开销
  */
 @Component
 @RequiredArgsConstructor
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
+
+    /** 无需 Token 校验的公开路径前缀 */
+    private static final Set<String> PUBLIC_PREFIXES = Set.of(
+            "/api/anime", "/api/auth", "/api/comment/page",
+            "/api/article", "/api/user", "/swagger-ui", "/v3/api-docs", "/error"
+    );
+
+    @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) {
+        String path = request.getRequestURI();
+        String method = request.getMethod();
+        // GET 请求的公开路径不需要 Token 校验
+        if ("GET".equalsIgnoreCase(method)) {
+            return PUBLIC_PREFIXES.stream().anyMatch(path::startsWith);
+        }
+        // POST /api/auth/** 也不需要
+        return path.startsWith("/api/auth/");
+    }
 
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)

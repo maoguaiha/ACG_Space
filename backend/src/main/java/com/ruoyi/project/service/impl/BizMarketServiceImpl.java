@@ -3,6 +3,8 @@ package com.ruoyi.project.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.ruoyi.project.common.exception.BizErrorCode;
+import com.ruoyi.project.common.exception.BizException;
 import com.ruoyi.project.domain.entity.BizMarketItem;
 import com.ruoyi.project.domain.entity.BizTransaction;
 import com.ruoyi.project.domain.entity.BizUserAsset;
@@ -97,15 +99,15 @@ public class BizMarketServiceImpl extends ServiceImpl<BizMarketItemMapper, BizMa
     public Long listAsset(Long userId, Long assetId, Integer price) {
         BizUserAsset asset = userAssetMapper.selectById(assetId);
         if (asset == null) {
-            throw new RuntimeException("资产不存在");
+            throw new BizException(BizErrorCode.ASSET_NOT_FOUND);
         }
 
         if (!userId.equals(asset.getUserId())) {
-            throw new RuntimeException("无权操作此资产");
+            throw new BizException(BizErrorCode.ASSET_NOT_OWNED);
         }
 
         if (asset.getStatus() != 1) {
-            throw new RuntimeException("资产状态不可上架");
+            throw new BizException(BizErrorCode.ASSET_STATUS_INVALID);
         }
 
         asset.setStatus(2);
@@ -134,15 +136,15 @@ public class BizMarketServiceImpl extends ServiceImpl<BizMarketItemMapper, BizMa
     public String buyItem(Long buyerId, Long itemId) {
         BizMarketItem marketItem = this.getById(itemId);
         if (marketItem == null) {
-            throw new RuntimeException("商品不存在");
+            throw new BizException(BizErrorCode.MARKET_ITEM_NOT_FOUND);
         }
 
         if (marketItem.getStatus() != 0) {
-            throw new RuntimeException("商品已下架或已售出");
+            throw new BizException(BizErrorCode.MARKET_ITEM_SOLD);
         }
 
         if (buyerId.equals(marketItem.getSellerId())) {
-            throw new RuntimeException("不能购买自己上架的商品");
+            throw new BizException(BizErrorCode.MARKET_CANNOT_BUY_OWN);
         }
 
         int fee = (int) Math.ceil(marketItem.getPrice() * 0.01);
@@ -153,7 +155,7 @@ public class BizMarketServiceImpl extends ServiceImpl<BizMarketItemMapper, BizMa
         // 扣减买家积分
         boolean buyerDeducted = pointsLogService.deductPoints(buyerId, marketItem.getPrice(), "MARKET_BUY", orderId);
         if (!buyerDeducted) {
-            throw new RuntimeException("积分不足，购买失败");
+            throw new BizException(BizErrorCode.INSUFFICIENT_POINTS);
         }
 
         // 给卖家加积分（扣除手续费后）
@@ -199,15 +201,15 @@ public class BizMarketServiceImpl extends ServiceImpl<BizMarketItemMapper, BizMa
     public boolean delistAsset(Long itemId, Long userId) {
         BizMarketItem marketItem = this.getById(itemId);
         if (marketItem == null) {
-            throw new RuntimeException("商品不存在");
+            throw new BizException(BizErrorCode.MARKET_ITEM_NOT_FOUND);
         }
 
         if (!userId.equals(marketItem.getSellerId())) {
-            throw new RuntimeException("无权操作此商品");
+            throw new BizException(BizErrorCode.ASSET_NOT_OWNED);
         }
 
         if (marketItem.getStatus() != 0) {
-            throw new RuntimeException("商品已售出，无法下架");
+            throw new BizException(BizErrorCode.MARKET_ITEM_SOLD);
         }
 
         marketItem.setStatus(2);

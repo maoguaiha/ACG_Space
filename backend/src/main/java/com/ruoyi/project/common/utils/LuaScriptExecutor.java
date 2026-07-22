@@ -206,7 +206,8 @@ public class LuaScriptExecutor {
      * @param expireSeconds 锁的过期时间（秒）
      * @return true=获取成功，false=获取失败
      */
-    public Boolean tryLock(String lockKey, long expireSeconds) {
+    public String tryLock(String lockKey, long expireSeconds) {
+        String lockValue = java.util.UUID.randomUUID().toString();
         String script = 
             "if redis.call('SETNX', KEYS[1], ARGV[1]) == 1 then " +
             "    redis.call('EXPIRE', KEYS[1], tonumber(ARGV[2])) " +
@@ -219,24 +220,29 @@ public class LuaScriptExecutor {
         Long result = redisTemplate.execute(
             redisScript, 
             Collections.singletonList(lockKey), 
-            "locked:" + System.currentTimeMillis(), 
+            lockValue, 
             String.valueOf(expireSeconds)
         );
         
         if (result != null && result == 1) {
             log.debug("获取锁成功，key: {}", lockKey);
-            return true;
+            return lockValue;
         } else {
             log.debug("获取锁失败，key: {}", lockKey);
-            return false;
+            return null;
         }
     }
 
     /**
-     * 释放分布式锁
+     * 释放分布式锁（安全：比对锁值，只删自己持有的锁）
      * @param lockKey 锁的 key
+     * @param lockValue tryLock 返回的唯一锁值
      */
-    public void unlock(String lockKey) {
+    public void unlock(String lockKey, String lockValue) {
+        if (lockValue == null) {
+            log.debug("释放锁时锁值为空，跳过，key: {}", lockKey);
+            return;
+        }
         String script = 
             "if redis.call('GET', KEYS[1]) == ARGV[1] then " +
             "    return redis.call('DEL', KEYS[1]) " +
@@ -244,8 +250,8 @@ public class LuaScriptExecutor {
             "    return 0 " +
             "end";
         
-        // 简单删除锁（生产环境建议使用更安全的解锁方式）
-        redisTemplate.delete(lockKey);
+        RedisScript<Long> redisScript = new DefaultRedisScript<>(script, Long.class);
+        redisTemplate.execute(redisScript, Collections.singletonList(lockKey), lockValue);
         log.debug("释放锁，key: {}", lockKey);
     }
 }

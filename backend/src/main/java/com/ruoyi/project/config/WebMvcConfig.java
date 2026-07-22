@@ -8,6 +8,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
 /**
  * Web MVC 配置类
+ * <p>
+ * IdempotentInterceptor 已修复（配合 ContentCachingFilter 解决 InputStream 消费 Bug），
+ * 现正式启用幂等性保护：所有标注 @Idempotent 的 POST 写入接口均受防重复提交保护。
+ * </p>
  */
 @Configuration
 @RequiredArgsConstructor
@@ -17,8 +21,7 @@ public class WebMvcConfig implements WebMvcConfigurer {
 
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
-        // 暂时禁用幂等性拦截器以排查问题
-        // registry.addInterceptor(idempotentInterceptor)
-        //         .addPathPatterns("/api/**");
+        registry.addInterceptor(idempotentInterceptor)
+                .addPathPatterns("/api/**");
     }
 }

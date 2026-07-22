@@ -394,7 +394,7 @@ watch(bgmSearchKeyword, (newVal) => {
   debounceTimer = setTimeout(async () => {
     try {
       const data = await searchBangumi(kw)
-      suggestions.value = data.list?.slice(0, 6) || []
+      suggestions.value = data?.list?.slice(0, 6) || []
       // 检查建议项的关注状态
       suggestions.value.forEach(async item => {
         if (userStore.isLoggedIn) {
@@ -484,6 +484,15 @@ const todayItems = computed(() => {
   }))
 })
 
+// cleanup listener on unmount — 必须在顶层注册，不能放在 async onMounted 的 await 之后
+onUnmounted(() => {
+  document.removeEventListener('click', handleDocumentClick)
+  if (librarySearchDebounceTimer) {
+    clearTimeout(librarySearchDebounceTimer)
+    librarySearchDebounceTimer = null
+  }
+})
+
 onMounted(async () => {
   loading.value = true
   // 确保社区番剧库数据已加载
@@ -515,14 +524,6 @@ onMounted(async () => {
       if (status) followedBgmIds.value.add(item.id)
     })
   }
-  // cleanup listener on unmount
-  onUnmounted(() => {
-    document.removeEventListener('click', handleDocumentClick)
-    if (librarySearchDebounceTimer) {
-      clearTimeout(librarySearchDebounceTimer)
-      librarySearchDebounceTimer = null
-    }
-  })
 })
 
 // ====== 搜索逻辑 ======
@@ -533,7 +534,7 @@ const handleBgmSearch = async () => {
   try {
     // 先执行 Bangumi 搜索
     const data = await searchBangumi(bgmSearchKeyword.value)
-    bgmResults.value = data.list || []
+    bgmResults.value = data?.list || []
 
     // 如果有结果，先进行批量导入并等待完成，再刷新本地库，保证页面显示为已收录内容
     if (bgmResults.value.length > 0) {

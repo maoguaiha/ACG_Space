@@ -1,45 +1,48 @@
 package com.ruoyi.project.service;
 
-import com.ruoyi.project.domain.entity.BizSynthesizeRecipe;
+import com.ruoyi.project.domain.entity.BizSynthesizeRule;
 import com.ruoyi.project.domain.entity.BizUserAsset;
-import com.ruoyi.project.mapper.BizSynthesizeRecipeMapper;
-import com.ruoyi.project.mapper.BizSynthesizeRecordMapper;
 import com.ruoyi.project.mapper.BizUserAssetMapper;
 import com.ruoyi.project.service.impl.BizSynthesizeServiceImpl;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.redisson.api.RLock;
 import org.redisson.api.RedissonClient;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyLong;
+import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 /**
- * 合成服务单元测试
+ * 合成服务单元测试 — 校验分布式锁核心行为（加锁/解锁/锁粒度/异常处理）。
+ *
+ * 条件更新（LambdaUpdateWrapper + 状态机防双花）依赖 MyBatis-Plus TableInfoHelper，
+ * 该组件需 Spring 容器初始化，建议用 @SpringBootTest + 真实 DB 做集成测试覆盖：
+ *   1. 同一用户 + 同一批 assetIds 并发两个合成请求 → 仅 1 条成功
+ *   2. 查库确认 material status=4 无重复
+ *   3. redis-cli 确认锁 key 存在/自动释放
  */
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 @DisplayName("合成服务测试")
 class BizSynthesizeServiceTest {
-
-    @Mock
-    private BizSynthesizeRecipeMapper synthesizeRecipeMapper;
 
     @Mock
     private BizUserAssetMapper userAssetMapper;
 
     @Mock
-    private BizSynthesizeRecordMapper synthesizeRecordMapper;
+    private IBizItemService itemService;
 
     @Mock
     private RedissonClient redissonClient;
@@ -47,190 +50,173 @@ class BizSynthesizeServiceTest {
     @Mock
     private RLock mockLock;
 
-    @InjectMocks
     private BizSynthesizeServiceImpl synthesizeService;
-
-    private BizSynthesizeRecipe testRecipe;
-    private BizUserAsset testAsset1;
-    private BizUserAsset testAsset2;
-    private BizUserAsset resultAsset;
 
     @BeforeEach
     void setUp() {
-        // 测试配方：2个碎片合成1个完整物品
-        testRecipe = new BizSynthesizeRecipe();
-        testRecipe.setId(1L);
-        testRecipe.setRecipeName("测试合成配方");
-        testRecipe.setResultItemId(100L);
-        testRecipe.setResultItemName("合成物品");
-        testRecipe.setConsumeItemIds("1,2");
-        testRecipe.setConsumeCounts("2,1");
-        testRecipe.setDelFlag(0);
-
-        // 消耗物品1
-        testAsset1 = new BizUserAsset();
-        testAsset1.setId(1L);
-        testAsset1.setUserId(1L);
-        testAsset1.setItemId(1L);
-        testAsset1.setItemName("碎片1");
-        testAsset1.setQuantity(5);
-        testAsset1.setDelFlag(0);
-
-        // 消耗物品2
-        testAsset2 = new BizUserAsset();
-        testAsset2.setId(2L);
-        testAsset2.setUserId(1L);
-        testAsset2.setItemId(2L);
-        testAsset2.setItemName("碎片2");
-        testAsset2.setQuantity(3);
-        testAsset2.setDelFlag(0);
-
-        // 结果物品
-        resultAsset = new BizUserAsset();
-        resultAsset.setUserId(1L);
-        resultAsset.setItemId(100L);
-        resultAsset.setItemName("合成物品");
-        resultAsset.setQuantity(0);
-        resultAsset.setDelFlag(0);
+        synthesizeService = spy(new BizSynthesizeServiceImpl(userAssetMapper, itemService, redissonClient));
     }
 
-    @Test
-    @DisplayName("获取合成配方列表 - 成功")
-    void getRecipes_Success() {
-        when(synthesizeRecipeMapper.selectList(any())).thenReturn(Arrays.asList(testRecipe));
-
-        List<BizSynthesizeRecipe> recipes = synthesizeService.getRecipes();
-
-        assertFalse(recipes.isEmpty());
-        assertEquals(1, recipes.size());
-        assertEquals("测试合成配方", recipes.get(0).getRecipeName());
-        verify(synthesizeRecipeMapper, times(1)).selectList(any());
-    }
+    // ─── lock acquisition failure ──────────────────────────────
 
     @Test
-    @DisplayName("获取合成配方列表 - 空列表")
-    void getRecipes_Empty() {
-        when(synthesizeRecipeMapper.selectList(any())).thenReturn(Arrays.asList());
-
-        List<BizSynthesizeRecipe> recipes = synthesizeService.getRecipes();
-
-        assertTrue(recipes.isEmpty());
-        verify(synthesizeRecipeMapper, times(1)).selectList(any());
-    }
-
-    @Test
-    @DisplayName("获取用户可用配方 - 有可用配方")
-    void getUserAvailableRecipes_HasAvailable() {
-        when(synthesizeRecipeMapper.selectList(any())).thenReturn(Arrays.asList(testRecipe));
-        when(userAssetMapper.selectList(any())).thenReturn(Arrays.asList(testAsset1, testAsset2));
-
-        List<BizSynthesizeRecipe> recipes = synthesizeService.getUserAvailableRecipes(1L);
-
-        assertFalse(recipes.isEmpty());
-        verify(synthesizeRecipeMapper, times(1)).selectList(any());
-        verify(userAssetMapper, times(1)).selectList(any());
-    }
-
-    @Test
-    @DisplayName("检查用户是否有足够材料 - 有足够材料")
-    void hasEnoughMaterials_Enough() {
-        when(userAssetMapper.selectOne(any())).thenReturn(testAsset1);
-
-        boolean result = synthesizeService.hasEnoughMaterials(1L, 1L, 2);
-
-        assertTrue(result);
-        verify(userAssetMapper, times(1)).selectOne(any());
-    }
-
-    @Test
-    @DisplayName("检查用户是否有足够材料 - 材料不足")
-    void hasEnoughMaterials_Insufficient() {
-        testAsset1.setQuantity(1);
-        when(userAssetMapper.selectOne(any())).thenReturn(testAsset1);
-
-        boolean result = synthesizeService.hasEnoughMaterials(1L, 1L, 2);
-
-        assertFalse(result);
-        verify(userAssetMapper, times(1)).selectOne(any());
-    }
-
-    @Test
-    @DisplayName("检查用户是否有足够材料 - 没有该材料")
-    void hasEnoughMaterials_NoMaterial() {
-        when(userAssetMapper.selectOne(any())).thenReturn(null);
-
-        boolean result = synthesizeService.hasEnoughMaterials(1L, 1L, 2);
-
-        assertFalse(result);
-        verify(userAssetMapper, times(1)).selectOne(any());
-    }
-
-    @Test
-    @DisplayName("合成操作 - 锁获取成功")
-    void synthesize_LockSuccess() throws InterruptedException {
-        when(synthesizeRecipeMapper.selectById(1L)).thenReturn(testRecipe);
-        when(userAssetMapper.selectOne(argThat(wrapper -> {
-            try {
-                return wrapper.getEntity().getItemId().equals(1L) && 
-                       wrapper.getEntity().getUserId().equals(1L);
-            } catch (Exception e) {
-                return false;
-            }
-        }))).thenReturn(testAsset1);
-        when(userAssetMapper.selectOne(argThat(wrapper -> {
-            try {
-                return wrapper.getEntity().getItemId().equals(2L) && 
-                       wrapper.getEntity().getUserId().equals(1L);
-            } catch (Exception e) {
-                return false;
-            }
-        }))).thenReturn(testAsset2);
-        when(userAssetMapper.selectOne(argThat(wrapper -> {
-            try {
-                return wrapper.getEntity().getItemId().equals(100L) && 
-                       wrapper.getEntity().getUserId().equals(1L);
-            } catch (Exception e) {
-                return false;
-            }
-        }))).thenReturn(resultAsset);
-        when(redissonClient.getMultiLock(any())).thenReturn(mockLock);
-        when(mockLock.tryLock(10, 60, TimeUnit.SECONDS)).thenReturn(true);
-        when(userAssetMapper.updateById(any())).thenReturn(1);
-        when(userAssetMapper.insert(any())).thenReturn(1);
-        when(synthesizeRecordMapper.insert(any())).thenReturn(1);
-
-        boolean result = synthesizeService.synthesize(1L, 1L);
-
-        assertTrue(result);
-        verify(mockLock, times(1)).tryLock(10, 60, TimeUnit.SECONDS);
-        verify(mockLock, times(1)).unlock();
-        verify(userAssetMapper, atLeastOnce()).updateById(any());
-    }
-
-    @Test
-    @DisplayName("合成操作 - 锁获取失败")
+    @DisplayName("synthesize - 锁获取失败抛「操作过于频繁」")
     void synthesize_LockFailure() throws InterruptedException {
-        when(redissonClient.getMultiLock(any())).thenReturn(mockLock);
-        when(mockLock.tryLock(10, 60, TimeUnit.SECONDS)).thenReturn(false);
+        when(redissonClient.getLock("synthesize:lock:user:1")).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(false);
 
-        boolean result = synthesizeService.synthesize(1L, 1L);
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesize(1L, "SR", 1));
 
-        assertFalse(result);
-        verify(mockLock, times(1)).tryLock(10, 60, TimeUnit.SECONDS);
+        assertTrue(ex.getMessage().contains("操作过于频繁"));
         verify(mockLock, never()).unlock();
     }
 
     @Test
-    @DisplayName("合成操作 - 配方不存在")
-    void synthesize_RecipeNotFound() throws InterruptedException {
-        when(synthesizeRecipeMapper.selectById(1L)).thenReturn(null);
-        when(redissonClient.getMultiLock(any())).thenReturn(mockLock);
-        when(mockLock.tryLock(10, 60, TimeUnit.SECONDS)).thenReturn(true);
+    @DisplayName("synthesizeByIds - 锁获取失败抛异常")
+    void synthesizeByIds_LockFailure() throws InterruptedException {
+        when(redissonClient.getLock("synthesize:lock:user:1")).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(false);
 
-        boolean result = synthesizeService.synthesize(1L, 1L);
+        List<Long> assetIds = Collections.nCopies(10, 100L);
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesizeByIds(1L, "SR", assetIds));
 
-        assertFalse(result);
-        verify(mockLock, times(1)).tryLock(10, 60, TimeUnit.SECONDS);
-        verify(mockLock, times(1)).unlock();
+        assertTrue(ex.getMessage().contains("操作过于频繁"));
+        verify(mockLock, never()).unlock();
+    }
+
+    @Test
+    @DisplayName("synthesizeByItems - 锁获取失败抛异常")
+    void synthesizeByItems_LockFailure() throws InterruptedException {
+        when(redissonClient.getLock("synthesize:lock:user:1")).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(false);
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesizeByItems(1L, "SR", Collections.emptyList(), 1));
+
+        assertTrue(ex.getMessage().contains("操作过于频繁"));
+        verify(mockLock, never()).unlock();
+    }
+
+    // ─── interrupt handling ────────────────────────────────────
+
+    @Test
+    @DisplayName("InterruptedException 被正确处理 + 中断标志保持")
+    void synthesize_InterruptedException() throws InterruptedException {
+        when(redissonClient.getLock("synthesize:lock:user:1")).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenThrow(new InterruptedException());
+
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesize(1L, "SR", 1));
+
+        assertTrue(ex.getMessage().contains("合成被中断"));
+        verify(mockLock, never()).unlock();
+        assertTrue(Thread.currentThread().isInterrupted());
+        Thread.interrupted(); // clear for other tests
+    }
+
+    // ─── lock released in finally on business error ────────────
+
+    @Test
+    @DisplayName("业务异常时 finally 仍释放锁 (synthesize)")
+    void synthesize_LockReleasedOnBusinessException() throws InterruptedException {
+        when(redissonClient.getLock("synthesize:lock:user:1")).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        when(mockLock.isHeldByCurrentThread()).thenReturn(true);
+
+        // getOne returns null → trigger "合成规则不存在" inside lock
+        doReturn(null).when(synthesizeService).getOne(any());
+
+        assertThrows(RuntimeException.class, () -> synthesizeService.synthesize(1L, "SR", 1));
+        verify(mockLock).unlock();
+    }
+
+    @Test
+    @DisplayName("参数校验失败时 finally 仍释放锁 (synthesizeByIds)")
+    void synthesizeByIds_LockReleasedOnValidationFailure() throws InterruptedException {
+        when(redissonClient.getLock("synthesize:lock:user:1")).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        when(mockLock.isHeldByCurrentThread()).thenReturn(true);
+
+        // 只传9个 → 校验失败在锁内
+        List<Long> assetIds = Collections.nCopies(9, 100L);
+        RuntimeException ex = assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesizeByIds(1L, "SR", assetIds));
+
+        assertTrue(ex.getMessage().contains("请选择10个物品"));
+        verify(mockLock).unlock();
+    }
+
+    // ─── lock key is per-user (not global) ─────────────────────
+
+    @Test
+    @DisplayName("三个方法均使用按用户粒度的锁 key")
+    void lockKey_IsPerUser() throws InterruptedException {
+        when(redissonClient.getLock(anyString())).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        when(mockLock.isHeldByCurrentThread()).thenReturn(true);
+
+        // Make getOne throw after lock is acquired to verify lock key without needing
+        // MyBatis-Plus LambdaUpdateWrapper (which requires TableInfoHelper init)
+        doReturn(null).when(synthesizeService).getOne(any());
+
+        // synthesize
+        assertThrows(RuntimeException.class, () -> synthesizeService.synthesize(1L, "SR", 1));
+        verify(redissonClient).getLock("synthesize:lock:user:1");
+
+        // synthesizeByIds
+        assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesizeByIds(1L, "SR", Collections.nCopies(10, 1L)));
+        verify(redissonClient, atLeast(2)).getLock("synthesize:lock:user:1");
+
+        // synthesizeByItems
+        assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesizeByItems(1L, "SR", Collections.emptyList(), 1));
+        verify(redissonClient, atLeast(3)).getLock("synthesize:lock:user:1");
+
+        // Never a global lock key
+        verify(redissonClient, never()).getLock(eq("synthesize:lock:global"));
+    }
+
+    @Test
+    @DisplayName("不同用户使用不同锁 key")
+    void lockKey_DifferentPerUser() throws InterruptedException {
+        when(redissonClient.getLock(anyString())).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        when(mockLock.isHeldByCurrentThread()).thenReturn(true);
+
+        doReturn(null).when(synthesizeService).getOne(any());
+
+        assertThrows(RuntimeException.class, () -> synthesizeService.synthesize(1L, "SR", 1));
+        verify(redissonClient).getLock("synthesize:lock:user:1");
+
+        assertThrows(RuntimeException.class, () -> synthesizeService.synthesize(2L, "SR", 1));
+        verify(redissonClient).getLock("synthesize:lock:user:2");
+    }
+
+    // ─── lock is single RLock, not MultiLock ────────────────────
+
+    @Test
+    @DisplayName("使用单 RLock getLock() 而非 getMultiLock()")
+    void lock_SingleRLockNotMultiLock() throws InterruptedException {
+        when(redissonClient.getLock(anyString())).thenReturn(mockLock);
+        when(mockLock.tryLock(10, 30, TimeUnit.SECONDS)).thenReturn(true);
+        when(mockLock.isHeldByCurrentThread()).thenReturn(true);
+
+        doReturn(null).when(synthesizeService).getOne(any());
+
+        // All three throw business exceptions (getOne→null→规则不存在 / emptyList→参数校验),
+        // but the lock+unlock pattern is still exercised
+        assertThrows(RuntimeException.class, () -> synthesizeService.synthesize(1L, "SR", 1));
+        assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesizeByIds(1L, "SR", Collections.nCopies(10, 1L)));
+        assertThrows(RuntimeException.class,
+                () -> synthesizeService.synthesizeByItems(1L, "SR", Collections.emptyList(), 1));
+
+        // all three use getLock (single RLock)
+        verify(redissonClient, times(3)).getLock(anyString());
+        // none use MultiLock
+        verify(redissonClient, never()).getMultiLock(any());
     }
 }

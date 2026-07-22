@@ -72,13 +72,13 @@
         <NuxtLink to="/anime" class="text-sm text-indigo-400 hover:underline">进入番剧库</NuxtLink>
       </div>
 
-      <div v-if="!currentSchedule || currentSchedule.length === 0" class="grid grid-cols-2 lg:grid-cols-5 gap-6">
+      <div v-if="!todaySchedule || todaySchedule.length === 0" class="grid grid-cols-2 lg:grid-cols-5 gap-6">
         <div v-for="i in 10" :key="i" class="aspect-[3/4] bg-slate-800 rounded-3xl animate-pulse"></div>
       </div>
 
       <div v-else class="grid grid-cols-2 lg:grid-cols-5 gap-6">
         <NuxtLink
-          v-for="item in currentSchedule"
+          v-for="item in todaySchedule"
           :key="item.id"
           :to="`/anime/bgm-${item.id}`"
           class="group relative aspect-[3/4] rounded-3xl overflow-hidden bg-slate-800 border border-slate-700/50 hover:border-indigo-500 transition-all duration-300"
@@ -255,12 +255,28 @@ const resetAutoplay = () => {
 
 // ====== 时间表逻辑 ======
 const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-const activeDay = ref(0)
-const daysList = ref(dayNames.map(name => ({ name, date: '' })))
 
-const currentSchedule = computed(() => {
+// 在 setup 阶段就计算好今天星期几，确保 SSR 和客户端初始值一致，避免 hydration mismatch
+const now = new Date()
+const todayIndex = now.getDay() === 0 ? 6 : now.getDay() - 1
+const activeDay = ref(todayIndex)
+
+const daysList = ref(dayNames.map((name, index) => {
+  const diff = index - todayIndex
+  const date = new Date(now)
+  date.setDate(now.getDate() + diff)
+  return { name, date: `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
+}))
+
+// 固定今天的番剧列表（不受 activeDay 点击影响）
+const todaySchedule = computed(() => getScheduleForDay(todayIndex))
+
+// 随用户点击星期标签变化的番剧列表
+const currentSchedule = computed(() => getScheduleForDay(activeDay.value))
+
+function getScheduleForDay(dayIndex: number) {
   if (!bangumiCalendar.value) return []
-  const targetId = activeDay.value + 1
+  const targetId = dayIndex + 1
   const dayData = bangumiCalendar.value.find((d: any) => d.weekday.id === targetId)
   if (!dayData || !dayData.items) return []
   return dayData.items.map((item: any) => ({
@@ -269,19 +285,10 @@ const currentSchedule = computed(() => {
     coverUrl: item.images?.large || item.images?.common || '',
     publishYear: item.air_date ? item.air_date.substring(0, 4) : '?',
   }))
-})
+}
 
 onMounted(() => {
   resetAutoplay()
-  const todayIndex = new Date().getDay() === 0 ? 6 : new Date().getDay() - 1
-  activeDay.value = todayIndex
-  const today = new Date()
-  daysList.value = dayNames.map((name, index) => {
-    const diff = index - todayIndex
-    const date = new Date(today)
-    date.setDate(today.getDate() + diff)
-    return { name, date: `${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}` }
-  })
 })
 
 onUnmounted(() => {

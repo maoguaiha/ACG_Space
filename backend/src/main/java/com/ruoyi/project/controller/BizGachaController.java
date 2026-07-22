@@ -7,6 +7,8 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.project.common.annotation.Idempotent;
 import com.ruoyi.project.common.annotation.RateLimiterAndCircuitBreaker;
 import com.ruoyi.project.common.api.Result;
+import com.ruoyi.project.common.exception.BizErrorCode;
+import com.ruoyi.project.common.exception.BizException;
 import com.ruoyi.project.common.utils.LuaScriptExecutor;
 import com.ruoyi.project.common.utils.SecurityUtils;
 import com.ruoyi.project.domain.dto.GachaPrizeDTO;
@@ -21,6 +23,9 @@ import com.ruoyi.project.service.IBizGachaRecordService;
 import com.ruoyi.project.service.IBizItemService;
 import com.ruoyi.project.service.IBizUserAssetService;
 import com.ruoyi.project.service.IBizUserFragmentService;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -33,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ThreadLocalRandom;
 
+@Tag(name = "抽赏系统", description = "奖池管理、抽赏(Lua原子扣减+保底机制)、奖品管理")
 @Slf4j
 @RestController
 @RequestMapping("/api/gacha")
@@ -210,6 +216,7 @@ public class BizGachaController {
         return Result.success(page);
     }
 
+    @Operation(summary = "执行抽赏", description = "支持单抽(1)和十连(10)。使用Lua脚本原子化扣减库存和积分，含保底机制(70抽保底SSR，十连保底SR)")
     @PostMapping("/draw")
     @Idempotent(prefix = "gacha_draw", expireTime = 10, message = "抽赏操作过于频繁，请稍后再试")
     @RateLimiterAndCircuitBreaker(rateLimiterName = "gachaDraw", circuitBreakerName = "gachaService")
@@ -219,16 +226,16 @@ public class BizGachaController {
         int count = request.getCount();
 
         if (poolId == null || (count != 1 && count != 10)) {
-            return Result.error("参数错误");
+            return Result.error(BizErrorCode.BAD_REQUEST, "抽赏次数为1或10");
         }
 
         BizGachaPool pool = gachaPoolService.getById(poolId);
         if (pool == null || pool.getDelFlag() != 0) {
-            return Result.error("奖池不存在");
+            return Result.error(BizErrorCode.GACHA_POOL_NOT_FOUND);
         }
 
         if (!gachaPoolService.isPoolAvailable(poolId)) {
-            return Result.error("奖池不可用或已结束");
+            return Result.error(BizErrorCode.GACHA_POOL_UNAVAILABLE);
         }
 
         int cost = count == 10 ? pool.getTenCost() : pool.getSingleCost();
@@ -242,12 +249,12 @@ public class BizGachaController {
             int userPoints = luaScriptExecutor.getUserPoints(userId);
             
             if (currentStock < count) {
-                return Result.error("库存不足，剩余库存: " + currentStock + "，需要: " + count);
+                return Result.error(BizErrorCode.GACHA_STOCK_INSUFFICIENT, "剩余库存: " + currentStock + "，需要: " + count);
             }
             if (userPoints < cost) {
-                return Result.error("积分不足");
+                return Result.error(BizErrorCode.INSUFFICIENT_POINTS, "需要" + cost + "积分，当前" + userPoints + "积分");
             }
-            return Result.error("扣减失败");
+            return Result.error(BizErrorCode.GACHA_DRAW_FAILED);
         }
 
         Long userDrawCount = getUserDrawCount(userId, poolId);

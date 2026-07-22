@@ -1,6 +1,7 @@
 package com.ruoyi.project.controller;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.ruoyi.project.common.api.Result;
 import com.ruoyi.project.domain.entity.BizAnime;
 import com.ruoyi.project.service.IBizAnimeService;
@@ -17,14 +18,13 @@ public class BizAnimeController {
     private final IBizAnimeService animeService;
 
     /**
-     * 获取社区番剧库列表
+     * 获取社区番剧库列表（分页，Redis缓存）
      */
     @GetMapping("/list")
-    public Result<List<BizAnime>> list() {
-        List<BizAnime> list = animeService.list(new LambdaQueryWrapper<BizAnime>()
-                .orderByDesc(BizAnime::getFeatured)
-                .orderByDesc(BizAnime::getCreateTime));
-        return Result.success(list);
+    public Result<Page<BizAnime>> list(
+            @RequestParam(defaultValue = "1") int page,
+            @RequestParam(defaultValue = "10") int size) {
+        return Result.success(animeService.getAnimePage(page, size));
     }
 
     /**
@@ -173,10 +173,7 @@ public class BizAnimeController {
      */
     @GetMapping("/featured")
     public Result<List<BizAnime>> featuredList() {
-        List<BizAnime> list = animeService.list(new LambdaQueryWrapper<BizAnime>()
-                .eq(BizAnime::getFeatured, 1)
-                .orderByDesc(BizAnime::getCreateTime));
-        return Result.success(list);
+        return Result.success(animeService.getFeaturedAnime());
     }
 
     /**
@@ -191,7 +188,11 @@ public class BizAnimeController {
      */
     @GetMapping("/bangumi/search")
     public Result<com.alibaba.fastjson2.JSONObject> searchBangumi(@RequestParam String keywords) {
-        return Result.success(animeService.searchBangumi(keywords));
+        com.alibaba.fastjson2.JSONObject result = animeService.searchBangumi(keywords);
+        if (result == null) {
+            return Result.error("Bangumi 搜索服务暂时不可用，请稍后重试");
+        }
+        return Result.success(result);
     }
 
     /**

@@ -16,12 +16,16 @@ import java.util.List;
 /**
  * Fastjson2 全局配置
  * 遵循用户准则：JSON 必须使用 Fastjson2
+ * <p>
+ * 使用 extendMessageConverters（而非 configureMessageConverters）以保留
+ * Spring 默认的 StringHttpMessageConverter 等转换器，确保中文 UTF-8 编码链路不中断。
+ * </p>
  */
 @Configuration
 public class FastjsonConfig implements WebMvcConfigurer {
 
     @Override
-    public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
+    public void extendMessageConverters(List<HttpMessageConverter<?>> converters) {
         FastJsonHttpMessageConverter converter = new FastJsonHttpMessageConverter();
         
         FastJsonConfig config = new FastJsonConfig();
@@ -45,7 +49,7 @@ public class FastjsonConfig implements WebMvcConfigurer {
         converter.setDefaultCharset(StandardCharsets.UTF_8);
         converter.setSupportedMediaTypes(Collections.singletonList(MediaType.APPLICATION_JSON));
         
-        // 将 Fastjson2 转换器添加到最前面，使其优先级高于 Jackson
+        // 将 Fastjson2 放在 Jackson 之前，保持 JSON 解析优先使用 Fastjson2
         converters.add(0, converter);
     }
 }

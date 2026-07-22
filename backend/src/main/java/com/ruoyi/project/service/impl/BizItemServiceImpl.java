@@ -26,7 +26,7 @@ public class BizItemServiceImpl extends ServiceImpl<BizItemMapper, BizItem> impl
     private static final String STOCK_LOCK_PREFIX = "item:stock:lock:";
 
     @Override
-    public Page<BizItem> pageItems(long pageNum, long pageSize, String name, String rarity, String type) {
+    public Page<BizItem> pageItems(long pageNum, long pageSize, String name, String rarity, String type, String itemKey) {
         Page<BizItem> page = new Page<>(pageNum, pageSize);
         LambdaQueryWrapper<BizItem> wrapper = new LambdaQueryWrapper<>();
         wrapper.eq(BizItem::getDelFlag, 0);
@@ -39,6 +39,9 @@ public class BizItemServiceImpl extends ServiceImpl<BizItemMapper, BizItem> impl
         }
         if (type != null && !type.isBlank()) {
             wrapper.eq(BizItem::getType, type);
+        }
+        if (itemKey != null && !itemKey.isBlank()) {
+            wrapper.like(BizItem::getItemKey, itemKey);
         }
 
         wrapper.orderByDesc(BizItem::getCreateTime);

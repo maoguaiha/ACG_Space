@@ -1,11 +1,20 @@
 server:
-  port: 8080
+  port: 18083
+  compression:
+    enabled: true
+    mime-types: application/json,application/xml,text/html,text/plain
+    min-response-size: 1024
 
 spring:
   profiles:
     active: dev
   application:
     name: acg-space-backend
+
+# JWT 配置（生产环境请通过环境变量 TOKEN_SECRET 覆盖）
+token:
+  secret: ${TOKEN_SECRET:acgspace_jwt_secret_prod_change_me}
+  expireTime: ${TOKEN_EXPIRE:1440}
 
 mybatis-plus:
   mapper-locations: classpath*:/mapper/**/*.xml
@@ -28,7 +37,7 @@ logging:
 # 自定义 Bangumi API 配置
 bangumi:
   api:
-    base-url: https://api.bgm.tv
+    base-url: https://bgmapi.anibt.net
     user-agent: "AcgSpace/1.0 (https://github.com/your-repo)" # 根据 bgm.tv 要求必须包含 User-Agent
 
 # Resilience4j 熔断、限流配置

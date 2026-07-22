@@ -1,0 +1,21 @@
+# Maven
+target/
+*.log
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# Git
+.git/
+.gitignore
+
+# Node (front-ends)
+front-ui/
+admin-ui/
+node_modules/
+
+# Docker
+Dockerfile
+.dockerignore

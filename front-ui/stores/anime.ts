@@ -101,7 +101,7 @@ export const useAnimeStore = defineStore('anime', () => {
    * 优先从缓存 Map 中读取，减少不必要的网络请求
    * 支持本地 ID 或 bgm- 前缀的 Bangumi ID
    */
-  async function loadAnimeDetail(id: string): Promise<BizAnime | null> {
+  async function loadAnimeDetail(id: string): Promise<BizAnime> {
     // 命中缓存直接返回
     if (animeDetailCache.value.has(id)) {
       return animeDetailCache.value.get(id)!
@@ -121,9 +121,12 @@ export const useAnimeStore = defineStore('anime', () => {
       animeDetailCache.value.set(id, detail)
       return detail
     } catch (e: unknown) {
-      error.value = e instanceof Error ? e.message : '加载番剧详情失败'
+      const msg = e instanceof Error ? e.message : '加载番剧详情失败'
+      error.value = msg
       console.error(`[AnimeStore] loadAnimeDetail(${id}) error:`, e)
-      return null
+      // 必须 throw，不能 return null。
+      // useAsyncData 收到 null 会触发 "must return a value" 警告并重试，造成无限错误循环。
+      throw new Error(msg)
     } finally {
       detailLoading.value = false
     }

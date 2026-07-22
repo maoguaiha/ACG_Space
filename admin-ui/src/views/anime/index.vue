@@ -99,8 +99,6 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          @size-change="getList"
-          @current-change="getList"
         />
       </div>
     </el-card>
@@ -185,7 +183,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import axios from 'axios'
 
@@ -219,7 +217,7 @@ const getList = async () => {
     if (queryParams.title && queryParams.title.trim().length > 0) params.title = queryParams.title.trim()
     if (queryParams.year) params.year = queryParams.year
 
-    const res = await axios.get('http://localhost:8080/api/anime/page', { params })
+    const res = await axios.get('/api/anime/page', { params })
     if (res.data && res.data.code === 200) {
       // 支持后端 MyBatis-Plus Page 结构：{ records, total, current, size }
       const pageData = res.data.data || {}
@@ -244,9 +242,21 @@ const getList = async () => {
 }
 
 const handleQuery = () => {
-  queryParams.pageNum = 1
-  getList()
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
 }
+
+watch(() => queryParams.pageNum, () => getList())
+watch(() => queryParams.pageSize, () => {
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
+})
 
 const resetQuery = () => {
   queryParams.title = ''
@@ -272,7 +282,7 @@ const submitSync = async () => {
   
   syncing.value = true
   try {
-    const res = await axios.post(`http://localhost:8080/api/anime/sync/${syncBgmId.value}`)
+    const res = await axios.post(`/api/anime/sync/${syncBgmId.value}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success('同步成功！')
       syncDialogVisible.value = false
@@ -326,7 +336,7 @@ const submitEdit = async () => {
   }
   editing.value = true
   try {
-    const res = await axios.put('http://localhost:8080/api/anime', editForm)
+    const res = await axios.put('/api/anime', editForm)
     if (res.data && res.data.code === 200) {
       ElMessage.success('修改成功！')
       editDialogVisible.value = false
@@ -344,7 +354,7 @@ const submitEdit = async () => {
 // ====== 删除番剧 ======
 const handleDelete = async (id: number) => {
   try {
-    const res = await axios.delete(`http://localhost:8080/api/anime/${id}`)
+    const res = await axios.delete(`/api/anime/${id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success('删除成功！')
       getList()
@@ -359,7 +369,7 @@ const handleDelete = async (id: number) => {
 // ====== 切换首页轮播推荐 ======
 const handleToggleFeatured = async (row: any) => {
   try {
-    const res = await axios.put(`http://localhost:8080/api/anime/featured/${row.id}`)
+    const res = await axios.put(`/api/anime/featured/${row.id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success(row.featured === 1 ? '已取消推荐' : '已设为首页推荐')
       getList()

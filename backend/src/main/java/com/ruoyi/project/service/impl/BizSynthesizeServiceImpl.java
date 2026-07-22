@@ -1,6 +1,7 @@
 package com.ruoyi.project.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.project.domain.entity.BizItem;
 import com.ruoyi.project.domain.entity.BizSynthesizeRule;
@@ -11,11 +12,14 @@ import com.ruoyi.project.service.IBizItemService;
 import com.ruoyi.project.service.IBizSynthesizeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 @Slf4j
 @Service
@@ -24,6 +28,8 @@ public class BizSynthesizeServiceImpl extends ServiceImpl<BizSynthesizeRuleMappe
 
     private final BizUserAssetMapper userAssetMapper;
     private final IBizItemService itemService;
+    private final RedissonClient redissonClient;
+    private static final String SYNTHESIZE_LOCK_PREFIX = "synthesize:lock:user:";
 
     @Override
     public List<BizSynthesizeRule> getActiveRules() {
@@ -49,201 +55,281 @@ public class BizSynthesizeServiceImpl extends ServiceImpl<BizSynthesizeRuleMappe
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean synthesize(Long userId, String sourceRarity, int times) {
-        BizSynthesizeRule rule = getOne(new LambdaQueryWrapper<BizSynthesizeRule>()
-                .eq(BizSynthesizeRule::getSourceRarity, sourceRarity)
-                .eq(BizSynthesizeRule::getStatus, 1)
-                .eq(BizSynthesizeRule::getDelFlag, 0));
-
-        if (rule == null) {
-            throw new RuntimeException("合成规则不存在");
-        }
-
-        int requiredCount = rule.getSourceCount() * times;
-        int userCount = getUserAssetCountByRarity(userId, sourceRarity);
-
-        if (userCount < requiredCount) {
-            throw new RuntimeException("材料不足，需要 " + requiredCount + " 个 " + sourceRarity + " 品质物品");
-        }
-
-        List<BizUserAsset> assets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
-                .eq(BizUserAsset::getUserId, userId)
-                .eq(BizUserAsset::getItemRarity, sourceRarity)
-                .eq(BizUserAsset::getStatus, 1)
-                .eq(BizUserAsset::getDelFlag, 0)
-                .orderByAsc(BizUserAsset::getCreateTime));
-
-        int remaining = requiredCount;
-        for (BizUserAsset asset : assets) {
-            if (remaining <= 0) {
-                break;
+        RLock lock = redissonClient.getLock(SYNTHESIZE_LOCK_PREFIX + userId);
+        boolean locked = false;
+        try {
+            locked = lock.tryLock(10, 30, TimeUnit.SECONDS);
+            if (!locked) {
+                throw new RuntimeException("操作过于频繁，请稍后重试");
             }
-            int qty = asset.getQuantity() != null ? asset.getQuantity() : 1;
-            if (qty <= remaining) {
-                asset.setStatus(4);
-                asset.setUpdateTime(LocalDateTime.now());
-                userAssetMapper.updateById(asset);
-                remaining -= qty;
-            } else {
-                asset.setQuantity(qty - remaining);
-                asset.setUpdateTime(LocalDateTime.now());
-                userAssetMapper.updateById(asset);
-                remaining = 0;
+
+            BizSynthesizeRule rule = getOne(new LambdaQueryWrapper<BizSynthesizeRule>()
+                    .eq(BizSynthesizeRule::getSourceRarity, sourceRarity)
+                    .eq(BizSynthesizeRule::getStatus, 1)
+                    .eq(BizSynthesizeRule::getDelFlag, 0));
+
+            if (rule == null) {
+                throw new RuntimeException("合成规则不存在");
+            }
+
+            int requiredCount = rule.getSourceCount() * times;
+            int userCount = getUserAssetCountByRarity(userId, sourceRarity);
+
+            if (userCount < requiredCount) {
+                throw new RuntimeException("材料不足，需要 " + requiredCount + " 个 " + sourceRarity + " 品质物品");
+            }
+
+            List<BizUserAsset> assets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
+                    .eq(BizUserAsset::getUserId, userId)
+                    .eq(BizUserAsset::getItemRarity, sourceRarity)
+                    .eq(BizUserAsset::getStatus, 1)
+                    .eq(BizUserAsset::getDelFlag, 0)
+                    .orderByAsc(BizUserAsset::getCreateTime));
+
+            int remaining = requiredCount;
+            for (BizUserAsset asset : assets) {
+                if (remaining <= 0) {
+                    break;
+                }
+                int qty = asset.getQuantity() != null ? asset.getQuantity() : 1;
+                if (qty <= remaining) {
+                    LambdaUpdateWrapper<BizUserAsset> uw = new LambdaUpdateWrapper<>();
+                    uw.eq(BizUserAsset::getId, asset.getId())
+                      .eq(BizUserAsset::getStatus, 1)
+                      .eq(BizUserAsset::getDelFlag, 0)
+                      .set(BizUserAsset::getStatus, 4)
+                      .set(BizUserAsset::getUpdateTime, LocalDateTime.now());
+                    if (userAssetMapper.update(null, uw) == 0) {
+                        throw new RuntimeException("材料已被消耗，请刷新页面后重试");
+                    }
+                    remaining -= qty;
+                } else {
+                    LambdaUpdateWrapper<BizUserAsset> uw = new LambdaUpdateWrapper<>();
+                    uw.eq(BizUserAsset::getId, asset.getId())
+                      .eq(BizUserAsset::getStatus, 1)
+                      .eq(BizUserAsset::getDelFlag, 0)
+                      .ge(BizUserAsset::getQuantity, remaining)
+                      .setSql("quantity = quantity - " + remaining)
+                      .set(BizUserAsset::getUpdateTime, LocalDateTime.now());
+                    if (userAssetMapper.update(null, uw) == 0) {
+                        throw new RuntimeException("材料数量已变化，请刷新页面后重试");
+                    }
+                    remaining = 0;
+                }
+            }
+
+            boolean isPhysical = rule.getIsPhysical() != null && rule.getIsPhysical() == 1;
+            String targetRarity = rule.getTargetRarity();
+            createFragmentAsset(userId, targetRarity, times, isPhysical);
+
+            log.info("用户 {} 合成成功: {} 个 {} -> {} 个 {}碎片", userId, requiredCount, sourceRarity, times, targetRarity);
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("合成被中断，请重试");
+        } finally {
+            if (locked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
             }
         }
-
-        boolean isPhysical = rule.getIsPhysical() != null && rule.getIsPhysical() == 1;
-        String targetRarity = rule.getTargetRarity();
-        createFragmentAsset(userId, targetRarity, times, isPhysical);
-
-        log.info("用户 {} 合成成功: {} 个 {} -> {} 个 {}碎片", userId, requiredCount, sourceRarity, times, targetRarity);
-        return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean synthesizeByIds(Long userId, String sourceRarity, List<Long> assetIds) {
-        if (assetIds == null || assetIds.size() != 10) {
-            throw new RuntimeException("请选择10个物品进行合成");
-        }
+        RLock lock = redissonClient.getLock(SYNTHESIZE_LOCK_PREFIX + userId);
+        boolean locked = false;
+        try {
+            locked = lock.tryLock(10, 30, TimeUnit.SECONDS);
+            if (!locked) {
+                throw new RuntimeException("操作过于频繁，请稍后重试");
+            }
 
-        BizSynthesizeRule rule = getOne(new LambdaQueryWrapper<BizSynthesizeRule>()
-                .eq(BizSynthesizeRule::getSourceRarity, sourceRarity)
-                .eq(BizSynthesizeRule::getStatus, 1)
-                .eq(BizSynthesizeRule::getDelFlag, 0));
+            if (assetIds == null || assetIds.size() != 10) {
+                throw new RuntimeException("请选择10个物品进行合成");
+            }
 
-        if (rule == null) {
-            throw new RuntimeException("合成规则不存在");
-        }
+            BizSynthesizeRule rule = getOne(new LambdaQueryWrapper<BizSynthesizeRule>()
+                    .eq(BizSynthesizeRule::getSourceRarity, sourceRarity)
+                    .eq(BizSynthesizeRule::getStatus, 1)
+                    .eq(BizSynthesizeRule::getDelFlag, 0));
 
-        List<BizUserAsset> assets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
-                .eq(BizUserAsset::getUserId, userId)
-                .in(BizUserAsset::getId, assetIds)
-                .eq(BizUserAsset::getItemRarity, sourceRarity)
-                .eq(BizUserAsset::getStatus, 1)
-                .eq(BizUserAsset::getDelFlag, 0));
+            if (rule == null) {
+                throw new RuntimeException("合成规则不存在");
+            }
 
-        log.info("合成校验: userId={}, sourceRarity={}, assetIds={}, 查询到资产数={}", userId, sourceRarity, assetIds, assets.size());
-        if (assets.size() < 10) {
-            List<BizUserAsset> allAssets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
+            List<BizUserAsset> assets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
                     .eq(BizUserAsset::getUserId, userId)
-                    .in(BizUserAsset::getId, assetIds));
-            log.info("全部资产(不限状态): {}", allAssets.stream().map(a -> a.getId() + "(rarity=" + a.getItemRarity() + ",status=" + a.getStatus() + ")").collect(java.util.stream.Collectors.joining(", ")));
+                    .in(BizUserAsset::getId, assetIds)
+                    .eq(BizUserAsset::getItemRarity, sourceRarity)
+                    .eq(BizUserAsset::getStatus, 1)
+                    .eq(BizUserAsset::getDelFlag, 0));
+
+            log.info("合成校验: userId={}, sourceRarity={}, assetIds={}, 查询到资产数={}", userId, sourceRarity, assetIds, assets.size());
+            if (assets.size() < 10) {
+                List<BizUserAsset> allAssets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
+                        .eq(BizUserAsset::getUserId, userId)
+                        .in(BizUserAsset::getId, assetIds));
+                log.info("全部资产(不限状态): {}", allAssets.stream().map(a -> a.getId() + "(rarity=" + a.getItemRarity() + ",status=" + a.getStatus() + ")").collect(java.util.stream.Collectors.joining(", ")));
+            }
+
+            if (assets.size() != 10) {
+                throw new RuntimeException("所选物品不合法，请重新选择");
+            }
+
+            for (BizUserAsset asset : assets) {
+                LambdaUpdateWrapper<BizUserAsset> uw = new LambdaUpdateWrapper<>();
+                uw.eq(BizUserAsset::getId, asset.getId())
+                  .eq(BizUserAsset::getStatus, 1)
+                  .eq(BizUserAsset::getDelFlag, 0)
+                  .set(BizUserAsset::getStatus, 4)
+                  .set(BizUserAsset::getUpdateTime, LocalDateTime.now());
+                if (userAssetMapper.update(null, uw) == 0) {
+                    throw new RuntimeException("材料已被消耗，请刷新页面后重试");
+                }
+            }
+
+            boolean isPhysical = rule.getIsPhysical() != null && rule.getIsPhysical() == 1;
+            String targetRarity = rule.getTargetRarity();
+            createFragmentAsset(userId, targetRarity, 1, isPhysical);
+
+            log.info("用户 {} 合成成功: 10个 {} -> 1个 {}碎片", userId, sourceRarity, targetRarity);
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("合成被中断，请重试");
+        } finally {
+            if (locked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
-
-        if (assets.size() != 10) {
-            throw new RuntimeException("所选物品不合法，请重新选择");
-        }
-
-        for (BizUserAsset asset : assets) {
-            asset.setStatus(4);
-            asset.setUpdateTime(LocalDateTime.now());
-            userAssetMapper.updateById(asset);
-        }
-
-        boolean isPhysical = rule.getIsPhysical() != null && rule.getIsPhysical() == 1;
-        String targetRarity = rule.getTargetRarity();
-        createFragmentAsset(userId, targetRarity, 1, isPhysical);
-
-        log.info("用户 {} 合成成功: 10个 {} -> 1个 {}碎片", userId, sourceRarity, targetRarity);
-        return true;
     }
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public boolean synthesizeByItems(Long userId, String sourceRarity, List<?> selectedItems, int times) {
-        if (selectedItems == null || selectedItems.isEmpty()) {
-            throw new RuntimeException("请选择合成材料");
-        }
-
-        int totalCount = 0;
-        for (Object item : selectedItems) {
-            try {
-                java.lang.reflect.Method getCountMethod = item.getClass().getMethod("getCount");
-                Integer count = (Integer) getCountMethod.invoke(item);
-                totalCount += count;
-            } catch (Exception e) {
-                throw new RuntimeException("合成数据格式错误");
-            }
-        }
-
-        int requiredCount = 10 * times;
-        if (totalCount != requiredCount) {
-            throw new RuntimeException("请选择" + requiredCount + "个物品进行合成，当前已选 " + totalCount + " 个");
-        }
-
-        BizSynthesizeRule rule = getOne(new LambdaQueryWrapper<BizSynthesizeRule>()
-                .eq(BizSynthesizeRule::getSourceRarity, sourceRarity)
-                .eq(BizSynthesizeRule::getStatus, 1)
-                .eq(BizSynthesizeRule::getDelFlag, 0));
-
-        if (rule == null) {
-            throw new RuntimeException("合成规则不存在");
-        }
-
-        List<Long> assetIds = new java.util.ArrayList<>();
-        for (Object item : selectedItems) {
-            try {
-                java.lang.reflect.Method getAssetIdMethod = item.getClass().getMethod("getAssetId");
-                Long assetId = (Long) getAssetIdMethod.invoke(item);
-                assetIds.add(assetId);
-            } catch (Exception e) {
-                throw new RuntimeException("合成数据格式错误");
-            }
-        }
-
-        List<BizUserAsset> assets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
-                .eq(BizUserAsset::getUserId, userId)
-                .in(BizUserAsset::getId, assetIds)
-                .eq(BizUserAsset::getItemRarity, sourceRarity)
-                .eq(BizUserAsset::getStatus, 1)
-                .eq(BizUserAsset::getDelFlag, 0));
-
-        log.info("合成校验(按数量): userId={}, sourceRarity={}, times={}, 查询到资产数={}", userId, sourceRarity, times, assets.size());
-
-        if (assets.size() != selectedItems.size()) {
-            throw new RuntimeException("所选物品不合法，请重新选择");
-        }
-
-        for (Object item : selectedItems) {
-            Long assetId;
-            int useCount;
-            try {
-                java.lang.reflect.Method getAssetIdMethod = item.getClass().getMethod("getAssetId");
-                java.lang.reflect.Method getCountMethod = item.getClass().getMethod("getCount");
-                assetId = (Long) getAssetIdMethod.invoke(item);
-                useCount = (Integer) getCountMethod.invoke(item);
-            } catch (Exception e) {
-                throw new RuntimeException("合成数据格式错误");
+        RLock lock = redissonClient.getLock(SYNTHESIZE_LOCK_PREFIX + userId);
+        boolean locked = false;
+        try {
+            locked = lock.tryLock(10, 30, TimeUnit.SECONDS);
+            if (!locked) {
+                throw new RuntimeException("操作过于频繁，请稍后重试");
             }
 
-            BizUserAsset asset = assets.stream()
-                    .filter(a -> a.getId().equals(assetId))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("物品不存在"));
-
-            int qty = asset.getQuantity() != null ? asset.getQuantity() : 1;
-
-            if (useCount > qty) {
-                throw new RuntimeException("物品 " + asset.getItemName() + " 数量不足，需要 " + useCount + " 个，仅有 " + qty + " 个");
+            if (selectedItems == null || selectedItems.isEmpty()) {
+                throw new RuntimeException("请选择合成材料");
             }
 
-            if (useCount >= qty) {
-                asset.setStatus(4);
-                asset.setUpdateTime(LocalDateTime.now());
-                userAssetMapper.updateById(asset);
-            } else {
-                asset.setQuantity(qty - useCount);
-                asset.setUpdateTime(LocalDateTime.now());
-                userAssetMapper.updateById(asset);
+            int totalCount = 0;
+            for (Object item : selectedItems) {
+                try {
+                    java.lang.reflect.Method getCountMethod = item.getClass().getMethod("getCount");
+                    Integer count = (Integer) getCountMethod.invoke(item);
+                    totalCount += count;
+                } catch (Exception e) {
+                    throw new RuntimeException("合成数据格式错误");
+                }
+            }
+
+            int requiredCount = 10 * times;
+            if (totalCount != requiredCount) {
+                throw new RuntimeException("请选择" + requiredCount + "个物品进行合成，当前已选 " + totalCount + " 个");
+            }
+
+            BizSynthesizeRule rule = getOne(new LambdaQueryWrapper<BizSynthesizeRule>()
+                    .eq(BizSynthesizeRule::getSourceRarity, sourceRarity)
+                    .eq(BizSynthesizeRule::getStatus, 1)
+                    .eq(BizSynthesizeRule::getDelFlag, 0));
+
+            if (rule == null) {
+                throw new RuntimeException("合成规则不存在");
+            }
+
+            List<Long> assetIds = new java.util.ArrayList<>();
+            for (Object item : selectedItems) {
+                try {
+                    java.lang.reflect.Method getAssetIdMethod = item.getClass().getMethod("getAssetId");
+                    Long assetId = (Long) getAssetIdMethod.invoke(item);
+                    assetIds.add(assetId);
+                } catch (Exception e) {
+                    throw new RuntimeException("合成数据格式错误");
+                }
+            }
+
+            List<BizUserAsset> assets = userAssetMapper.selectList(new LambdaQueryWrapper<BizUserAsset>()
+                    .eq(BizUserAsset::getUserId, userId)
+                    .in(BizUserAsset::getId, assetIds)
+                    .eq(BizUserAsset::getItemRarity, sourceRarity)
+                    .eq(BizUserAsset::getStatus, 1)
+                    .eq(BizUserAsset::getDelFlag, 0));
+
+            log.info("合成校验(按数量): userId={}, sourceRarity={}, times={}, 查询到资产数={}", userId, sourceRarity, times, assets.size());
+
+            if (assets.size() != selectedItems.size()) {
+                throw new RuntimeException("所选物品不合法，请重新选择");
+            }
+
+            for (Object item : selectedItems) {
+                Long assetId;
+                int useCount;
+                try {
+                    java.lang.reflect.Method getAssetIdMethod = item.getClass().getMethod("getAssetId");
+                    java.lang.reflect.Method getCountMethod = item.getClass().getMethod("getCount");
+                    assetId = (Long) getAssetIdMethod.invoke(item);
+                    useCount = (Integer) getCountMethod.invoke(item);
+                } catch (Exception e) {
+                    throw new RuntimeException("合成数据格式错误");
+                }
+
+                BizUserAsset asset = assets.stream()
+                        .filter(a -> a.getId().equals(assetId))
+                        .findFirst()
+                        .orElseThrow(() -> new RuntimeException("物品不存在"));
+
+                int qty = asset.getQuantity() != null ? asset.getQuantity() : 1;
+
+                if (useCount > qty) {
+                    throw new RuntimeException("物品 " + asset.getItemName() + " 数量不足，需要 " + useCount + " 个，仅有 " + qty + " 个");
+                }
+
+                if (useCount >= qty) {
+                    LambdaUpdateWrapper<BizUserAsset> uw = new LambdaUpdateWrapper<>();
+                    uw.eq(BizUserAsset::getId, asset.getId())
+                      .eq(BizUserAsset::getStatus, 1)
+                      .eq(BizUserAsset::getDelFlag, 0)
+                      .set(BizUserAsset::getStatus, 4)
+                      .set(BizUserAsset::getUpdateTime, LocalDateTime.now());
+                    if (userAssetMapper.update(null, uw) == 0) {
+                        throw new RuntimeException("材料已被消耗，请刷新页面后重试");
+                    }
+                } else {
+                    LambdaUpdateWrapper<BizUserAsset> uw = new LambdaUpdateWrapper<>();
+                    uw.eq(BizUserAsset::getId, asset.getId())
+                      .eq(BizUserAsset::getStatus, 1)
+                      .eq(BizUserAsset::getDelFlag, 0)
+                      .ge(BizUserAsset::getQuantity, useCount)
+                      .setSql("quantity = quantity - " + useCount)
+                      .set(BizUserAsset::getUpdateTime, LocalDateTime.now());
+                    if (userAssetMapper.update(null, uw) == 0) {
+                        throw new RuntimeException("材料数量已变化，请刷新页面后重试");
+                    }
+                }
+            }
+
+            boolean isPhysical = rule.getIsPhysical() != null && rule.getIsPhysical() == 1;
+            String targetRarity = rule.getTargetRarity();
+            createFragmentAsset(userId, targetRarity, times, isPhysical);
+
+            log.info("用户 {} 合成成功(按数量): {} 个 {} -> {}个 {}碎片", userId, totalCount, sourceRarity, times, targetRarity);
+            return true;
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new RuntimeException("合成被中断，请重试");
+        } finally {
+            if (locked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
             }
         }
-
-        boolean isPhysical = rule.getIsPhysical() != null && rule.getIsPhysical() == 1;
-        String targetRarity = rule.getTargetRarity();
-        createFragmentAsset(userId, targetRarity, times, isPhysical);
-
-        log.info("用户 {} 合成成功(按数量): {} 个 {} -> {}个 {}碎片", userId, totalCount, sourceRarity, times, targetRarity);
-        return true;
     }
 
     @Override

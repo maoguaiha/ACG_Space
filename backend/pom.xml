@@ -118,6 +118,21 @@
             <scope>test</scope>
         </dependency>
 
+        <!-- H2 内存数据库（测试用，无需安装 MySQL） -->
+        <dependency>
+            <groupId>com.h2database</groupId>
+            <artifactId>h2</artifactId>
+            <scope>test</scope>
+        </dependency>
+
+        <!-- MyBatis-Plus 测试工具 -->
+        <dependency>
+            <groupId>com.baomidou</groupId>
+            <artifactId>mybatis-plus-boot-starter-test</artifactId>
+            <version>3.5.6</version>
+            <scope>test</scope>
+        </dependency>
+
         <!-- Resilience4j 熔断、限流 -->
         <dependency>
             <groupId>io.github.resilience4j</groupId>
@@ -141,6 +156,13 @@
             <artifactId>checkstyle</artifactId>
             <version>${checkstyle.version}</version>
             <scope>provided</scope>
+        </dependency>
+
+        <!-- SpringDoc OpenAPI (Swagger 3) — API 文档自动生成 -->
+        <dependency>
+            <groupId>org.springdoc</groupId>
+            <artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
+            <version>2.6.0</version>
         </dependency>
     </dependencies>
 

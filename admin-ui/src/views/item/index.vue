@@ -14,6 +14,9 @@
           <el-form-item label="物品名称">
             <el-input v-model="queryParams.name" placeholder="请输入名称" clearable />
           </el-form-item>
+          <el-form-item label="物品标识">
+            <el-input v-model="queryParams.itemKey" placeholder="请输入唯一标识" clearable />
+          </el-form-item>
           <el-form-item label="稀有度">
             <el-select v-model="queryParams.rarity" placeholder="请选择" clearable>
               <el-option label="SSR" value="SSR" />
@@ -54,6 +57,11 @@
           <template #default="scope">
             <div class="font-bold">{{ scope.row.name }}</div>
             <div class="text-gray-400 text-xs">{{ scope.row.itemKey }}</div>
+          </template>
+        </el-table-column>
+        <el-table-column prop="itemKey" label="物品标识" width="100" align="center">
+          <template #default="scope">
+            <el-tag :type="getTypeTagType(scope.row.itemKey)">{{ getTypeLabel(scope.row.itemKey) }}</el-tag>
           </template>
         </el-table-column>
         <el-table-column prop="type" label="类型" width="100" align="center">
@@ -103,8 +111,6 @@
           :page-sizes="[10, 20, 50, 100]"
           layout="total, sizes, prev, pager, next, jumper"
           :total="total"
-          @size-change="getList"
-          @current-change="getList"
         />
       </div>
     </el-card>
@@ -140,7 +146,7 @@
           </el-select>
         </el-form-item>
         <el-form-item label="物品图片" prop="image">
-          <ImagePickerDialog v-model="form.image" aspect-ratio="1" />
+          <ImagePickerDialog v-model="form.image" :aspect-ratio="1" />
         </el-form-item>
         <el-form-item label="总库存" prop="totalStock">
           <el-input-number v-model="form.totalStock" :min="0" />
@@ -161,7 +167,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive } from 'vue'
+import { ref, reactive, watch } from 'vue'
 import { ElMessage } from 'element-plus'
 import { Plus, Search, Refresh, Edit, Delete } from '@element-plus/icons-vue'
 import type { FormInstance, FormRules } from 'element-plus'
@@ -180,7 +186,8 @@ const queryParams = reactive({
   pageSize: 10,
   name: '',
   rarity: '',
-  type: ''
+  type: '',
+  itemKey:''
 })
 
 const form = reactive({
@@ -210,10 +217,11 @@ async function getList() {
       pageSize: queryParams.pageSize,
       name: queryParams.name || undefined,
       rarity: queryParams.rarity || undefined,
-      type: queryParams.type || undefined
+      type: queryParams.type || undefined,
+      itemKey: queryParams.itemKey || undefined
     })
     itemList.value = res.data.data.records
-    total.value = res.data.data.total
+    total.value = Number(res.data.data.total) || 0
   } catch (error) {
     ElMessage.error('获取物品列表失败')
   } finally {
@@ -222,14 +230,18 @@ async function getList() {
 }
 
 function handleQuery() {
-  queryParams.pageNum = 1
-  getList()
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1
+  }
 }
 
 function resetQuery() {
   queryParams.name = ''
   queryParams.rarity = ''
   queryParams.type = ''
+  queryParams.itemKey = ''
   handleQuery()
 }
 
@@ -305,11 +317,11 @@ function getTypeTagType(type: string): string {
 function getRarityTagType(rarity: string): string {
   const types: Record<string, string> = {
     SSR: 'warning',
-    SR: 'purple',
+    SR: 'danger',
     R: 'info',
-    N: ''
+    N: 'info'
   }
-  return types[rarity] || ''
+  return types[rarity] || 'info'
 }
 
 function getStockClass(remaining: number, total: number): string {
@@ -320,6 +332,16 @@ function getStockClass(remaining: number, total: number): string {
 }
 
 getList()
+
+// 分页变化监听（替代废弃的 @size-change / @current-change）
+watch(() => queryParams.pageNum, () => getList())
+watch(() => queryParams.pageSize, () => {
+  if (queryParams.pageNum === 1) {
+    getList()
+  } else {
+    queryParams.pageNum = 1  // pageNum watcher 会自动触发 getList
+  }
+})
 </script>
 
 <style scoped>

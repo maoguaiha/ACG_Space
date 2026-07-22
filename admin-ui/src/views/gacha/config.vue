@@ -198,9 +198,9 @@ function getRarityType(rarity: string): string {
     SSR: 'warning',
     SR: 'success',
     R: 'info',
-    N: 'default'
+    N: 'info'
   }
-  return types[rarity] || 'default'
+  return types[rarity] || 'info'
 }
 
 function getProbability(weight: number): string {
