@@ -19,6 +19,7 @@ import com.ruoyi.project.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,7 +32,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class BizCommentServiceImpl extends ServiceImpl<BizCommentMapper, BizComment> implements IBizCommentService {
 
-    private final RocketMQTemplate rocketMQTemplate;
+    @Autowired(required = false)
+    private RocketMQTemplate rocketMQTemplate;
     private final ISysUserService sysUserService;
     private final IBizMessageService messageService;
 
@@ -55,22 +57,25 @@ public class BizCommentServiceImpl extends ServiceImpl<BizCommentMapper, BizComm
         eventDTO.setAnimeId(comment.getAnimeId());
         eventDTO.setCommentId(comment.getId());
 
-        // 3. 异步发送 MQ 消息触发积分结算
-        try {
-            rocketMQTemplate.asyncSend(MqConstants.TOPIC_COMMENT_EVENT, MessageBuilder.withPayload(JSON.toJSONString(eventDTO)).build(), new org.apache.rocketmq.client.producer.SendCallback() {
-                @Override
-                public void onSuccess(org.apache.rocketmq.client.producer.SendResult sendResult) {
-                    log.info("评论积分事件发送 MQ 成功: {}", sendResult.getMsgId());
-                }
+        // 3. 异步发送 MQ 消息触发积分结算（无 MQ 环境时跳过）
+        if (rocketMQTemplate != null) {
+            try {
+                rocketMQTemplate.asyncSend(MqConstants.TOPIC_COMMENT_EVENT, MessageBuilder.withPayload(JSON.toJSONString(eventDTO)).build(), new org.apache.rocketmq.client.producer.SendCallback() {
+                    @Override
+                    public void onSuccess(org.apache.rocketmq.client.producer.SendResult sendResult) {
+                        log.info("评论积分事件发送 MQ 成功: {}", sendResult.getMsgId());
+                    }
 
-                @Override
-                public void onException(Throwable e) {
-                    log.error("评论积分事件发送 MQ 失败", e);
-                    // 业务补偿逻辑可以写在这里
-                }
-            });
-        } catch (Exception e) {
-            log.error("MQ 生产者发送异常", e);
+                    @Override
+                    public void onException(Throwable e) {
+                        log.error("评论积分事件发送 MQ 失败", e);
+                    }
+                });
+            } catch (Exception e) {
+                log.error("MQ 生产者发送异常", e);
+            }
+        } else {
+            log.debug("RocketMQ 未配置，跳过评论积分事件消息发送");
         }
 
         // 4. 发送评论提示私信（如果是回复）

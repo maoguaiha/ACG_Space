@@ -7,6 +7,7 @@ import com.ruoyi.project.service.IBizTransactionLogService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.core.RocketMQTemplate;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.Message;
 import org.springframework.messaging.support.MessageBuilder;
 import org.springframework.stereotype.Component;
@@ -14,10 +15,13 @@ import org.springframework.stereotype.Component;
 /**
  * 交易事件消息生产者
  * 用于发送交易相关的 RocketMQ 事务消息
+ *
+ * 仅在配置了 rocketmq.name-server 时才加载，避免无 MQ 环境下启动崩溃
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "rocketmq.name-server", matchIfMissing = false)
 public class TransactionProducer {
 
     private final RocketMQTemplate rocketMQTemplate;

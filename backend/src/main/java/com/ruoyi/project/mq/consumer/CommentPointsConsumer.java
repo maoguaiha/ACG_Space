@@ -8,15 +8,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * 评论积分事件消费者
  * 监听评论产生的消息，异步计算并派发积分
+ *
+ * 仅在配置了 rocketmq.name-server 时才加载，避免无 MQ 环境下启动崩溃
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "rocketmq.name-server", matchIfMissing = false)
 @RocketMQMessageListener(
     topic = MqConstants.TOPIC_COMMENT_EVENT,
     consumerGroup = MqConstants.CONSUMER_GROUP_COMMENT

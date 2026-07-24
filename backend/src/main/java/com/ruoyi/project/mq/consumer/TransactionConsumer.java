@@ -8,15 +8,19 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQMessageListener;
 import org.apache.rocketmq.spring.core.RocketMQListener;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 /**
  * 交易事件消息消费者
  * 处理交易成功/失败的事件
+ *
+ * 仅在配置了 rocketmq.name-server 时才加载，避免无 MQ 环境下启动崩溃
  */
 @Slf4j
 @Component
 @RequiredArgsConstructor
+@ConditionalOnProperty(name = "rocketmq.name-server", matchIfMissing = false)
 @RocketMQMessageListener(
         topic = MqConstants.TOPIC_TRANSACTION,
         consumerGroup = MqConstants.CONSUMER_GROUP_TRANSACTION
