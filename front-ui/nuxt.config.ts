@@ -32,8 +32,9 @@ export default defineNuxtConfig({
     '/anime': { ssr: true, swr: 120 },
     // 番剧详情页：ISR，预渲染后按需更新，有利于 SEO
     '/anime/**': { ssr: true, isr: 3600 },
-    // 开发阶段代理转发请求，解决前台跨域问题并将 /api-proxy 映射到 /api
-    '/api-proxy/**': { proxy: 'http://localhost:18083/api/**' }
+    // /api-proxy 代理由 server/middleware/api-proxy.ts 动态处理
+    // （从 runtimeConfig.apiInternalBase 读后端地址，支持 Railway 部署）
+    '/api-proxy/**': { ssr: false }
   },
 
   app: {
