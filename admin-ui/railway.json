@@ -1,0 +1,15 @@
+{
+  "$schema": "https://railway.app/railway.schema.json",
+  "build": {
+    "builder": "NIXPACKS",
+    "buildCommand": "npm run build:railway"
+  },
+  "deploy": {
+    "startCommand": "node server.js",
+    "healthcheckPath": "/",
+    "restartPolicyType": "ON_FAILURE",
+    "env": {
+      "BACKEND_URL": "https://authentic-healing-production-ce8a.up.railway.app"
+    }
+  }
+}
