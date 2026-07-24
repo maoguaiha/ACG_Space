@@ -22,7 +22,7 @@ SET FOREIGN_KEY_CHECKS = 0;
 SET NAMES utf8mb4;
 SET FOREIGN_KEY_CHECKS = 0;
 
-CREATE TABLE IF NOT EXISTS `sys_user` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`sys_user` (
   `id` bigint(20) NOT NULL COMMENT '用户ID',
   `username` varchar(64) NOT NULL COMMENT '用户账号',
   `nickname` varchar(64) DEFAULT NULL COMMENT '用户昵称',
@@ -70,16 +70,16 @@ DROP PROCEDURE IF EXISTS `SafeAddSysUserColumns`;
 DELIMITER //
 CREATE PROCEDURE `SafeAddSysUserColumns`()
 BEGIN
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'points') THEN
-        ALTER TABLE `sys_user` ADD COLUMN `points` int(11) DEFAULT 0 COMMENT '积分' AFTER `status`;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'points') THEN
+        ALTER TABLE `acg_space`.`sys_user` ADD COLUMN `points` int(11) DEFAULT 0 COMMENT '积分' AFTER `status`;
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'vip_level') THEN
-        ALTER TABLE `sys_user` ADD COLUMN `vip_level` int(11) DEFAULT 0 COMMENT 'VIP等级' AFTER `points`;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'vip_level') THEN
+        ALTER TABLE `acg_space`.`sys_user` ADD COLUMN `vip_level` int(11) DEFAULT 0 COMMENT 'VIP等级' AFTER `points`;
     END IF;
 
-    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'vip_expire_time') THEN
-        ALTER TABLE `sys_user` ADD COLUMN `vip_expire_time` datetime DEFAULT NULL COMMENT 'VIP过期时间' AFTER `vip_level`;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'vip_expire_time') THEN
+        ALTER TABLE `acg_space`.`sys_user` ADD COLUMN `vip_expire_time` datetime DEFAULT NULL COMMENT 'VIP过期时间' AFTER `vip_level`;
     END IF;
 END //
 DELIMITER ;
@@ -91,7 +91,7 @@ DROP PROCEDURE IF EXISTS `SafeAddSysUserColumns`;
 -- 第二部分：动漫模块
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `biz_anime` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_anime` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `bgm_id` int(11) DEFAULT NULL COMMENT 'Bangumi ID',
   `name` varchar(200) NOT NULL COMMENT '动漫名称',
@@ -119,7 +119,7 @@ CREATE TABLE IF NOT EXISTS `biz_anime` (
 -- 第三部分：文章模块
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `biz_article` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_article` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID(兼容旧字段)',
   `title` varchar(200) NOT NULL COMMENT '标题',
@@ -150,7 +150,7 @@ CREATE TABLE IF NOT EXISTS `biz_article` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章表';
 
-CREATE TABLE IF NOT EXISTS `biz_comment` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_comment` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `target_type` varchar(50) NOT NULL COMMENT '目标类型',
@@ -170,7 +170,7 @@ CREATE TABLE IF NOT EXISTS `biz_comment` (
 -- 第四部分：抽赏模块
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `biz_item` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_item` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `item_key` varchar(100) DEFAULT NULL COMMENT '物品唯一标识 (如 item_ssr_001)',
   `name` varchar(100) NOT NULL COMMENT '物品名称',
@@ -195,7 +195,7 @@ CREATE TABLE IF NOT EXISTS `biz_item` (
   KEY `idx_item_key` (`item_key`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='物品表';
 
-CREATE TABLE IF NOT EXISTS `biz_gacha_pool` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_gacha_pool` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `name` varchar(100) NOT NULL COMMENT '奖池名称',
   `description` text COMMENT '描述',
@@ -216,7 +216,7 @@ CREATE TABLE IF NOT EXISTS `biz_gacha_pool` (
   KEY `idx_status` (`status`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖池表';
 
-CREATE TABLE IF NOT EXISTS `biz_gacha_pool_item` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_gacha_pool_item` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `pool_id` bigint(20) NOT NULL COMMENT '奖池ID',
   `item_id` bigint(20) NOT NULL COMMENT '物品ID',
@@ -229,7 +229,7 @@ CREATE TABLE IF NOT EXISTS `biz_gacha_pool_item` (
   KEY `idx_item_id` (`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='奖池物品关联表';
 
-CREATE TABLE IF NOT EXISTS `biz_gacha_record` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_gacha_record` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `pool_id` bigint(20) NOT NULL COMMENT '奖池ID',
@@ -251,7 +251,7 @@ CREATE TABLE IF NOT EXISTS `biz_gacha_record` (
 -- 第五部分：用户资产模块
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `biz_user_asset` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_user_asset` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `item_id` bigint(20) NOT NULL COMMENT '物品ID',
@@ -274,7 +274,7 @@ CREATE TABLE IF NOT EXISTS `biz_user_asset` (
   KEY `idx_item_id` (`item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户资产表';
 
-CREATE TABLE IF NOT EXISTS `biz_user_points_log` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_user_points_log` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `action_type` varchar(50) NOT NULL COMMENT '动作类型(如COMMENT,LOGIN,SHARE,REGISTRATION)',
@@ -295,7 +295,7 @@ CREATE TABLE IF NOT EXISTS `biz_user_points_log` (
 -- 第六部分：集市模块（已废弃，保留表结构）
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `biz_market_item` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_market_item` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `asset_id` bigint(20) NOT NULL COMMENT '资产ID',
@@ -316,7 +316,7 @@ CREATE TABLE IF NOT EXISTS `biz_market_item` (
 -- =====================================================
 
 -- 用户碎片表
-CREATE TABLE IF NOT EXISTS `biz_user_fragment` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_user_fragment` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `fragment_type` varchar(20) NOT NULL DEFAULT 'normal' COMMENT '碎片类型',
@@ -333,7 +333,7 @@ CREATE TABLE IF NOT EXISTS `biz_user_fragment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户碎片表';
 
 -- 合成规则表
-CREATE TABLE IF NOT EXISTS `biz_synthesize_rule` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_synthesize_rule` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `source_rarity` varchar(10) NOT NULL COMMENT '源品质',
   `source_count` int(11) NOT NULL DEFAULT 10 COMMENT '需要数量',
@@ -352,7 +352,7 @@ CREATE TABLE IF NOT EXISTS `biz_synthesize_rule` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='合成规则表';
 
 -- 兑换订单表（包含商品相关字段）
-CREATE TABLE IF NOT EXISTS `biz_redeem_order` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_redeem_order` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `order_no` varchar(64) NOT NULL COMMENT '订单编号',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -390,7 +390,7 @@ CREATE TABLE IF NOT EXISTS `biz_redeem_order` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='兑换订单表';
 
 -- 兑换实物商品表
-CREATE TABLE IF NOT EXISTS `biz_redeem_product` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_redeem_product` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `name` varchar(100) NOT NULL COMMENT '商品名称',
   `image` longtext DEFAULT NULL COMMENT '商品图片',
@@ -413,7 +413,7 @@ CREATE TABLE IF NOT EXISTS `biz_redeem_product` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='兑换实物商品表';
 
 -- 充值订单表
-CREATE TABLE IF NOT EXISTS `biz_recharge_order` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_recharge_order` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `order_no` varchar(64) NOT NULL COMMENT '订单编号',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -440,15 +440,15 @@ CREATE TABLE IF NOT EXISTS `biz_recharge_order` (
 -- =====================================================
 
 -- 初始化合成规则
-INSERT INTO `biz_synthesize_rule` (`id`, `source_rarity`, `source_count`, `target_rarity`, `target_count`, `is_physical`, `status`, `create_time`, `update_time`, `del_flag`)
+INSERT INTO `acg_space`.`biz_synthesize_rule` (`id`, `source_rarity`, `source_count`, `target_rarity`, `target_count`, `is_physical`, `status`, `create_time`, `update_time`, `del_flag`)
 SELECT 1, 'R', 10, 'SR', 1, 0, 1, NOW(), NOW(), 0
 WHERE NOT EXISTS (SELECT 1 FROM `biz_synthesize_rule` WHERE `id` = 1);
 
-INSERT INTO `biz_synthesize_rule` (`id`, `source_rarity`, `source_count`, `target_rarity`, `target_count`, `is_physical`, `status`, `create_time`, `update_time`, `del_flag`)
+INSERT INTO `acg_space`.`biz_synthesize_rule` (`id`, `source_rarity`, `source_count`, `target_rarity`, `target_count`, `is_physical`, `status`, `create_time`, `update_time`, `del_flag`)
 SELECT 2, 'SR', 10, 'SSR', 1, 0, 1, NOW(), NOW(), 0
 WHERE NOT EXISTS (SELECT 1 FROM `biz_synthesize_rule` WHERE `id` = 2);
 
-INSERT INTO `biz_synthesize_rule` (`id`, `source_rarity`, `source_count`, `target_rarity`, `target_count`, `is_physical`, `status`, `create_time`, `update_time`, `del_flag`)
+INSERT INTO `acg_space`.`biz_synthesize_rule` (`id`, `source_rarity`, `source_count`, `target_rarity`, `target_count`, `is_physical`, `status`, `create_time`, `update_time`, `del_flag`)
 SELECT 3, 'SSR', 10, 'UR', 1, 1, 1, NOW(), NOW(), 0
 WHERE NOT EXISTS (SELECT 1 FROM `biz_synthesize_rule` WHERE `id` = 3);
 
@@ -456,7 +456,7 @@ WHERE NOT EXISTS (SELECT 1 FROM `biz_synthesize_rule` WHERE `id` = 3);
 -- 第十七部分：站内消息表
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `biz_message` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_message` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `from_user_id` bigint(20) DEFAULT NULL COMMENT '发送者ID(0=系统)',
   `to_user_id` bigint(20) DEFAULT NULL COMMENT '接收者ID',
@@ -472,7 +472,7 @@ CREATE TABLE IF NOT EXISTS `biz_message` (
 -- 第十八部分：番剧追番记录表
 -- =====================================================
 
-CREATE TABLE IF NOT EXISTS `biz_anime_follow` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_anime_follow` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `anime_id` bigint(20) NOT NULL COMMENT '番剧ID',
@@ -486,7 +486,7 @@ CREATE TABLE IF NOT EXISTS `biz_anime_follow` (
 -- ---------------------------------------------------
 
 -- 评论反应表
-CREATE TABLE IF NOT EXISTS `biz_comment_reaction` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_comment_reaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `comment_id` bigint(20) NOT NULL COMMENT '评论ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -497,7 +497,7 @@ CREATE TABLE IF NOT EXISTS `biz_comment_reaction` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评论反应表';
 
 -- 文章评论反应表
-CREATE TABLE IF NOT EXISTS `biz_article_comment_reaction` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_article_comment_reaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `article_comment_id` bigint(20) NOT NULL COMMENT '文章评论ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -508,7 +508,7 @@ CREATE TABLE IF NOT EXISTS `biz_article_comment_reaction` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章评论反应表';
 
 -- 文章反应表
-CREATE TABLE IF NOT EXISTS `biz_article_reaction` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_article_reaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `article_id` bigint(20) NOT NULL COMMENT '文章ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -525,7 +525,7 @@ CREATE TABLE IF NOT EXISTS `biz_article_reaction` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章反应表';
 
 -- 文章评论表
-CREATE TABLE IF NOT EXISTS `biz_article_comment` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_article_comment` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `article_id` bigint(20) NOT NULL COMMENT '所属文章ID',
   `user_id` bigint(20) NOT NULL COMMENT '发布用户ID',
@@ -551,7 +551,7 @@ CREATE TABLE IF NOT EXISTS `biz_article_comment` (
 -- ---------------------------------------------------
 
 -- 合成记录表
-CREATE TABLE IF NOT EXISTS `biz_synthesize_record` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_synthesize_record` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `recipe_id` bigint(20) DEFAULT NULL COMMENT '配方ID',
@@ -573,7 +573,7 @@ CREATE TABLE IF NOT EXISTS `biz_synthesize_record` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='合成记录表';
 
 -- 合成配方表
-CREATE TABLE IF NOT EXISTS `biz_synthesize_recipe` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_synthesize_recipe` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `name` varchar(100) NOT NULL COMMENT '配方名称',
   `description` text COMMENT '配方描述',
@@ -599,7 +599,7 @@ CREATE TABLE IF NOT EXISTS `biz_synthesize_recipe` (
 -- ---------------------------------------------------
 
 -- O2O核销订单表
-CREATE TABLE IF NOT EXISTS `biz_delivery_order` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_delivery_order` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `order_id` varchar(64) NOT NULL COMMENT '订单号(DLV+时间戳+随机)',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -628,7 +628,7 @@ CREATE TABLE IF NOT EXISTS `biz_delivery_order` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='O2O核销订单表';
 
 -- RocketMQ事务日志回查表
-CREATE TABLE IF NOT EXISTS `biz_transaction_log` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_transaction_log` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `transaction_id` varchar(100) DEFAULT NULL COMMENT 'RocketMQ事务消息ID',
   `topic` varchar(100) DEFAULT NULL COMMENT '消息主题',
@@ -650,7 +650,7 @@ CREATE TABLE IF NOT EXISTS `biz_transaction_log` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='RocketMQ事务日志回查表';
 
 -- 用户地址表
-CREATE TABLE IF NOT EXISTS `biz_user_address` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_user_address` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
   `receiver` varchar(50) DEFAULT NULL COMMENT '收货人姓名',
@@ -673,7 +673,7 @@ CREATE TABLE IF NOT EXISTS `biz_user_address` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户地址表';
 
 -- 用户关注关系表
-CREATE TABLE IF NOT EXISTS `biz_user_follow` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_user_follow` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '关注者ID',
   `follow_user_id` bigint(20) NOT NULL COMMENT '被关注者ID',
@@ -683,7 +683,7 @@ CREATE TABLE IF NOT EXISTS `biz_user_follow` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户关注关系表';
 
 -- 交易订单表
-CREATE TABLE IF NOT EXISTS `biz_transaction` (
+CREATE TABLE IF NOT EXISTS `acg_space`.`biz_transaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `order_id` varchar(64) NOT NULL COMMENT '订单号(TXN+时间戳+随机)',
   `buyer_id` bigint(20) NOT NULL COMMENT '买家用户ID',
@@ -783,53 +783,53 @@ BEGIN
     -- =====================================================
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_id') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `item_id` bigint(20) DEFAULT NULL COMMENT '物品ID' AFTER `asset_id`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_id') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `item_id` bigint(20) DEFAULT NULL COMMENT '物品ID' AFTER `asset_id`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_name') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `item_name` varchar(100) DEFAULT NULL COMMENT '物品名称' AFTER `item_id`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_name') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `item_name` varchar(100) DEFAULT NULL COMMENT '物品名称' AFTER `item_id`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_image') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `item_image` varchar(500) DEFAULT NULL COMMENT '物品图片' AFTER `item_name`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_image') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `item_image` varchar(500) DEFAULT NULL COMMENT '物品图片' AFTER `item_name`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_rarity') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `item_rarity` varchar(10) DEFAULT NULL COMMENT '物品稀有度' AFTER `item_image`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_rarity') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `item_rarity` varchar(10) DEFAULT NULL COMMENT '物品稀有度' AFTER `item_image`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_type') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `item_type` varchar(50) DEFAULT NULL COMMENT '物品类型' AFTER `item_rarity`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'item_type') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `item_type` varchar(50) DEFAULT NULL COMMENT '物品类型' AFTER `item_rarity`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'seller_id') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `seller_id` bigint(20) DEFAULT NULL COMMENT '卖家用户ID' AFTER `item_type`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'seller_id') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `seller_id` bigint(20) DEFAULT NULL COMMENT '卖家用户ID' AFTER `item_type`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'order_id') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `order_id` varchar(64) DEFAULT NULL COMMENT '市场订单号' AFTER `status`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'order_id') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `order_id` varchar(64) DEFAULT NULL COMMENT '市场订单号' AFTER `status`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'sold_time') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `sold_time` datetime DEFAULT NULL COMMENT '售出时间' AFTER `order_id`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'sold_time') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `sold_time` datetime DEFAULT NULL COMMENT '售出时间' AFTER `order_id`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'delist_time') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `delist_time` datetime DEFAULT NULL COMMENT '下架时间' AFTER `sold_time`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'delist_time') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `delist_time` datetime DEFAULT NULL COMMENT '下架时间' AFTER `sold_time`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'remark') THEN
-        ALTER TABLE `biz_market_item` ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注' AFTER `delist_time`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_market_item' AND COLUMN_NAME = 'remark') THEN
+        ALTER TABLE `acg_space`.`biz_market_item` ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注' AFTER `delist_time`;
     END IF;
 
     -- 旧表有 user_id 字段，新实体用 seller_id，保留 user_id 向后兼容
@@ -841,18 +841,18 @@ BEGIN
     -- =====================================================
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool_item' AND COLUMN_NAME = 'rarity') THEN
-        ALTER TABLE `biz_gacha_pool_item` ADD COLUMN `rarity` varchar(10) DEFAULT 'N' COMMENT '物品稀有度' AFTER `item_id`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool_item' AND COLUMN_NAME = 'rarity') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool_item` ADD COLUMN `rarity` varchar(10) DEFAULT 'N' COMMENT '物品稀有度' AFTER `item_id`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool_item' AND COLUMN_NAME = 'is_guarantee') THEN
-        ALTER TABLE `biz_gacha_pool_item` ADD COLUMN `is_guarantee` tinyint(4) DEFAULT 0 COMMENT '是否保底物品(0否1是)' AFTER `weight`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool_item' AND COLUMN_NAME = 'is_guarantee') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool_item` ADD COLUMN `is_guarantee` tinyint(4) DEFAULT 0 COMMENT '是否保底物品(0否1是)' AFTER `weight`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool_item' AND COLUMN_NAME = 'stock_limit') THEN
-        ALTER TABLE `biz_gacha_pool_item` ADD COLUMN `stock_limit` int(11) DEFAULT NULL COMMENT '库存上限(NULL不限)' AFTER `is_guarantee`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool_item' AND COLUMN_NAME = 'stock_limit') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool_item` ADD COLUMN `stock_limit` int(11) DEFAULT NULL COMMENT '库存上限(NULL不限)' AFTER `is_guarantee`;
     END IF;
 
     -- =====================================================
@@ -861,28 +861,28 @@ BEGIN
     -- =====================================================
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'rarity') THEN
-        ALTER TABLE `biz_gacha_pool` ADD COLUMN `rarity` varchar(10) DEFAULT NULL COMMENT '限定稀有度(SSR/SR/normal)' AFTER `banner`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'rarity') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool` ADD COLUMN `rarity` varchar(10) DEFAULT NULL COMMENT '限定稀有度(SSR/SR/normal)' AFTER `banner`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'weight_config') THEN
-        ALTER TABLE `biz_gacha_pool` ADD COLUMN `weight_config` text COMMENT '权重配置(JSON格式)' AFTER `status`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'weight_config') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool` ADD COLUMN `weight_config` text COMMENT '权重配置(JSON格式)' AFTER `status`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'create_by') THEN
-        ALTER TABLE `biz_gacha_pool` ADD COLUMN `create_by` varchar(64) DEFAULT NULL COMMENT '创建者' AFTER `weight_config`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'create_by') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool` ADD COLUMN `create_by` varchar(64) DEFAULT NULL COMMENT '创建者' AFTER `weight_config`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'update_by') THEN
-        ALTER TABLE `biz_gacha_pool` ADD COLUMN `update_by` varchar(64) DEFAULT NULL COMMENT '更新者' AFTER `create_by`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'update_by') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool` ADD COLUMN `update_by` varchar(64) DEFAULT NULL COMMENT '更新者' AFTER `create_by`;
     END IF;
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'remark') THEN
-        ALTER TABLE `biz_gacha_pool` ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注' AFTER `update_by`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'biz_gacha_pool' AND COLUMN_NAME = 'remark') THEN
+        ALTER TABLE `acg_space`.`biz_gacha_pool` ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注' AFTER `update_by`;
     END IF;
 
     -- =====================================================
@@ -890,8 +890,8 @@ BEGIN
     -- =====================================================
 
     IF NOT EXISTS (SELECT 1 FROM information_schema.COLUMNS 
-                   WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'points') THEN
-        ALTER TABLE `sys_user` ADD COLUMN `points` int(11) DEFAULT 0 COMMENT '积分' AFTER `status`;
+                   WHERE TABLE_SCHEMA = 'acg_space' AND TABLE_NAME = 'sys_user' AND COLUMN_NAME = 'points') THEN
+        ALTER TABLE `acg_space`.`sys_user` ADD COLUMN `points` int(11) DEFAULT 0 COMMENT '积分' AFTER `status`;
     END IF;
 
 END //
