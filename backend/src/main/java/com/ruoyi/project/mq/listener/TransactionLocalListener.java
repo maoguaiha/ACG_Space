@@ -12,15 +12,19 @@ import lombok.extern.slf4j.Slf4j;
 import org.apache.rocketmq.spring.annotation.RocketMQTransactionListener;
 import org.apache.rocketmq.spring.core.RocketMQLocalTransactionListener;
 import org.apache.rocketmq.spring.core.RocketMQLocalTransactionState;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.messaging.Message;
 import org.springframework.stereotype.Component;
 
 /**
  * RocketMQ事务消息本地事务监听器
  * 负责执行本地事务和处理事务回查
+ *
+ * 仅在配置了 rocketmq.name-server 时才加载，避免无 MQ 环境下启动崩溃
  */
 @Slf4j
 @Component
+@ConditionalOnProperty(name = "rocketmq.name-server", matchIfMissing = false)
 @RocketMQTransactionListener
 @RequiredArgsConstructor
 public class TransactionLocalListener implements RocketMQLocalTransactionListener {

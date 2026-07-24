@@ -1,0 +1,7 @@
+# RocketMQ 配置（独立 profile：mq）
+# 仅当设置了 ROCKETMQ_NAMESRV 环境变量时由 Dockerfile 自动激活（dev,mq），
+# 默认只激活 dev 时本文件不加载，RocketMQ 自动配置整体不生效，避免无 MQ 环境启动崩溃。
+rocketmq:
+  name-server: ${ROCKETMQ_NAMESRV}
+  producer:
+    group: acg-space-producer-group

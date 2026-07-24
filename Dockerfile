@@ -32,4 +32,6 @@ USER acgspace
 ENV PORT=18083
 ENV JAVA_OPTS="-Xms256m -Xmx512m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom"
 
-ENTRYPOINT ["sh", "-c", "java $JAVA_OPTS -Dserver.port=${PORT} -jar app.jar"]
+# 仅当设置了 ROCKETMQ_NAMESRV 时才激活 mq profile，否则不加载 RocketMQ 自动配置
+# （避免无 MQ 环境下 RocketMQ starter 启动即连 nameserver 导致崩溃）
+ENTRYPOINT ["sh", "-c", "PROFILES=dev; if [ -n \"$ROCKETMQ_NAMESRV\" ]; then PROFILES=dev,mq; fi; java $JAVA_OPTS -Dserver.port=${PORT} -Dspring.profiles.active=$PROFILES -jar app.jar"]

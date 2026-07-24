@@ -18,8 +18,3 @@ spring:
     user:
       name: admin
       password: admin123
-
-rocketmq:
-  name-server: ${ROCKETMQ_NAMESRV:127.0.0.1:9876}
-  producer:
-    group: acg-space-producer-group
