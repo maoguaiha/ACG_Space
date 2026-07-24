@@ -1,10 +1,106 @@
--- ============================================================
--- ACG_Space 缺失表一次性创建脚本
--- 适用：已有数据库发现缺少实体类对应表的情况
--- 日期：2026-07-10
--- ============================================================
+-- =====================================================
+-- ACG_Space 存量库升级脚本（合并版，给本地老 docker 库用）
+-- 合并了: create_missing_tables.sql + fix_missing_columns.sql
+--          + fix_article_and_points_columns.sql + fix_update_time_missing.sql
+-- 原 4 个文件内容高度重叠，此处去重合并为 1 个。
+-- 用途: 仅当你有一个“早于 V2.1_Complete 创建的老库”需要补齐表/列时运行。
+--       全新库(Railway)请勿用本文件，请用 ACG_Space_init.sql。
+-- 注意: 含 CHANGE COLUMN / DROP INDEX 等语句，对老库只跑一次；重复跑会报错。
+-- =====================================================
 
--- 1. biz_comment_reaction (评论反应表)
+SET NAMES utf8mb4;
+
+-- Fix missing columns for ACG_Space V2.1
+SET NAMES utf8mb4;
+
+ALTER TABLE `biz_gacha_pool`
+  ADD COLUMN `rarity` varchar(20) DEFAULT NULL AFTER `banner`,
+  ADD COLUMN `weight_config` text AFTER `status`,
+  ADD COLUMN `create_by` varchar(64) DEFAULT NULL AFTER `weight_config`,
+  ADD COLUMN `update_by` varchar(64) DEFAULT NULL AFTER `create_by`,
+  ADD COLUMN `remark` varchar(500) DEFAULT NULL AFTER `update_by`;
+
+ALTER TABLE `biz_anime` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+ALTER TABLE `biz_article` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+ALTER TABLE `biz_comment` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+-- ========== biz_item entity-schema mismatch fix ==========
+-- Issue: BizItem entity has item_key, total_stock, remaining_stock, price,
+-- marketable, synthesizable fields but the DB table was missing them.
+-- MyBatis-Plus generates INSERT with these columns → "Unknown column" error.
+-- Note: MySQL 8.0 does not support "ADD COLUMN IF NOT EXISTS", so this
+-- script should be run once on existing databases. For fresh installs,
+-- ACG_Space_V2.1_Complete.sql already includes these columns.
+ALTER TABLE `biz_item`
+  ADD COLUMN `item_key` varchar(100) DEFAULT NULL COMMENT '物品唯一标识 (如 item_ssr_001)' AFTER `name`,
+  ADD COLUMN `total_stock` int(11) DEFAULT 0 COMMENT '总库存' AFTER `description`,
+  ADD COLUMN `remaining_stock` int(11) DEFAULT 0 COMMENT '剩余库存' AFTER `total_stock`,
+  ADD COLUMN `price` int(11) DEFAULT 0 COMMENT '参考价格(积分)' AFTER `remaining_stock`,
+  ADD COLUMN `marketable` tinyint(4) DEFAULT 1 COMMENT '是否可上架市场(0否1是)' AFTER `price`,
+  ADD COLUMN `synthesizable` tinyint(4) DEFAULT 0 COMMENT '是否可合成(0否1是)' AFTER `marketable`,
+  ADD COLUMN `create_by` varchar(64) DEFAULT NULL COMMENT '创建者',
+  ADD COLUMN `update_by` varchar(64) DEFAULT NULL COMMENT '更新者',
+  ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注';
+
+-- Add index for item_key lookup
+ALTER TABLE `biz_item` ADD INDEX `idx_item_key` (`item_key`);
+ALTER TABLE `biz_gacha_pool_item` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+ALTER TABLE `biz_gacha_record` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+ALTER TABLE `biz_user_asset` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+ALTER TABLE `biz_user_points_log` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+ALTER TABLE `biz_market_item` ADD COLUMN `create_by` varchar(64) DEFAULT NULL, ADD COLUMN `update_by` varchar(64) DEFAULT NULL, ADD COLUMN `remark` varchar(500) DEFAULT NULL;
+
+-- ========== biz_comment entity-schema mismatch fixes ==========
+-- Issue: entity has animeId, likes, dislikes, replyToUserId, replyToNickname
+-- but the DB table has target_type/target_id and like_count instead.
+-- MyBatis-Plus generates WHERE anime_id=? which throws "Unknown column" SQL error.
+
+ALTER TABLE `biz_comment`
+  ADD COLUMN `anime_id` bigint(20) DEFAULT NULL COMMENT '番剧ID',
+  ADD COLUMN `likes` int(11) DEFAULT 0 COMMENT '点赞数',
+  ADD COLUMN `dislikes` int(11) DEFAULT 0 COMMENT '点踩数',
+  ADD COLUMN `reply_to_user_id` bigint(20) DEFAULT NULL COMMENT '回复目标用户ID',
+  ADD COLUMN `reply_to_nickname` varchar(100) DEFAULT NULL COMMENT '回复目标用户昵称';
+
+-- Migrate existing data from old columns
+UPDATE `biz_comment` SET `anime_id` = `target_id` WHERE `target_type` = 'anime' AND `anime_id` IS NULL;
+UPDATE `biz_comment` SET `likes` = `like_count` WHERE `likes` = 0 AND `like_count` > 0;
+
+-- ========== biz_message table missing ==========
+-- Issue: register() calls sendRegistrationBonusMessage() which inserts into
+-- biz_message, but the table doesn't exist in the database.
+-- Fix: create the table for existing databases.
+CREATE TABLE IF NOT EXISTS `biz_message` (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `from_user_id` bigint(20) DEFAULT NULL COMMENT '发送者ID(0=系统)',
+  `to_user_id` bigint(20) DEFAULT NULL COMMENT '接收者ID',
+  `content` text COMMENT '消息内容',
+  `is_read` tinyint(4) DEFAULT 0 COMMENT '是否已读(0否1是)',
+  `create_time` datetime DEFAULT NULL COMMENT '创建时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_to_user` (`to_user_id`),
+  KEY `idx_from_user` (`from_user_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='站内消息表';
+
+-- ========== biz_anime_follow table missing ==========
+-- Issue: getUserFollowList() queries biz_anime_follow, but the table doesn't
+-- exist in the database. This causes "系统异常" when loading /follows page.
+-- Fix: create the table for existing databases.
+CREATE TABLE IF NOT EXISTS `biz_anime_follow` (
+  `id` bigint(20) NOT NULL COMMENT '主键ID',
+  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
+  `anime_id` bigint(20) NOT NULL COMMENT '番剧ID',
+  `create_time` datetime DEFAULT NULL COMMENT '追番时间',
+  PRIMARY KEY (`id`),
+  KEY `idx_user_anime` (`user_id`, `anime_id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='番剧追番记录表';
+
+-- ========== 11 missing entity tables (batch audit 2026-07-10) ==========
+-- Issue: Entity classes with @TableName exist but their corresponding database
+-- tables were never created. Each time a feature touches one of these entities,
+-- it crashes with "Table 'acg_space.xxx' doesn't exist".
+-- Fix: create all 11 missing tables at once.
+
+-- 1. biz_comment_reaction
 CREATE TABLE IF NOT EXISTS `biz_comment_reaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `comment_id` bigint(20) NOT NULL COMMENT '评论ID',
@@ -15,7 +111,7 @@ CREATE TABLE IF NOT EXISTS `biz_comment_reaction` (
   KEY `idx_comment_user` (`comment_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='评论反应表';
 
--- 2. biz_article_comment_reaction (文章评论反应表)
+-- 2. biz_article_comment_reaction
 CREATE TABLE IF NOT EXISTS `biz_article_comment_reaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `article_comment_id` bigint(20) NOT NULL COMMENT '文章评论ID',
@@ -26,7 +122,7 @@ CREATE TABLE IF NOT EXISTS `biz_article_comment_reaction` (
   KEY `idx_comment_user` (`article_comment_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章评论反应表';
 
--- 3. biz_article_reaction (文章反应表)
+-- 3. biz_article_reaction
 CREATE TABLE IF NOT EXISTS `biz_article_reaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `article_id` bigint(20) NOT NULL COMMENT '文章ID',
@@ -43,7 +139,7 @@ CREATE TABLE IF NOT EXISTS `biz_article_reaction` (
   KEY `idx_article_user` (`article_id`, `user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章反应表';
 
--- 4. biz_article_comment (文章评论表)
+-- 4. biz_article_comment
 CREATE TABLE IF NOT EXISTS `biz_article_comment` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `article_id` bigint(20) NOT NULL COMMENT '所属文章ID',
@@ -65,7 +161,7 @@ CREATE TABLE IF NOT EXISTS `biz_article_comment` (
   KEY `idx_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='文章评论表';
 
--- 5. biz_synthesize_record (合成记录表)
+-- 5. biz_synthesize_record
 CREATE TABLE IF NOT EXISTS `biz_synthesize_record` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -87,7 +183,7 @@ CREATE TABLE IF NOT EXISTS `biz_synthesize_record` (
   KEY `idx_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='合成记录表';
 
--- 6. biz_synthesize_recipe (合成配方表)
+-- 6. biz_synthesize_recipe
 CREATE TABLE IF NOT EXISTS `biz_synthesize_recipe` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `name` varchar(100) NOT NULL COMMENT '配方名称',
@@ -109,7 +205,7 @@ CREATE TABLE IF NOT EXISTS `biz_synthesize_recipe` (
   KEY `idx_result_item` (`result_item_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='合成配方表';
 
--- 7. biz_delivery_order (O2O核销订单表)
+-- 7. biz_delivery_order
 CREATE TABLE IF NOT EXISTS `biz_delivery_order` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `order_id` varchar(64) NOT NULL COMMENT '订单号(DLV+时间戳+随机)',
@@ -138,7 +234,7 @@ CREATE TABLE IF NOT EXISTS `biz_delivery_order` (
   KEY `idx_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='O2O核销订单表';
 
--- 8. biz_transaction_log (RocketMQ事务日志回查表)
+-- 8. biz_transaction_log
 CREATE TABLE IF NOT EXISTS `biz_transaction_log` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `transaction_id` varchar(100) DEFAULT NULL COMMENT 'RocketMQ事务消息ID',
@@ -160,7 +256,7 @@ CREATE TABLE IF NOT EXISTS `biz_transaction_log` (
   KEY `idx_transaction_id` (`transaction_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='RocketMQ事务日志回查表';
 
--- 9. biz_user_address (用户地址表)
+-- 9. biz_user_address
 CREATE TABLE IF NOT EXISTS `biz_user_address` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '用户ID',
@@ -183,7 +279,7 @@ CREATE TABLE IF NOT EXISTS `biz_user_address` (
   KEY `idx_user` (`user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户地址表';
 
--- 10. biz_user_follow (用户关注关系表)
+-- 10. biz_user_follow
 CREATE TABLE IF NOT EXISTS `biz_user_follow` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `user_id` bigint(20) NOT NULL COMMENT '关注者ID',
@@ -193,7 +289,7 @@ CREATE TABLE IF NOT EXISTS `biz_user_follow` (
   KEY `idx_user_follow` (`user_id`, `follow_user_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户关注关系表';
 
--- 11. biz_transaction (交易订单表)
+-- 11. biz_transaction
 CREATE TABLE IF NOT EXISTS `biz_transaction` (
   `id` bigint(20) NOT NULL COMMENT '主键ID',
   `order_id` varchar(64) NOT NULL COMMENT '订单号(TXN+时间戳+随机)',
@@ -222,3 +318,63 @@ CREATE TABLE IF NOT EXISTS `biz_transaction` (
   KEY `idx_buyer` (`buyer_id`),
   KEY `idx_seller` (`seller_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='交易订单表';
+
+-- ========== biz_article entity-schema mismatch fix (2026-07-10) ==========
+-- Issue: BizArticle entity has summary, author_id, category, tags,
+-- dislike_count, is_vip_only, is_featured, reject_reason fields,
+-- but the DB table was missing all of them.
+-- MyBatis-Plus generates SELECT with these columns -> "Unknown column" error.
+-- Also: entity uses author_id but table had user_id. Added author_id
+-- and migrated data from user_id.
+
+ALTER TABLE `biz_article`
+  ADD COLUMN `summary` varchar(500) DEFAULT NULL COMMENT '文章摘要' AFTER `title`,
+  ADD COLUMN `author_id` bigint(20) DEFAULT NULL COMMENT '作者用户ID' AFTER `cover_url`,
+  ADD COLUMN `category` varchar(50) DEFAULT NULL COMMENT '文章分类' AFTER `author_id`,
+  ADD COLUMN `tags` varchar(500) DEFAULT NULL COMMENT '标签(逗号分隔)' AFTER `category`,
+  ADD COLUMN `dislike_count` int(11) DEFAULT 0 COMMENT '点踩数' AFTER `like_count`,
+  ADD COLUMN `is_vip_only` tinyint(4) DEFAULT 0 COMMENT '是否VIP专享(0否1是)' AFTER `status`,
+  ADD COLUMN `is_featured` tinyint(4) DEFAULT 0 COMMENT '是否推荐(0否1是)' AFTER `is_vip_only`,
+  ADD COLUMN `reject_reason` varchar(500) DEFAULT NULL COMMENT '驳回原因' AFTER `is_featured`;
+
+-- Migrate data from user_id to author_id (entity uses author_id, not user_id)
+UPDATE `biz_article` SET `author_id` = `user_id` WHERE `author_id` IS NULL;
+
+-- Add index for author_id lookups
+ALTER TABLE `biz_article` ADD INDEX `idx_author_id` (`author_id`);
+
+-- ========== biz_user_points_log column name mismatch fix (2026-07-10) ==========
+-- Issue: Entity has actionType/pointsChange/bizReferenceId which MyBatis-Plus
+-- maps to action_type/points_change/biz_reference_id, but the DB table had
+-- type/points/source_id. Every INSERT and WHERE clause failed with
+-- "Unknown column 'action_type'" error.
+-- Fix: rename columns to match entity expectations.
+
+ALTER TABLE `biz_user_points_log`
+  CHANGE COLUMN `type` `action_type` varchar(50) NOT NULL COMMENT '动作类型(如COMMENT,LOGIN,SHARE,REGISTRATION)',
+  CHANGE COLUMN `points` `points_change` int(11) NOT NULL COMMENT '积分变动(正负值)',
+  CHANGE COLUMN `source_id` `biz_reference_id` varchar(100) DEFAULT NULL COMMENT '业务关联ID(幂等键)';
+
+-- Update unique key to use new column names
+ALTER TABLE `biz_user_points_log` DROP INDEX `uk_user_type_source`;
+ALTER TABLE `biz_user_points_log` ADD UNIQUE KEY `uk_user_action_ref` (`user_id`, `action_type`, `biz_reference_id`);
+
+-- ========== update_time column missing on multiple tables (2026-07-10) ==========
+-- Issue: The ALTER TABLE statements above added create_by/update_by/remark to
+-- many tables but forgot update_time. Entity classes extend BaseEntity which
+-- has updateTime. When setUpdateTime() is called, MyBatis-Plus generates
+-- INSERT/UPDATE with update_time column -> "Unknown column 'update_time'" error.
+-- Fix: add update_time to all affected tables.
+-- Note: MySQL doesn't support ADD COLUMN IF NOT EXISTS. If a table already has
+-- the column, that statement will error - just skip it and continue.
+
+ALTER TABLE `biz_user_points_log` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_gacha_pool` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_anime` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_article` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_comment` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_item` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_gacha_pool_item` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_gacha_record` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_user_asset` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';
+ALTER TABLE `biz_market_item` ADD COLUMN `update_time` datetime DEFAULT NULL COMMENT '更新时间';

@@ -42,10 +42,9 @@ services:
       MYSQL_DATABASE: "acg_space"   # Docker 会在首次启动时自动创建此库
       TZ: Asia/Shanghai
     volumes:
-      # 按文件名顺序执行：先建基础表 sys_user，再跑迁移脚本
-      - ./backend/sql/schema.sql:/docker-entrypoint-initdb.d/01-schema.sql
-      - ./backend/sql/ACG_Space_V2.1_Complete.sql:/docker-entrypoint-initdb.d/02-migration.sql
-      - ./backend/sql/ACG_Space_V2.2_Fix.sql:/docker-entrypoint-initdb.d/03-fix.sql
+      # 合并后的单文件初始化脚本（schema + V2.1 完整业务表 + V2.2 补列 + 测试数据，全程 IF NOT EXISTS 幂等）
+      # 仅在数据卷为空（首次初始化）时由 MySQL 自动执行一次；存量库请手动执行 ACG_Space_upgrade.sql 补齐
+      - ./backend/sql/ACG_Space_init.sql:/docker-entrypoint-initdb.d/01-init.sql
       # 命名数据卷：避免 docker compose down/up 重建时丢失业务数据（原匿名卷易丢失）
       - mysql_data:/var/lib/mysql
     command: --character-set-server=utf8mb4 --collation-server=utf8mb4_unicode_ci
