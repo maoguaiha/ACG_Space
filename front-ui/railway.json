@@ -5,11 +5,9 @@
     "dockerfilePath": "Dockerfile"
   },
   "deploy": {
+    "startCommand": "node .output/server/index.mjs",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
-    "restartPolicyType": "ON_FAILURE",
-    "env": {
-      "HOST": "0.0.0.0"
-    }
+    "restartPolicyType": "ON_FAILURE"
   }
 }

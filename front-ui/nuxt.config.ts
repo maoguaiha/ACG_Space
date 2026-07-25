@@ -29,6 +29,7 @@ export default defineNuxtConfig({
   //       运行期 Railway 分配的 $PORT 被忽略，健康检查连不上 → 502。
   //       正确做法：只固定 host=0.0.0.0，端口交给 Nitro 运行期读运行时 $PORT（node-server preset 默认行为）。
   nitro: {
+    preset: 'node-server',
     server: {
       host: '0.0.0.0'
     }
