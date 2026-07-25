@@ -162,7 +162,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import request from '../../api/request'
 
 interface UserItem {
   id: number
@@ -202,7 +202,7 @@ const getList = async () => {
     if (queryParams.username) params.username = queryParams.username
     if (queryParams.nickname) params.nickname = queryParams.nickname
 
-    const res = await axios.get('/api/admin/user/page', { params })
+    const res = await request.get('/admin/user/page', { params })
     if (res.data && res.data.code === 200) {
       const pageData = res.data.data || {}
       userList.value = pageData.records || []
@@ -327,7 +327,7 @@ const submitEdit = async () => {
       levelExperience: editForm.levelExperience,
       points: editForm.points
     }
-    const res = await axios.put(`/api/admin/user/vip/${editForm.id}`, data)
+    const res = await request.put(`/admin/user/vip/${editForm.id}`, data)
     if (res.data && res.data.code === 200) {
       ElMessage.success('修改成功！')
       editDialogVisible.value = false
@@ -349,7 +349,7 @@ const handleDelete = (row: UserItem) => {
     type: 'warning'
   }).then(async () => {
     try {
-      const res = await axios.delete(`/api/admin/user/${row.id}`)
+      const res = await request.delete(`/admin/user/${row.id}`)
       if (res.data && res.data.code === 200) {
         ElMessage.success('删除成功！')
         getList()

@@ -185,7 +185,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage } from 'element-plus'
-import axios from 'axios'
+import request from '../../api/request'
 
 // 番剧状态映射
 const statusLabel = (status: number): string => {
@@ -217,7 +217,7 @@ const getList = async () => {
     if (queryParams.title && queryParams.title.trim().length > 0) params.title = queryParams.title.trim()
     if (queryParams.year) params.year = queryParams.year
 
-    const res = await axios.get('/api/anime/page', { params })
+    const res = await request.get('/anime/page', { params })
     if (res.data && res.data.code === 200) {
       // 支持后端 MyBatis-Plus Page 结构：{ records, total, current, size }
       const pageData = res.data.data || {}
@@ -282,7 +282,7 @@ const submitSync = async () => {
   
   syncing.value = true
   try {
-    const res = await axios.post(`/api/anime/sync/${syncBgmId.value}`)
+    const res = await request.post(`/anime/sync/${syncBgmId.value}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success('同步成功！')
       syncDialogVisible.value = false
@@ -336,7 +336,7 @@ const submitEdit = async () => {
   }
   editing.value = true
   try {
-    const res = await axios.put('/api/anime', editForm)
+    const res = await request.put('/anime', editForm)
     if (res.data && res.data.code === 200) {
       ElMessage.success('修改成功！')
       editDialogVisible.value = false
@@ -354,7 +354,7 @@ const submitEdit = async () => {
 // ====== 删除番剧 ======
 const handleDelete = async (id: number) => {
   try {
-    const res = await axios.delete(`/api/anime/${id}`)
+    const res = await request.delete(`/anime/${id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success('删除成功！')
       getList()
@@ -369,7 +369,7 @@ const handleDelete = async (id: number) => {
 // ====== 切换首页轮播推荐 ======
 const handleToggleFeatured = async (row: any) => {
   try {
-    const res = await axios.put(`/api/anime/featured/${row.id}`)
+    const res = await request.put(`/anime/featured/${row.id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success(row.featured === 1 ? '已取消推荐' : '已设为首页推荐')
       getList()

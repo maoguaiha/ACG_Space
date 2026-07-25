@@ -186,7 +186,7 @@
 <script setup lang="ts">
 import { ref, reactive, onMounted, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
-import axios from 'axios'
+import request from '../../api/request'
 import ImagePickerDialog from '@/components/ImagePickerDialog.vue'
 import AdminTagSelector from '@/components/AdminTagSelector.vue'
 import AdminRichEditor from '@/components/AdminRichEditor.vue'
@@ -230,7 +230,7 @@ const getList = async () => {
     if (queryParams.category) params.category = queryParams.category
     if (queryParams.status !== undefined) params.status = queryParams.status
 
-    const res = await axios.get('/api/article/list', { params })
+    const res = await request.get('/article/list', { params })
     if (res.data && res.data.code === 200) {
       const pageData = res.data.data || {}
       articleList.value = pageData.records || []
@@ -329,9 +329,9 @@ const submitEdit = async () => {
   }
   editing.value = true
   try {
-    const url = editForm.id ? '/api/article' : '/api/article'
-    const method = editForm.id ? 'put' : 'post'
-    const res = await axios[method](url, editForm)
+    const res = editForm.id
+      ? await request.put('/article', editForm)
+      : await request.post('/article', editForm)
     if (res.data && res.data.code === 200) {
       ElMessage.success(editForm.id ? '修改成功！' : '创建成功！')
       editDialogVisible.value = false
@@ -348,7 +348,7 @@ const submitEdit = async () => {
 
 const handleDelete = async (id: number) => {
   try {
-    const res = await axios.delete(`/api/article/${id}`)
+    const res = await request.delete(`/article/${id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success('删除成功！')
       getList()
@@ -362,7 +362,7 @@ const handleDelete = async (id: number) => {
 
 const handleToggleFeatured = async (row: any) => {
   try {
-    const res = await axios.put(`/api/article/featured/${row.id}`)
+    const res = await request.put(`/article/featured/${row.id}`)
     if (res.data && res.data.code === 200) {
       ElMessage.success(row.isFeatured === 1 ? '已取消推荐' : '已设为推荐')
       getList()
@@ -376,7 +376,7 @@ const handleToggleFeatured = async (row: any) => {
 
 const handleApprove = async (row: any) => {
   try {
-    const res = await axios.put('/api/article/admin/review', { id: row.id, approve: true })
+    const res = await request.put('/article/admin/review', { id: row.id, approve: true })
     if (res.data && res.data.code === 200) {
       ElMessage.success('审核通过')
       getList()
@@ -396,7 +396,7 @@ const handleReject = async (row: any) => {
       inputPlaceholder: '请输入原因...'
     })
     if (rejectReason === undefined) return
-    const res = await axios.put('/api/article/admin/review', { id: row.id, approve: false, rejectReason })
+    const res = await request.put('/article/admin/review', { id: row.id, approve: false, rejectReason })
     if (res.data && res.data.code === 200) {
       ElMessage.success('已驳回')
       getList()

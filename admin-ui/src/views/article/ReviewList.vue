@@ -17,14 +17,14 @@
 
 <script setup lang="ts">
 import { ref, onMounted } from 'vue'
-import axios from 'axios'
+import request from '../../api/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const list = ref<any[]>([])
 
 async function fetchList() {
   try {
-    const res = await axios.get('/api/article/admin/reviewList')
+    const res = await request.get('/article/admin/reviewList')
     list.value = res.data?.data?.records || []
   } catch (e) {
     ElMessage.error('获取待审核列表失败')
@@ -33,7 +33,7 @@ async function fetchList() {
 
 async function approve(row: any) {
   try {
-    await axios.put('/api/article/admin/review', { id: row.id, approve: true })
+    await request.put('/article/admin/review', { id: row.id, approve: true })
     ElMessage.success('已通过')
     fetchList()
   } catch (e) {
@@ -47,7 +47,7 @@ async function reject(row: any) {
       confirmButtonText: '提交',
       cancelButtonText: '取消'
     })
-    await axios.put('/api/article/admin/review', { id: row.id, approve: false, rejectReason: value })
+    await request.put('/article/admin/review', { id: row.id, approve: false, rejectReason: value })
     ElMessage.success('已驳回')
     fetchList()
   } catch (e) {

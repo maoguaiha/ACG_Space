@@ -74,7 +74,7 @@
 
 <script setup lang="ts">
 import { ref, onMounted, watch } from 'vue'
-import axios from 'axios'
+import request from '../../api/request'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 interface CommentItem {
@@ -105,7 +105,7 @@ const currentComment = ref<CommentItem | null>(null)
 
 const fetchData = async () => {
   try {
-    const { data } = await axios.get('/api/comment/admin/page', {
+    const { data } = await request.get('/comment/admin/page', {
       params: queryForm.value
     })
     if (data.code === 200) {
@@ -153,7 +153,7 @@ const handleDelete = async (id?: number) => {
       cancelButtonText: '取消',
       type: 'warning'
     })
-    const { data } = await axios.delete(`/api/comment/${id}`)
+    const { data } = await request.delete(`/comment/${id}`)
     if (data.code === 200) {
       ElMessage.success('删除成功')
       detailDialogVisible.value = false
