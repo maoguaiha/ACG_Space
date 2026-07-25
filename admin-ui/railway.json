@@ -9,7 +9,8 @@
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE",
     "env": {
-      "BACKEND_URL": "https://authentic-healing-production-ce8a.up.railway.app"
+      "BACKEND_URL": "https://authentic-healing-production-ce8a.up.railway.app",
+      "HOST": "0.0.0.0"
     }
   }
 }

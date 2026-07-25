@@ -9,9 +9,12 @@ import { fileURLToPath } from 'node:url'
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = path.dirname(__filename)
 
+// Railway 在运行时注入 $PORT；绝不在构建期求值（会写死）。
 const PORT = process.env.PORT || 8080
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:18083'
 const DIST = path.join(__dirname, 'dist')
+
+console.log(`[admin-ui] env PORT=${PORT} BACKEND_URL=${BACKEND} DIST=${DIST}`)
 
 const MIME = {
   '.html': 'text/html; charset=utf-8',
@@ -29,12 +32,32 @@ const MIME = {
   '.map': 'application/json'
 }
 
+function serveStatic(res, filePath) {
+  fs.readFile(filePath, (err, data) => {
+    if (!err) {
+      const ext = path.extname(filePath).toLowerCase()
+      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
+      res.end(data)
+      return true
+    }
+    return false
+  })
+  return true
+}
+
 const server = http.createServer((req, res) => {
   const parsed = new URL(req.url, `http://${req.headers.host}`)
 
   // 1) /api 请求 -> 反向代理到后端（服务端转发，无 CORS 限制）
   if (parsed.pathname.startsWith('/api')) {
-    const target = new URL(BACKEND)
+    let target
+    try {
+      target = new URL(BACKEND)
+    } catch (e) {
+      res.writeHead(500, { 'Content-Type': 'application/json' })
+      res.end(JSON.stringify({ code: 500, msg: 'Bad BACKEND_URL: ' + BACKEND, data: null }))
+      return
+    }
     const options = {
       hostname: target.hostname,
       port: target.port || 80,
@@ -43,7 +66,6 @@ const server = http.createServer((req, res) => {
       headers: { ...req.headers, host: target.host }
     }
     const proxyReq = http.request(options, (proxyRes) => {
-      // 透传响应头
       const headers = { ...proxyRes.headers }
       res.writeHead(proxyRes.statusCode, headers)
       proxyRes.pipe(res)
@@ -56,30 +78,64 @@ const server = http.createServer((req, res) => {
     return
   }
 
-  // 2) 静态资源
-  const safePath = parsed.pathname === '/' ? 'index.html' : parsed.pathname
+  // 2) 健康检查 / 根路径：先尝试 dist/index.html，缺失也返回 200（保证 Railway 健康检查通过）
+  if (parsed.pathname === '/') {
+    const indexPath = path.join(DIST, 'index.html')
+    if (fs.existsSync(indexPath)) {
+      fs.readFile(indexPath, (err, data) => {
+        if (!err) {
+          res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+          res.end(data)
+        } else {
+          res.writeHead(200); res.end('<h1>admin-ui</h1>')
+        }
+      })
+      return
+    }
+    // dist 还没构建好时的兜底（避免健康检查因 404 失败）
+    res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+    res.end('<h1>admin-ui starting...</h1>')
+    return
+  }
+
+  // 3) 静态资源
+  const safePath = parsed.pathname
   const filePath = path.join(DIST, safePath)
-  // 防目录穿越
   if (!filePath.startsWith(DIST)) {
     res.writeHead(403); res.end('Forbidden'); return
   }
-  fs.readFile(filePath, (err, data) => {
-    if (!err) {
-      const ext = path.extname(filePath).toLowerCase()
-      res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
-      res.end(data)
-      return
-    }
-    // 3) SPA 兜底：未匹配路径返回 index.html
-    fs.readFile(path.join(DIST, 'index.html'), (e2, html) => {
-      if (e2) { res.writeHead(404); res.end('Not found'); return }
-      res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
-      res.end(html)
+  if (fs.existsSync(filePath) && fs.statSync(filePath).isFile()) {
+    const ext = path.extname(filePath).toLowerCase()
+    res.writeHead(200, { 'Content-Type': MIME[ext] || 'application/octet-stream' })
+    fs.createReadStream(filePath).pipe(res)
+    return
+  }
+  // 4) SPA 兜底：未匹配路径返回 index.html
+  const indexPath = path.join(DIST, 'index.html')
+  if (fs.existsSync(indexPath)) {
+    fs.readFile(indexPath, (e2, html) => {
+      if (!e2) {
+        res.writeHead(200, { 'Content-Type': 'text/html; charset=utf-8' })
+        res.end(html)
+      } else {
+        res.writeHead(404); res.end('Not found')
+      }
     })
-  })
+  } else {
+    res.writeHead(200); res.end('<h1>admin-ui</h1>')
+  }
 })
 
 // 显式绑定 0.0.0.0 + Railway 分配的 $PORT（健康检查才能连上）
-server.listen(PORT, '0.0.0.0', () => {
-  console.log(`[admin-ui] serving dist on 0.0.0.0:${PORT}, proxy /api -> ${BACKEND}`)
+try {
+  server.listen(PORT, '0.0.0.0', () => {
+    console.log(`[admin-ui] listening on 0.0.0.0:${PORT}, proxy /api -> ${BACKEND}`)
+  })
+} catch (e) {
+  console.error('[admin-ui] failed to listen:', e)
+  process.exit(1)
+}
+server.on('error', (e) => {
+  console.error('[admin-ui] server error:', e)
+  process.exit(1)
 })

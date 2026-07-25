@@ -9,7 +9,8 @@
     "healthcheckPath": "/",
     "restartPolicyType": "ON_FAILURE",
     "env": {
-      "NUXT_API_INTERNAL_BASE": "https://authentic-healing-production-ce8a.up.railway.app"
+      "NUXT_API_INTERNAL_BASE": "https://authentic-healing-production-ce8a.up.railway.app",
+      "HOST": "0.0.0.0"
     }
   }
 }

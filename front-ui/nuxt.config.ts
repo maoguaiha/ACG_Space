@@ -24,12 +24,13 @@ export default defineNuxtConfig({
     }
   },
 
-  // 显式指定 Nitro 监听地址与端口（Railway 部署必填）
-  // Railway 通过 $PORT 分配端口，必须监听 0.0.0.0 且用该端口，否则健康检查连不上 → 502
+  // 显式指定 Nitro 监听地址（Railway 部署必填）
+  // 注意：【不能】在配置里写死 port！Nuxt 在构建期就求值 process.env.PORT（此时为空）→ 写死 3000，
+  //       运行期 Railway 分配的 $PORT 被忽略，健康检查连不上 → 502。
+  //       正确做法：只固定 host=0.0.0.0，端口交给 Nitro 运行期读运行时 $PORT（node-server preset 默认行为）。
   nitro: {
     server: {
-      host: '0.0.0.0',
-      port: Number(process.env.PORT) || 3000
+      host: '0.0.0.0'
     }
   },
 
