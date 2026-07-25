@@ -14,8 +14,10 @@ import org.springframework.util.StringUtils;
 import org.springframework.web.filter.OncePerRequestFilter;
 
 import java.io.IOException;
-import java.util.ArrayList;
+import java.util.List;
 import java.util.Set;
+
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
  * JWT 认证过滤器
@@ -55,7 +57,8 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
             try {
                 Long userId = jwtUtils.getUserId(token);
                 if (userId != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(userId, null, new ArrayList<>());
+                    UsernamePasswordAuthenticationToken authenticationToken = new UsernamePasswordAuthenticationToken(
+                            userId, null, List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
                     authenticationToken.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
                 }
