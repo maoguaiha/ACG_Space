@@ -1,25 +1,12 @@
-import axios from 'axios'
+import axios, { type AxiosRequestConfig, type AxiosResponse } from 'axios'
 
-const request = axios.create({
+const instance = axios.create({
   baseURL: '/api',
   timeout: 15000
 })
 
-// 请求拦截器：自动附加 Token
-request.interceptors.request.use(
-  (config) => {
-    const token = localStorage.getItem('acg_token')
-    if (token) {
-      config.headers.set('Authorization', `Bearer ${token}`)
-    }
-    return config
-  },
-  (error) => Promise.reject(error)
-)
-
 // 响应拦截器：401 通知
-// （重定向逻辑在 auth store 里处理，避免循环依赖）
-request.interceptors.response.use(
+instance.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
@@ -29,5 +16,28 @@ request.interceptors.response.use(
     return Promise.reject(error)
   }
 )
+
+// 不依赖拦截器注入 token——直接在每次调用时注入
+function withAuth(config: AxiosRequestConfig = {}): AxiosRequestConfig {
+  const token = localStorage.getItem('acg_token')
+  return token
+    ? { ...config, headers: { ...config.headers, Authorization: `Bearer ${token}` } }
+    : config
+}
+
+const request = {
+  get<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return instance.get(url, withAuth(config))
+  },
+  post<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return instance.post(url, data, withAuth(config))
+  },
+  put<T = any>(url: string, data?: any, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return instance.put(url, data, withAuth(config))
+  },
+  delete<T = any>(url: string, config?: AxiosRequestConfig): Promise<AxiosResponse<T>> {
+    return instance.delete(url, withAuth(config))
+  }
+}
 
 export default request
