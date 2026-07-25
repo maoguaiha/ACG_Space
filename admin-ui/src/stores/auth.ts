@@ -12,6 +12,17 @@ export const useAuthStore = defineStore('auth', () => {
   const displayName = computed(() => userInfo.value?.nickName || userInfo.value?.userName || 'Admin')
   const avatar = computed(() => userInfo.value?.avatar || '')
 
+  // 监听请求层的 401 事件（避免 request.ts 里 import router 造成循环依赖）
+  if (typeof window !== 'undefined') {
+    window.addEventListener('auth:401', () => {
+      token.value = null
+      userInfo.value = null
+      if (router.currentRoute.value.path !== '/login') {
+        router.replace({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
+      }
+    })
+  }
+
   async function login(username: string, password: string) {
     const res = await loginApi(username, password)
     token.value = res.token

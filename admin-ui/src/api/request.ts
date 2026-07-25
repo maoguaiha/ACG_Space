@@ -1,5 +1,4 @@
 import axios from 'axios'
-import router from '../router'
 
 const request = axios.create({
   baseURL: '/api',
@@ -18,15 +17,14 @@ request.interceptors.request.use(
   (error) => Promise.reject(error)
 )
 
-// 响应拦截器：401 跳转登录页
+// 响应拦截器：401 通知
+// （重定向逻辑在 auth store 里处理，避免循环依赖）
 request.interceptors.response.use(
   (response) => response,
   (error) => {
     if (error.response?.status === 401) {
       localStorage.removeItem('acg_token')
-      if (router.currentRoute.value.path !== '/login') {
-        router.replace({ path: '/login', query: { redirect: router.currentRoute.value.fullPath } })
-      }
+      window.dispatchEvent(new CustomEvent('auth:401'))
     }
     return Promise.reject(error)
   }
