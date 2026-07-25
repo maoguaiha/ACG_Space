@@ -1033,3 +1033,27 @@ SELECT '=== 奖池物品关联 ===' AS info;
 SELECT pool_id, COUNT(*) AS item_count FROM biz_gacha_pool_item WHERE del_flag=0 GROUP BY pool_id;
 
 SET FOREIGN_KEY_CHECKS = 1;
+
+
+
+
+
+-- 1) 已有列改名（match Java 实体驼峰→下划线映射）
+ALTER TABLE biz_anime CHANGE COLUMN `name` `title` varchar(200) NOT NULL COMMENT '番剧名称';
+ALTER TABLE biz_anime CHANGE COLUMN `name_cn` `title_original` varchar(200) DEFAULT NULL COMMENT '原版名称';
+ALTER TABLE biz_anime CHANGE COLUMN `cover` `cover_url` varchar(500) DEFAULT NULL COMMENT '封面图片';
+ALTER TABLE biz_anime CHANGE COLUMN `episodes` `total_episodes` int(11) DEFAULT 0 COMMENT '总集数';
+ALTER TABLE biz_anime CHANGE COLUMN `tags` `genre` varchar(500) DEFAULT NULL COMMENT '番剧类型';
+
+-- 2) 新增缺失列
+ALTER TABLE biz_anime ADD COLUMN `publish_year` int(11) DEFAULT NULL COMMENT '开播年份' AFTER `total_episodes`;
+ALTER TABLE biz_anime ADD COLUMN `featured` tinyint(4) DEFAULT 0 COMMENT '是否首页推荐' AFTER `rating`;
+ALTER TABLE biz_anime ADD COLUMN `create_by` varchar(64) DEFAULT NULL COMMENT '创建者';
+ALTER TABLE biz_anime ADD COLUMN `update_by` varchar(64) DEFAULT NULL COMMENT '更新者';
+ALTER TABLE biz_anime ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注';
+
+-- 3) 删掉旧代码不用的列（可选，不删也不影响运行）
+ALTER TABLE biz_anime DROP COLUMN `type`;
+ALTER TABLE biz_anime DROP COLUMN `air_date`;
+ALTER TABLE biz_anime DROP COLUMN `air_weekday`;
+ALTER TABLE biz_anime DROP COLUMN `rating_count`;
