@@ -1,9 +1,13 @@
 // 零依赖静态服务器 + /api 反向代理（部署到 Railway 用）
 // 前端 SPA 调用同源 /api/*，本服务把 /api 转发到后端，避免跨域(CORS)问题。
-const http = require('http')
-const fs = require('fs')
-const path = require('path')
-const url = require('url')
+// 注意：package.json 设了 "type": "module"，故本文件必须用 ESM 写法（不能用 require）
+import http from 'node:http'
+import fs from 'node:fs'
+import path from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
 
 const PORT = process.env.PORT || 8080
 const BACKEND = process.env.BACKEND_URL || 'http://localhost:18083'
@@ -26,20 +30,20 @@ const MIME = {
 }
 
 const server = http.createServer((req, res) => {
-  const parsed = url.parse(req.url)
+  const parsed = new URL(req.url, `http://${req.headers.host}`)
 
   // 1) /api 请求 -> 反向代理到后端（服务端转发，无 CORS 限制）
   if (parsed.pathname.startsWith('/api')) {
-    const target = url.parse(BACKEND)
+    const target = new URL(BACKEND)
     const options = {
       hostname: target.hostname,
       port: target.port || 80,
-      path: parsed.path,
+      path: parsed.pathname + parsed.search,
       method: req.method,
       headers: { ...req.headers, host: target.host }
     }
     const proxyReq = http.request(options, (proxyRes) => {
-      // 透传除 chunked 外的响应头
+      // 透传响应头
       const headers = { ...proxyRes.headers }
       res.writeHead(proxyRes.statusCode, headers)
       proxyRes.pipe(res)
@@ -75,6 +79,7 @@ const server = http.createServer((req, res) => {
   })
 })
 
-server.listen(PORT, () => {
-  console.log(`[admin-ui] serving dist on :${PORT}, proxy /api -> ${BACKEND}`)
+// 显式绑定 0.0.0.0 + Railway 分配的 $PORT（健康检查才能连上）
+server.listen(PORT, '0.0.0.0', () => {
+  console.log(`[admin-ui] serving dist on 0.0.0.0:${PORT}, proxy /api -> ${BACKEND}`)
 })
