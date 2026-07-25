@@ -61,12 +61,17 @@ const server = http.createServer((req, res) => {
     }
     const isHttps = target.protocol === 'https:'
     const transport = isHttps ? https : http
+    // 去掉浏览器专用头，避免后端 CORS 过滤器因 Origin mismatch 返回 403
+    const {
+      origin, referer, 'sec-fetch-site': _sfs,
+      'sec-fetch-mode': _sfm, 'sec-fetch-dest': _sfd, ...cleanHeaders
+    } = req.headers
     const options = {
       hostname: target.hostname,
       port: target.port ? Number(target.port) : (isHttps ? 443 : 80),
       path: parsed.pathname + parsed.search,
       method: req.method,
-      headers: { ...req.headers, host: target.host },
+      headers: { ...cleanHeaders, host: target.host },
       rejectUnauthorized: false
     }
     const proxyReq = transport.request(options, (proxyRes) => {

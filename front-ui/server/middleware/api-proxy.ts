@@ -14,10 +14,14 @@ export default defineEventHandler(async (event) => {
     : ''
 
   try {
+    // 去掉浏览器专用头，避免后端 CORS 过滤器因 Origin mismatch 返回 403
+    const allHeaders = Object.fromEntries(event.headers.entries())
+    const { origin, referer, 'sec-fetch-site': _sfs,
+      'sec-fetch-mode': _sfm, 'sec-fetch-dest': _sfd, ...cleanHeaders } = allHeaders as Record<string, string>
     const res = await fetch(targetUrl + queryString, {
       method: event.method,
       headers: {
-        ...Object.fromEntries(event.headers.entries()),
+        ...cleanHeaders,
         host: new URL(baseUrl).host,
       },
       body: event.method !== 'GET' && event.method !== 'HEAD'
