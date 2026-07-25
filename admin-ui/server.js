@@ -2,6 +2,7 @@
 // 前端 SPA 调用同源 /api/*，本服务把 /api 转发到后端，避免跨域(CORS)问题。
 // 注意：package.json 设了 "type": "module"，故本文件必须用 ESM 写法（不能用 require）
 import http from 'node:http'
+import https from 'node:https'
 import fs from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -58,14 +59,17 @@ const server = http.createServer((req, res) => {
       res.end(JSON.stringify({ code: 500, msg: 'Bad BACKEND_URL: ' + BACKEND, data: null }))
       return
     }
+    const isHttps = target.protocol === 'https:'
+    const transport = isHttps ? https : http
     const options = {
       hostname: target.hostname,
-      port: target.port || 80,
+      port: target.port ? Number(target.port) : (isHttps ? 443 : 80),
       path: parsed.pathname + parsed.search,
       method: req.method,
-      headers: { ...req.headers, host: target.host }
+      headers: { ...req.headers, host: target.host },
+      rejectUnauthorized: false
     }
-    const proxyReq = http.request(options, (proxyRes) => {
+    const proxyReq = transport.request(options, (proxyRes) => {
       const headers = { ...proxyRes.headers }
       res.writeHead(proxyRes.statusCode, headers)
       proxyRes.pipe(res)
