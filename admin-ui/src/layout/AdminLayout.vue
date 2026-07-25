@@ -67,8 +67,18 @@
           </el-breadcrumb>
         </div>
         <div class="header-right">
-          <el-avatar size="small" src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
-          <span class="username">Admin</span>
+          <el-dropdown trigger="click" @command="handleCommand">
+            <span class="user-area">
+              <el-avatar size="small" :src="authStore.avatar || 'https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png'" />
+              <span class="username">{{ authStore.displayName }}</span>
+              <el-icon class="arrow-icon"><ArrowDown /></el-icon>
+            </span>
+            <template #dropdown>
+              <el-dropdown-menu>
+                <el-dropdown-item command="logout" icon="SwitchButton">注销账号</el-dropdown-item>
+              </el-dropdown-menu>
+            </template>
+          </el-dropdown>
         </div>
       </el-header>
       
@@ -86,10 +96,21 @@
 <script setup lang="ts">
 import { computed } from 'vue'
 import { useRoute } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 
 const route = useRoute()
+const authStore = useAuthStore()
 const activeMenu = computed(() => route.path)
 const currentTitle = computed(() => route.meta.title as string)
+
+const handleCommand = (command: string) => {
+  if (command === 'logout') {
+    authStore.logoutAndRedirect()
+  }
+}
+
+// 初始化加载用户信息
+authStore.loadUser()
 </script>
 
 <style scoped>
@@ -157,6 +178,20 @@ const currentTitle = computed(() => route.meta.title as string)
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+.user-area {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+}
+
+.arrow-icon {
+  font-size: 12px;
+  color: #9ca3af;
+  margin-left: 2px;
 }
 
 .username {

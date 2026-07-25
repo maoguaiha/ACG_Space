@@ -5,6 +5,12 @@ import { Box, Present, Wallet, Van, ShoppingCart } from '@element-plus/icons-vue
 
 const routes: RouteRecordRaw[] = [
   {
+    path: '/login',
+    name: 'Login',
+    component: () => import('../views/login/index.vue'),
+    meta: { title: '登录', noAuth: true }
+  },
+  {
     path: '/',
     component: AdminLayout,
     redirect: '/dashboard',
@@ -94,6 +100,17 @@ const routes: RouteRecordRaw[] = [
 const router = createRouter({
   history: createWebHistory(),
   routes
+})
+
+// 导航守卫：未登录跳转登录页
+router.beforeEach((to) => {
+  const token = localStorage.getItem('acg_token')
+  if (!token && to.meta.noAuth !== true) {
+    return { path: '/login', query: { redirect: to.fullPath } }
+  }
+  if (token && to.path === '/login') {
+    return '/'
+  }
 })
 
 export default router

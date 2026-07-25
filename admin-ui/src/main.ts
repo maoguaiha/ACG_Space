@@ -4,6 +4,7 @@ import ElementPlus from 'element-plus'
 import 'element-plus/dist/index.css'
 import * as ElementPlusIconsVue from '@element-plus/icons-vue'
 import router from './router'
+import './utils/auth-interceptor'  // 全局 axios token 拦截（必须在 router 之后加载）
 import App from './App.vue'
 import './style.css'
 
