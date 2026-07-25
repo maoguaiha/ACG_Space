@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const baseUrl = '/api/admin/redeem'
+import request from './request'
 
 export interface DeliveryOrder {
   id?: number
@@ -58,22 +56,22 @@ export const deliveryApi = {
     orderNo?: string
     status?: number
   }) {
-    return axios.get<{ data: DeliveryPageResult }>(`${baseUrl}/orders`, { params })
+    return request.get<{ data: DeliveryPageResult }>('/admin/redeem/orders', { params })
   },
 
   getStats() {
-    return axios.get<{ data: DeliveryStats }>(`${baseUrl}/stats`)
+    return request.get<{ data: DeliveryStats }>('/admin/redeem/stats')
   },
 
   getById(id: number) {
-    return axios.get<{ data: DeliveryOrder }>(`${baseUrl}/order/${id}`)
+    return request.get<{ data: DeliveryOrder }>('/admin/redeem/order/${id}')
   },
 
   ship(data: ShipRequest) {
-    return axios.post(`${baseUrl}/ship`, data)
+    return request.post('/admin/redeem/ship', data)
   },
 
   complete(id: number) {
-    return axios.post(`${baseUrl}/complete/${id}`)
+    return request.post('/admin/redeem/complete/${id}')
   }
 }

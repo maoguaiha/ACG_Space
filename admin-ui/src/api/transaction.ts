@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const baseUrl = '/api'
+import request from './request'
 
 export interface Transaction {
   id?: number
@@ -50,22 +48,22 @@ export const transactionApi = {
     orderId?: string
     status?: number
   }) {
-    return axios.get<{ data: TransactionPageResult }>(`${baseUrl}/transaction/page`, { params })
+    return request.get<{ data: TransactionPageResult }>('/transaction/page', { params })
   },
 
   getStats() {
-    return axios.get<{ data: TransactionStats }>(`${baseUrl}/transaction/stats`)
+    return request.get<{ data: TransactionStats }>('/transaction/stats')
   },
 
   getByOrderId(orderId: string) {
-    return axios.get<{ data: Transaction }>(`${baseUrl}/transaction/${orderId}`)
+    return request.get<{ data: Transaction }>('/transaction/${orderId}')
   },
 
   compensate(orderId: string) {
-    return axios.post(`${baseUrl}/transaction/${orderId}/compensate`)
+    return request.post('/transaction/${orderId}/compensate')
   },
 
   retry(orderId: string) {
-    return axios.post(`${baseUrl}/transaction/${orderId}/retry`)
+    return request.post('/transaction/${orderId}/retry')
   }
 }

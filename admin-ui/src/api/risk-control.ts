@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const baseUrl = '/api/admin/risk-control'
+import request from './request'
 
 export interface CircuitBreakerVO {
   name: string
@@ -24,14 +22,14 @@ export interface RiskOverviewVO {
 
 export const riskControlApi = {
   getOverview() {
-    return axios.get<RiskOverviewVO>(`${baseUrl}/overview`)
+    return request.get<RiskOverviewVO>('/admin/risk-control/overview')
   },
 
   getCircuitBreakers() {
-    return axios.get<CircuitBreakerVO[]>(`${baseUrl}/circuit-breakers`)
+    return request.get<CircuitBreakerVO[]>('/admin/risk-control/circuit-breakers')
   },
 
   getRateLimiters() {
-    return axios.get<RateLimiterVO[]>(`${baseUrl}/rate-limiters`)
+    return request.get<RateLimiterVO[]>('/admin/risk-control/rate-limiters')
   }
 }

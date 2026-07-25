@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const baseUrl = '/api'
+import request from './request'
 
 export interface Item {
   id?: number
@@ -38,26 +36,26 @@ export const itemApi = {
     rarity?: string
     type?: string
   }) {
-    return axios.get<{ data: ItemPageResult }>(`${baseUrl}/item/page`, { params })
+    return request.get<{ data: ItemPageResult }>('/item/page', { params })
   },
 
   getById(id: number) {
-    return axios.get<{ data: Item }>(`${baseUrl}/item/${id}`)
+    return request.get<{ data: Item }>('/item/${id}')
   },
 
   getByItemKey(itemKey: string) {
-    return axios.get<{ data: Item }>(`${baseUrl}/item/key/${itemKey}`)
+    return request.get<{ data: Item }>('/item/key/${itemKey}')
   },
 
   create(data: Item) {
-    return axios.post(`${baseUrl}/item`, data)
+    return request.post('/item', data)
   },
 
   update(data: Item) {
-    return axios.put(`${baseUrl}/item`, data)
+    return request.put('/item', data)
   },
 
   delete(id: number) {
-    return axios.delete(`${baseUrl}/item/${id}`)
+    return request.delete('/item/${id}')
   }
 }

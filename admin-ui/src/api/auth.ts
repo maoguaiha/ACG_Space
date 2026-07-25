@@ -1,13 +1,11 @@
-import axios from 'axios'
-
-const BASE = '/api'
+import request from './request'
 
 export async function loginApi(username: string, password: string) {
-  const res = await axios.post<{ token: string }>(`${BASE}/auth/login`, { username, password })
+  const res = await request.post<{ token: string }>('/auth/login', { username, password })
   return res.data
 }
 
 export async function fetchMe() {
-  const res = await axios.get<{ nickName?: string; userName?: string; avatar?: string }>(`${BASE}/auth/me`)
+  const res = await request.get<{ nickName?: string; userName?: string; avatar?: string }>('/auth/me')
   return res.data
 }

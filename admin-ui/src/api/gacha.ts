@@ -1,6 +1,4 @@
-import axios from 'axios'
-
-const baseUrl = '/api'
+import request from './request'
 
 export interface GachaPool {
   id?: number
@@ -62,46 +60,46 @@ export const gachaApi = {
     name?: string
     status?: number
   }) {
-    return axios.get<{ data: GachaPoolPageResult }>(`${baseUrl}/gacha/page`, { params })
+    return request.get<{ data: GachaPoolPageResult }>('/gacha/page', { params })
   },
 
   getActivePools() {
-    return axios.get<{ data: GachaPool[] }>(`${baseUrl}/gacha/active`)
+    return request.get<{ data: GachaPool[] }>('/gacha/active')
   },
 
   getById(id: number) {
-    return axios.get<{ data: GachaPool }>(`${baseUrl}/gacha/${id}`)
+    return request.get<{ data: GachaPool }>('/gacha/${id}')
   },
 
   create(data: GachaPool) {
-    return axios.post(`${baseUrl}/gacha`, data)
+    return request.post('/gacha', data)
   },
 
   update(data: GachaPool) {
-    return axios.put(`${baseUrl}/gacha`, data)
+    return request.put('/gacha', data)
   },
 
   endPool(id: number) {
-    return axios.post(`${baseUrl}/gacha/${id}/end`)
+    return request.post('/gacha/${id}/end')
   },
 
   getPool(id: number) {
-    return axios.get<{ data: GachaPool }>(`${baseUrl}/gacha/${id}`)
+    return request.get<{ data: GachaPool }>('/gacha/${id}')
   },
 
   getPrizes(poolId: number) {
-    return axios.get<{ data: GachaPrize[] }>(`${baseUrl}/gacha/${poolId}/prizes`)
+    return request.get<{ data: GachaPrize[] }>('/gacha/${poolId}/prizes')
   },
 
   createPrize(poolId: number, data: Omit<GachaPrize, 'id' | 'poolId'>) {
-    return axios.post(`${baseUrl}/gacha/${poolId}/prizes`, data)
+    return request.post('/gacha/${poolId}/prizes', data)
   },
 
   updatePrize(data: GachaPrize) {
-    return axios.put(`${baseUrl}/gacha/prizes`, data)
+    return request.put('/gacha/prizes', data)
   },
 
   deletePrize(id: number) {
-    return axios.delete(`${baseUrl}/gacha/prizes/${id}`)
+    return request.delete('/gacha/prizes/${id}')
   }
 }
