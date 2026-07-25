@@ -8,6 +8,6 @@ export async function loginApi(username: string, password: string) {
 }
 
 export async function fetchMe() {
-  const res = await axios.get<{ nickName?: string; userName?: string; avatar?: string }>(`${BASE}/system/user/myProfile`)
+  const res = await axios.get<{ nickName?: string; userName?: string; avatar?: string }>(`${BASE}/auth/me`)
   return res.data
 }
