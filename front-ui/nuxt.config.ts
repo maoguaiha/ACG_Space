@@ -24,6 +24,15 @@ export default defineNuxtConfig({
     }
   },
 
+  // 显式指定 Nitro 监听地址与端口（Railway 部署必填）
+  // Railway 通过 $PORT 分配端口，必须监听 0.0.0.0 且用该端口，否则健康检查连不上 → 502
+  nitro: {
+    server: {
+      host: '0.0.0.0',
+      port: Number(process.env.PORT) || 3000
+    }
+  },
+
   // 路由渲染策略：混合模式 SSR + SWR + ISR
   routeRules: {
     // 首页：服务端渲染 + SWR 60秒缓存，兼顾 SEO 与时效性
