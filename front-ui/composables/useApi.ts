@@ -86,6 +86,12 @@ function getBaseUrl(): string {
 }
 
 /**
+ * SSR 请求超时时间（毫秒）
+ * Railway 环境中后端可能未就绪，必须设置超时防止 SSR 无限 hanging
+ */
+const SSR_FETCH_TIMEOUT = 8000
+
+/**
  * 通用 GET 请求
  * 配合 useAsyncData/useFetch 使用，支持 SSR 数据预取
  */
@@ -96,7 +102,8 @@ export async function apiFetch<T>(
   const baseUrl = getBaseUrl()
   const userStore = useUserStore()
 
-  const result = await $fetch<ApiResult<T>>(`${baseUrl}${path}`, {
+  // SSR 阶段必须设置超时，防止后端不可达时无限 hanging
+  const fetchOptions: any = {
     ...options,
     headers: {
       ...options?.headers,
@@ -108,7 +115,16 @@ export async function apiFetch<T>(
         userStore.logout() // Token 失效，退出登录
       }
     }
-  })
+  }
+
+  // Nitro $fetch 在服务端基于 ofetch，ofetch 支持 timeout 选项
+  if (import.meta.server) {
+    fetchOptions.timeout = SSR_FETCH_TIMEOUT
+    // retry 设为 0，避免超时后自动重试延长 hang 时间
+    fetchOptions.retry = 0
+  }
+
+  const result = await $fetch<ApiResult<T>>(`${baseUrl}${path}`, fetchOptions)
 
   if (result.code !== 200) {
     throw new Error(result.msg || '服务端返回错误')

@@ -157,16 +157,24 @@ import { fetchBangumiCalendar, fetchFeaturedAnime } from '~/composables/useApi'
 // ====== 数据层 ======
 const animeStore = useAnimeStore()
 
-// 预取数据
+// 预取数据（SSR 阶段后端可能未就绪，必须用 try-catch 兜底，防止页面渲染崩溃）
 await useAsyncData('homeData', async () => {
-  await Promise.all([
-    animeStore.loadAnimeList(),
-  ])
+  try {
+    await Promise.all([
+      animeStore.loadAnimeList(),
+    ])
+  } catch {
+    console.warn('[SSR] 番剧列表预取失败，使用空列表兜底')
+  }
   return true
 })
 
-const { data: bangumiCalendar } = await useAsyncData('bangumiCalendar', () => fetchBangumiCalendar())
-const { data: featuredAnimeList } = await useAsyncData('featuredAnime', () => fetchFeaturedAnime())
+const { data: bangumiCalendar } = await useAsyncData('bangumiCalendar',
+  () => fetchBangumiCalendar().catch(() => [])
+)
+const { data: featuredAnimeList } = await useAsyncData('featuredAnime',
+  () => fetchFeaturedAnime().catch(() => [])
+)
 
 // ====== 搜索与筛选逻辑 ======
 const searchKeyword = ref('')

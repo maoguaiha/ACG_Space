@@ -5,12 +5,11 @@
     "buildCommand": "npm run build"
   },
   "deploy": {
-    "startCommand": "sh -c \"HOST=0.0.0.0 NUXT_API_INTERNAL_BASE=https://authentic-healing-production-ce8a.up.railway.app node .output/server/index.mjs\"",
+    "startCommand": "node .output/server/index.mjs",
     "healthcheckPath": "/",
-    "healthcheckTimeout": 600,
+    "healthcheckTimeout": 300,
     "restartPolicyType": "ON_FAILURE",
     "env": {
-      "NUXT_API_INTERNAL_BASE": "https://authentic-healing-production-ce8a.up.railway.app",
       "HOST": "0.0.0.0"
     }
   }
