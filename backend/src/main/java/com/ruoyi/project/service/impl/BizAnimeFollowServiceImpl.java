@@ -77,7 +77,7 @@ public class BizAnimeFollowServiceImpl extends ServiceImpl<BizAnimeFollowMapper,
     public boolean isFollowedByBgmId(Long userId, Integer bgmId) {
         if (userId == null) return false;
         // 先找本地是否有此 bgmId 的番剧
-        BizAnime anime = animeService.getOne(new LambdaQueryWrapper<BizAnime>().eq(BizAnime::getBgmId, bgmId));
+        BizAnime anime = animeService.getOne(new LambdaQueryWrapper<BizAnime>().eq(BizAnime::getBgmId, bgmId).last("LIMIT 1"));
         if (anime == null) return false;
         // 再检查是否关注
         return isFollowed(userId, anime.getId());
