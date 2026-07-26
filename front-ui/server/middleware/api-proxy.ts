@@ -26,8 +26,9 @@ export default defineEventHandler(async (event) => {
     const res = await fetch(targetUrl + queryString, {
       method: event.method,
       headers: cleanHeaders,
+      // POST/PUT 用 readRawBody 保留原始 JSON 字符串，避免 readBody 解析后 fetch 二次序列化不匹配
       body: event.method !== 'GET' && event.method !== 'HEAD'
-        ? await readBody(event)
+        ? await readRawBody(event)
         : undefined,
     })
 
