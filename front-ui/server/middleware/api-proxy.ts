@@ -32,9 +32,13 @@ export default defineEventHandler(async (event) => {
         : undefined,
     })
 
-    // 透传响应
+    // 透传响应（arrayBuffer() 已自动解压，需去掉 Content-Encoding 防止客户端重复解压）
     const body = await res.arrayBuffer()
-    setResponseHeaders(event, Object.fromEntries(res.headers.entries()))
+    const responseHeaders = Object.fromEntries(res.headers.entries())
+    // arrayBuffer() 返回的是解压后的原始数据，如果保留 gzip/brotli 头，浏览器会二次解压失败
+    delete (responseHeaders as any)['content-encoding']
+    delete (responseHeaders as any)['transfer-encoding']
+    setResponseHeaders(event, responseHeaders)
     setResponseStatus(event, res.status)
     return body
   } catch (e: any) {
