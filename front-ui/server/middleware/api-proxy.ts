@@ -32,12 +32,15 @@ export default defineEventHandler(async (event) => {
         : undefined,
     })
 
-    // 透传响应（arrayBuffer() 已自动解压，需去掉 Content-Encoding 防止客户端重复解压）
+    // 透传响应（arrayBuffer() 已自动解压，需重算 Content-Length，否则会触发 HTTP/2 协议错误）
     const body = await res.arrayBuffer()
     const responseHeaders = Object.fromEntries(res.headers.entries())
-    // arrayBuffer() 返回的是解压后的原始数据，如果保留 gzip/brotli 头，浏览器会二次解压失败
+    // arrayBuffer() 返回的是解压后的原始数据：
+    //  - Content-Encoding/Transfer-Encoding 必须删，否则浏览器会重复解压
+    //  - Content-Length 是压缩后的大小，必须删，否则 HTTP/2 帧长度对不上 → ERR_HTTP2_PROTOCOL_ERROR
     delete (responseHeaders as any)['content-encoding']
     delete (responseHeaders as any)['transfer-encoding']
+    delete (responseHeaders as any)['content-length']
     setResponseHeaders(event, responseHeaders)
     setResponseStatus(event, res.status)
     return body
