@@ -17,22 +17,34 @@ export default defineEventHandler(async (event) => {
     : ''
 
   try {
+    // 从 event.headers 单独取关键头（避免 Object.fromEntries 漏字段时间复杂性）
+    const authorization = event.headers.get('authorization')
+    const cookie = event.headers.get('cookie')
+
+    // 取所有头，去掉浏览器专用头（避免后端安全过滤器判定跨域失败）
     const allHeaders = Object.fromEntries(event.headers.entries())
-    // 去掉浏览器专用头，避免后端 CORS/安全过滤器因 Origin mismatch 返回 403
     const { origin, referer, 'sec-fetch-site': _sfs,
       'sec-fetch-mode': _sfm, 'sec-fetch-dest': _sfd,
-      'accept-encoding': _ae, host: _h, ...cleanHeaders } = allHeaders as Record<string, string>
+      'accept-encoding': _ae, host: _h,
+      authorization: _a, cookie: _c,  // 也去掉这两个，后面显式赋值保证最新
+      ...forwardHeaders } = allHeaders as Record<string, string>
+
+    // 显式塞回 authorization 和 cookie（保证不被之前的解构漏掉）
+    if (authorization) forwardHeaders['authorization'] = authorization
+    if (cookie) forwardHeaders['cookie'] = cookie
+
+    console.log(`[proxy] ${event.method} ${event.path} -> ${targetUrl}${queryString} | auth=${authorization ? 'YES' : 'NO'} | cookie=${cookie ? 'YES' : 'NO'}`)
 
     const res = await fetch(targetUrl + queryString, {
       method: event.method,
-      headers: cleanHeaders,
+      headers: forwardHeaders,
       // POST/PUT 用 readRawBody 保留原始 JSON 字符串，避免 readBody 解析后 fetch 二次序列化不匹配
       body: event.method !== 'GET' && event.method !== 'HEAD'
         ? await readRawBody(event)
         : undefined,
     })
 
-    // 用 .text() 替代 .arrayBuffer() — text() 会后端 JSON 解析更可靠
+    // 用 .text() 替代 .arrayBuffer() — text() 对后端 JSON 解析更可靠
     const body = await res.text()
 
     // 解构剔除会有问题的 Header（不依赖 delete）
@@ -47,6 +59,7 @@ export default defineEventHandler(async (event) => {
     setResponseStatus(event, res.status)
     return body
   } catch (e: any) {
+    console.error(`[proxy] ${event.method} ${event.path} failed:`, e.message)
     throw createError({
       statusCode: 502,
       statusMessage: `Bad Gateway: ${e.message || 'backend unreachable'}`,
