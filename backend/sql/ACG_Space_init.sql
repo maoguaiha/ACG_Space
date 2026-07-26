@@ -1057,3 +1057,15 @@ ALTER TABLE biz_anime DROP COLUMN `type`;
 ALTER TABLE biz_anime DROP COLUMN `air_date`;
 ALTER TABLE biz_anime DROP COLUMN `air_weekday`;
 ALTER TABLE biz_anime DROP COLUMN `rating_count`;
+
+ALTER TABLE biz_comment ADD COLUMN `anime_id` bigint(20) DEFAULT NULL COMMENT '番剧ID' AFTER `user_id`;
+
+ALTER TABLE biz_user_asset
+    ADD COLUMN `is_certified` tinyint(4) DEFAULT 0 AFTER `acquire_source_id`,
+    ADD COLUMN `certified_time` datetime DEFAULT NULL AFTER `is_certified`,
+    ADD COLUMN `create_by` varchar(64) DEFAULT NULL AFTER `del_flag`,
+    ADD COLUMN `update_by` varchar(64) DEFAULT NULL AFTER `create_by`,
+    ADD COLUMN `remark` varchar(500) DEFAULT NULL AFTER `update_by`;
+
+ALTER TABLE biz_article MODIFY COLUMN `user_id` bigint(20) DEFAULT NULL COMMENT '用户ID(兼容旧字段)';
+

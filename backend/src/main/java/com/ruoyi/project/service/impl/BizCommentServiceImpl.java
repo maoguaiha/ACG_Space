@@ -91,7 +91,8 @@ public class BizCommentServiceImpl extends ServiceImpl<BizCommentMapper, BizComm
         Page<BizComment> page = this.page(
                 new Page<>(pageNum, pageSize),
                 new LambdaQueryWrapper<BizComment>()
-                        .eq(BizComment::getAnimeId, animeId)
+                        .eq(BizComment::getTargetType, "anime")
+                        .eq(BizComment::getTargetId, animeId)
                         .eq(BizComment::getDelFlag, 0)
                         .eq(BizComment::getParentId, 0) // 仅主评论
                         .orderByDesc(BizComment::getCreateTime)
