@@ -9,9 +9,11 @@ export default defineEventHandler(async (event) => {
   const baseUrl = config.apiInternalBase
 
   const path = event.path.replace(/^\/api-proxy/, '')
-  // 直接透传原始 query string，避免 getQuery + URLSearchParams 重建导致的参数错误
-  const rawQuery = (event.node.req.url || '').split('?')[1] || ''
-  const targetUrl = `${baseUrl}/api${path}${rawQuery ? '?' + rawQuery : ''}`
+    // 直接透传原始 query string，避免 getQuery + URLSearchParams 重建导致的参数错误
+    const rawUrl = event.node.req.url || ''
+    const rawQuery = rawUrl.split('?')[1] || ''
+    const targetUrl = `${baseUrl}/api${path}${rawQuery ? '?' + rawQuery : ''}`
+    console.log(`[proxy-debug] rawUrl=${rawUrl} | target=${targetUrl}`)
 
   try {
     // 从 event.headers 单独取关键头（避免 Object.fromEntries 漏字段时间复杂性）
