@@ -1069,3 +1069,12 @@ ALTER TABLE biz_user_asset
 
 ALTER TABLE biz_article MODIFY COLUMN `user_id` bigint(20) DEFAULT NULL COMMENT '用户ID(兼容旧字段)';
 
+ALTER TABLE biz_gacha_record
+    ADD COLUMN `transaction_id` varchar(100) DEFAULT NULL COMMENT '事务ID' AFTER `is_guaranteed`,
+    ADD COLUMN `create_by` varchar(64) DEFAULT NULL COMMENT '创建者' AFTER `del_flag`,
+    ADD COLUMN `update_by` varchar(64) DEFAULT NULL COMMENT '更新者' AFTER `create_by`,
+    ADD COLUMN `remark` varchar(500) DEFAULT NULL COMMENT '备注' AFTER `update_by`;
+
+
+-- 封面改为 MEDIUMTEXT 以容纳前端 base64 data URL（640x360 JPEG 约 70KB）
+ALTER TABLE biz_article MODIFY COLUMN `cover_url` MEDIUMTEXT DEFAULT NULL COMMENT '封面图片(base64 dataURL)';
