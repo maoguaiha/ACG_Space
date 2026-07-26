@@ -28,7 +28,8 @@ public class UserArticleController {
         article.setCoverUrl(dto.getCoverUrl());
         article.setCategory(dto.getCategory());
         article.setTags(dto.getTags());
-        article.setStatus(dto.getStatus());
+        // 用户通过前端提交默认设为"待审核"(3)，dto 有值则用 dto 的值
+        article.setStatus(dto.getStatus() != null ? dto.getStatus() : 3);
         BizArticle created = articleService.createArticle(article);
         return Result.success(created.getId());
     }
