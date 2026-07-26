@@ -287,7 +287,9 @@ function getScheduleForDay(dayIndex: number) {
   const targetId = dayIndex + 1
   const dayData = bangumiCalendar.value.find((d: any) => d.weekday.id === targetId)
   if (!dayData || !dayData.items) return []
-  return dayData.items.map((item: any) => ({
+  return dayData.items
+    .filter((item: any) => item.id != null)
+    .map((item: any) => ({
     id: item.id,
     title: item.name_cn || item.name,
     coverUrl: item.images?.large || item.images?.common || '',
