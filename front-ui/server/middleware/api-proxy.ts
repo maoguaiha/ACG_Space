@@ -2,6 +2,9 @@
 // 解决 nuxt.config.ts 的 routeRules proxy 无法读运行时配置的问题
 // 生产环境通过 NUXT_API_INTERNAL_BASE 环境变量指定后端地址
 export default defineEventHandler(async (event) => {
+  // 只拦截 /api-proxy/* 请求，其他路径（如 /health、首页 SSR）走正常路由
+  if (!event.path.startsWith('/api-proxy')) return
+
   const config = useRuntimeConfig()
   const baseUrl = config.apiInternalBase // http://localhost:18083 或 Railway 覆盖值
 
