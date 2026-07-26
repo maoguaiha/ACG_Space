@@ -6,7 +6,7 @@ export default defineEventHandler(async (event) => {
   if (!event.path.startsWith('/api-proxy')) return
 
   const config = useRuntimeConfig()
-  const baseUrl = config.apiInternalBase // http://localhost:18083 或 Railway 覆盖值
+  const baseUrl = config.apiInternalBase
 
   const path = event.path.replace(/^\/api-proxy/, '')
   const targetUrl = `${baseUrl}/api${path}`
@@ -17,31 +17,32 @@ export default defineEventHandler(async (event) => {
     : ''
 
   try {
-    // 去掉浏览器专用头，避免后端 CORS 过滤器因 Origin mismatch 返回 403
     const allHeaders = Object.fromEntries(event.headers.entries())
+    // 去掉浏览器专用头，避免后端 CORS/安全过滤器因 Origin mismatch 返回 403
     const { origin, referer, 'sec-fetch-site': _sfs,
-      'sec-fetch-mode': _sfm, 'sec-fetch-dest': _sfd, ...cleanHeaders } = allHeaders as Record<string, string>
+      'sec-fetch-mode': _sfm, 'sec-fetch-dest': _sfd,
+      'accept-encoding': _ae, host: _h, ...cleanHeaders } = allHeaders as Record<string, string>
+
     const res = await fetch(targetUrl + queryString, {
       method: event.method,
-      headers: {
-        ...cleanHeaders,
-        host: new URL(baseUrl).host,
-      },
+      headers: cleanHeaders,
       body: event.method !== 'GET' && event.method !== 'HEAD'
         ? await readBody(event)
         : undefined,
     })
 
-    // 透传响应（arrayBuffer() 已自动解压，需重算 Content-Length，否则会触发 HTTP/2 协议错误）
-    const body = await res.arrayBuffer()
-    const responseHeaders = Object.fromEntries(res.headers.entries())
-    // arrayBuffer() 返回的是解压后的原始数据：
-    //  - Content-Encoding/Transfer-Encoding 必须删，否则浏览器会重复解压
-    //  - Content-Length 是压缩后的大小，必须删，否则 HTTP/2 帧长度对不上 → ERR_HTTP2_PROTOCOL_ERROR
-    delete (responseHeaders as any)['content-encoding']
-    delete (responseHeaders as any)['transfer-encoding']
-    delete (responseHeaders as any)['content-length']
-    setResponseHeaders(event, responseHeaders)
+    // 用 .text() 替代 .arrayBuffer() — text() 会后端 JSON 解析更可靠
+    const body = await res.text()
+
+    // 解构剔除会有问题的 Header（不依赖 delete）
+    const {
+      'content-encoding': _ce,
+      'transfer-encoding': _te,
+      'content-length': _cl,
+      ...safeHeaders
+    } = Object.fromEntries(res.headers.entries()) as Record<string, string>
+
+    setResponseHeaders(event, safeHeaders)
     setResponseStatus(event, res.status)
     return body
   } catch (e: any) {
