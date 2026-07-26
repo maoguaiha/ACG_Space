@@ -345,6 +345,8 @@ export function fetchArticleList(query: { pageNum?: number; pageSize?: number; k
   const params = new URLSearchParams()
   params.set('pageNum', String(query.pageNum || 1))
   params.set('pageSize', String(query.pageSize || 10))
+  // 公开列表只显示已发布的文章（status=1），admin 端传 status=null 查看全部
+  params.set('status', '1')
   if (query.keyword) params.set('keyword', query.keyword)
   if (query.category) params.set('category', query.category)
   if (query.sortBy) params.set('sortBy', query.sortBy)

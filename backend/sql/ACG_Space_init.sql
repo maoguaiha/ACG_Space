@@ -1078,3 +1078,4 @@ ALTER TABLE biz_gacha_record
 
 -- 封面改为 MEDIUMTEXT 以容纳前端 base64 data URL（640x360 JPEG 约 70KB）
 ALTER TABLE biz_article MODIFY COLUMN `cover_url` MEDIUMTEXT DEFAULT NULL COMMENT '封面图片(base64 dataURL)';
+ALTER TABLE biz_article MODIFY COLUMN `cover_url` MEDIUMTEXT DEFAULT NULL COMMENT '封面图片(base64 dataURL)';
