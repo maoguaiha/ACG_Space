@@ -30,9 +30,9 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
 
-    /** 无需 Token 校验的公开路径前缀 */
+    /** 无需 Token 校验的公开路径前缀（GET 方法生效） */
     private static final Set<String> PUBLIC_PREFIXES = Set.of(
-            "/api/anime", "/api/auth", "/api/comment/page",
+            "/api/anime", "/api/comment/page",
             "/api/article", "/api/user", "/swagger-ui", "/v3/api-docs", "/error"
     );
 
