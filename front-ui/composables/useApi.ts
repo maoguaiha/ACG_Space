@@ -423,6 +423,8 @@ export function searchArticles(keyword: string, pageNum = 1, pageSize = 10, sort
   params.set('pageNum', String(pageNum))
   params.set('pageSize', String(pageSize))
   params.set('sortBy', sortBy)
+  // 公开列表只显示已发布的文章
+  params.set('status', '1')
   if (keyword) params.set('keyword', keyword)
   return apiFetch<PageResult<ArticleListItem>>(`/article/list?${params.toString()}`)
 }
