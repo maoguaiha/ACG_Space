@@ -970,7 +970,7 @@ const handleLogout = () => {
   color: #818cf8;
 }
 .theme-light .theme-tab-active {
-  color: #4f46e5;
+  color: #3B82F6;
 }
 .theme-pink .theme-tab-active {
   color: #ec4899;
@@ -980,7 +980,7 @@ const handleLogout = () => {
   background-color: #818cf8;
 }
 .theme-light .theme-tab-active::after {
-  background-color: #4f46e5;
+  background-color: #3B82F6;
 }
 .theme-pink .theme-tab-active::after {
   background-color: #ec4899;
@@ -1068,7 +1068,7 @@ const handleLogout = () => {
   background-color: #818cf8;
 }
 .theme-light .theme-tab-active-bar {
-  background-color: #4f46e5;
+  background-color: #3B82F6;
 }
 .theme-pink .theme-tab-active-bar {
   background-color: #ec4899;
@@ -1821,10 +1821,10 @@ const handleLogout = () => {
   border-color: rgba(79, 70, 229, 0.3);
 }
 .theme-light .theme-btn-like-lg.active {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
+  background: linear-gradient(135deg, #3B82F6, #6366F1) !important;
   color: white;
   border-color: transparent;
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.3);
   transform: scale(1.05);
 }
 

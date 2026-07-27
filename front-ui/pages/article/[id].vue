@@ -379,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted } from 'vue'
+import { ref, reactive, onMounted } from 'vue'
 import { useUserStore } from '~/stores/user'
 import { fetchArticleDetail, publishArticleComment, fetchArticleCommentPage, reactArticle, reactArticleComment, getArticleReactionStatus, getArticleCommentReactionStatus, replyArticleComment, fetchArticleCommentReplies, type ArticleDetail, type ArticleCommentVO } from '~/composables/useApi'
 
@@ -399,7 +399,7 @@ const commentPage = ref(1)
 const commentPageSize = 10
 const commentPages = ref(1)
 const showDislikeDialog = ref(false)
-const commentReactionStatus = ref<Map<string, number>>(new Map())
+const commentReactionStatus = reactive(new Map<string, number>())
 const reactionLoading = ref(false)
 const articleReaction = ref<number | null>(null)
 const selectedReason = ref('')
@@ -412,7 +412,7 @@ const showingReplies = ref<Set<string>>(new Set())
 const commentRepliesMap = ref<Record<string, ArticleCommentVO[]>>({})
 
 // 回复的反应状态
-const replyReactionStatus = ref<Map<string, number>>(new Map())
+const replyReactionStatus = reactive(new Map<string, number>())
 
 // 回复回复相关
 const replyReplyTargetId = ref<string | null>(null)
@@ -526,14 +526,14 @@ async function loadCommentReactionStatus() {
     try {
       const status = await getArticleCommentReactionStatus(comment.id.toString())
       if (status !== null) {
-        commentReactionStatus.value.set(comment.id.toString(), status)
+        commentReactionStatus.set(comment.id.toString(), status)
       }
       // 同时加载回复的反应状态
       if (comment.replies) {
         for (const reply of comment.replies) {
           const replyStatus = await getArticleCommentReactionStatus(reply.id.toString())
           if (replyStatus !== null) {
-            replyReactionStatus.value.set(reply.id.toString(), replyStatus)
+            replyReactionStatus.set(reply.id.toString(), replyStatus)
           }
         }
       }
@@ -555,7 +555,7 @@ async function handleCommentReaction(commentId: string, reactionType: number) {
   
   // 点踩：如果已点踩则直接取消，否则弹出理由选择
   if (reactionType === 2) {
-    const currentStatus = commentReactionStatus.value.get(commentId)
+    const currentStatus = commentReactionStatus.get(commentId)
     if (currentStatus === 2) {
       // 已点踩，直接取消
       await performCommentReaction(commentId, reactionType)
@@ -573,7 +573,7 @@ async function handleCommentReaction(commentId: string, reactionType: number) {
 async function performCommentReaction(commentId: string, reactionType: number, reason?: string) {
   try {
     const newStatus = await reactArticleComment(commentId, reactionType)
-    commentReactionStatus.value.set(commentId, newStatus)
+    commentReactionStatus.set(commentId, newStatus)
     await loadComments()
   } catch (e: any) {
     console.error('反应失败:', e)
@@ -607,7 +607,7 @@ async function handleReplyReaction(replyId: string, reactionType: number) {
   }
   
   if (reactionType === 2) {
-    const currentStatus = replyReactionStatus.value.get(replyId)
+    const currentStatus = replyReactionStatus.get(replyId)
     if (currentStatus === 2) {
       await performReplyReaction(replyId, reactionType)
       return
@@ -623,9 +623,9 @@ async function handleReplyReaction(replyId: string, reactionType: number) {
 async function performReplyReaction(replyId: string, reactionType: number, reason?: string) {
   try {
     // 获取当前状态（切换前的状态）
-    const currentStatus = replyReactionStatus.value.get(replyId)
+    const currentStatus = replyReactionStatus.get(replyId)
     const newStatus = await reactArticleComment(replyId, reactionType)
-    replyReactionStatus.value.set(replyId, newStatus)
+    replyReactionStatus.set(replyId, newStatus)
     
     // 刷新回复列表
     for (const comment of comments.value) {
