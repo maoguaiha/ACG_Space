@@ -41,7 +41,7 @@
                   </div>
                 </div>
                 <div class="p-4 gacha-card-body bg-slate-900/90 backdrop-blur-md">
-                  <h3 class="text-base font-bold gacha-banner-title text-white mb-1.5">{{ pool.name }}</h3>
+                  <h3 class="text-base font-bold gacha-banner-title mb-1.5" :style="{ color: index === 0 ? 'var(--banner-stellar-title)' : 'var(--banner-normal-title)' }">{{ pool.name }}</h3>
                   <div class="flex items-center justify-between text-sm">
                     <span class="gacha-banner-muted text-slate-400">剩余库存</span>
                     <span class="font-bold" :class="pool.remainingStock > 100 ? 'text-emerald-400' : pool.remainingStock > 20 ? 'text-amber-400' : 'text-rose-400'">
@@ -69,7 +69,7 @@
           <div class="flex-shrink-0">
             <div class="relative w-[200px] h-[200px] mx-auto">
               <div class="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400/20 via-purple-500/20 to-pink-500/20 blur-xl animate-pulse"></div>
-              <div class="relative w-full h-full gacha-ring rounded-full overflow-hidden border-4 border-slate-700 shadow-2xl" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);">
+              <div class="relative w-full h-full gacha-ring rounded-full overflow-hidden border-4 shadow-2xl" style="border-color: var(--chart-ring-inner, #334155); background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);">
                 <div class="absolute inset-4 gacha-ring-inner rounded-full bg-gradient-to-br from-purple-600 to-indigo-800 flex items-center justify-center">
                   <div class="text-center">
                     <span class="text-5xl">🎰</span>

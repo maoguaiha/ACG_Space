@@ -199,37 +199,47 @@ const handleLogout = () => {
   --gacha-hero-to: rgba(15, 23, 42, 1);
 }
 
-/* 浅色变量 (Light) - 清新简约风 */
+/* 浅色变量 (Light) - 清透白昼风 */
 .theme-light {
-  --bg-main: #fafafa;
+  --bg-main: #F8FAFC;
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.9);
   --bg-header: rgba(255, 255, 255, 0.95);
   --hero-bg-from: #f1f5f9;
-  --hero-bg-to: rgba(250, 250, 250, 0);
+  --hero-bg-to: rgba(248, 250, 252, 0);
   --border-color: #e2e8f0;
-  --text-main: #1e293b;
+  --text-main: #0F172A;
   --text-muted: #64748b;
   --text-dim: #94a3b8;
-  --accent: #8A2387;
-  --accent-hover: #E94057;
-  --accent-secondary: #F27121;
+  --accent: #6366F1;
+  --accent-hover: #4F46E5;
+  --accent-secondary: #3B82F6;
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --hero-overlay: rgba(60, 10, 30, 0.92);
-  --gacha-hero-from: rgba(233, 64, 87, 0.2);
+  --hero-overlay: rgba(15, 23, 42, 0.92);
+  --gacha-hero-from: rgba(99, 102, 241, 0.15);
   --gacha-hero-via: rgba(255, 255, 255, 1);
-  --gacha-hero-to: rgba(255, 245, 245, 1);
-  /* 浅色 gacha 卡片专用 */
-  --gacha-stellar-bg: rgba(223, 200, 240, 0.3);
-  --gacha-normal-bg: rgba(200, 220, 240, 0.3);
+  --gacha-hero-to: rgba(239, 246, 255, 1);
+  /* gacha 标题 & 主按钮渐变 */
+  --gacha-ten-bg: linear-gradient(135deg, #6366F1 0%, #3B82F6 100%);
+  --gacha-title-grad: linear-gradient(135deg, #6366F1 0%, #3B82F6 100%);
+  /* gacha Banner 卡片 */
+  --gacha-stellar-bg: linear-gradient(to bottom, #f5f3ff, #ffffff);
+  --gacha-normal-bg: linear-gradient(to bottom, #eff6ff, #ffffff);
+  --banner-stellar-title: #4C1D95;
+  --banner-normal-title: #1E3A5F;
   --gacha-card-text: #334155;
   --gacha-card-muted: #64748b;
-  --gacha-ten-bg-start: #F0C27A;
-  --gacha-ten-bg-end: #FC5C7D;
-  --gacha-single-bg: #f8fafc;
-  --gacha-progress-ring: #c8b6e8;
+  /* gacha 按钮 */
+  --gacha-single-bg: #ffffff;
+  --gacha-single-text: #475569;
+  --gacha-single-border: #e2e8f0;
+  /* 积分 & 环形图 */
+  --points-bg: #F1F5F9;
+  --chart-ring-outer: #A78BFA;
+  --chart-ring-inner: #e2e8f0;
+  /* 进度条 */
   --gacha-progress-track: #e2e8f0;
 }
 
@@ -509,7 +519,7 @@ const handleLogout = () => {
 }
 
 /* ═══════════════════════════════════════════
-   浅色主题 gacha 页轻量化
+   浅色主题 gacha 页 — 蓝紫白昼风
    ═══════════════════════════════════════════ */
 .theme-light .gacha-navbar {
   background: rgba(255,255,255,0.88) !important;
@@ -523,52 +533,48 @@ const handleLogout = () => {
 .theme-light .gacha-banner-overlay {
   background: linear-gradient(to top, rgba(255,255,255,0.9), transparent) !important;
 }
-.theme-light .gacha-banner-title { color: #1e293b !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
+.theme-light .gacha-banner-title { color: var(--text-main) !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
 .theme-light .gacha-banner-muted { color: #64748b !important; }
 .theme-light .gacha-progress-track { background: #e2e8f0 !important; }
-.theme-light .gacha-progress-fill {
-  background: linear-gradient(to right, #c8b6e8, #94a3f0) !important;
-}
 .theme-light .gacha-progress-stellar {
-  background: linear-gradient(to right, #8A2387, #E94057) !important;
+  background: linear-gradient(to right, #6366F1, #8B5CF6) !important;
 }
 .theme-light .gacha-progress-normal {
-  background: linear-gradient(to right, #3b82f6, #0ea5e9) !important;
+  background: linear-gradient(to right, #3B82F6, #60A5FA) !important;
 }
 .theme-light .gacha-ring {
   border-color: #e2e8f0 !important;
-  background: linear-gradient(135deg, #f5f3ff, #ede9fe, #f5f3ff) !important;
+  background: linear-gradient(135deg, #eff6ff, #e0e7ff, #eff6ff) !important;
 }
 .theme-light .gacha-ring-inner {
-  background: linear-gradient(135deg, #e9d5ff, #d8b4fe) !important;
+  background: linear-gradient(135deg, #c7d2fe, #a5b4fc) !important;
 }
 .theme-light .gacha-btn-single {
-  background: #fff0f5 !important;
-  border-color: #fbcfe8 !important;
-  color: #831843 !important;
+  background: #ffffff !important;
+  border: 1px solid #e2e8f0 !important;
+  color: #475569 !important;
   box-shadow: none !important;
   font-weight: 600 !important;
 }
 .theme-light .gacha-btn-single:hover {
-  background: #fce7f3 !important;
-  border-color: #f9a8d4 !important;
+  background: #f8fafc !important;
+  border-color: #cbd5e1 !important;
 }
 .theme-light .gacha-badge {
-  background: rgba(138, 35, 135, 0.08) !important;
-  color: #8A2387 !important;
-  border-color: rgba(138, 35, 135, 0.2) !important;
+  background: rgba(99, 102, 241, 0.08) !important;
+  color: #6366F1 !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
 }
 .theme-light .gacha-btn-recharge {
-  background: #FFF7ED !important;
-  color: #EA580C !important;
-  border: 1px solid #fed7aa !important;
+  background: #EFF6FF !important;
+  color: #3B82F6 !important;
+  border: 1px solid #BFDBFE !important;
   box-shadow: none !important;
 }
 .theme-light .gacha-btn-recharge:hover {
-  background: #FFEDD5 !important;
+  background: #DBEAFE !important;
 }
-/* 池卡片未选中环 */
-.theme-light .gacha-pool-card .ring-slate-700 { border-color: #e2e8f0 !important; color: #e2e8f0 !important; }
+.theme-light .gacha-pool-card .ring-slate-700 { border-color: #e2e8f0 !important; }
 
 /* ═══════════════════════════════════════════
    粉色主题 gacha 页 — 全粉化（非紫）

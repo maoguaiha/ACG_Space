@@ -26,8 +26,10 @@
               <span class="text-sm">💎</span>
               <span class="text-sm font-bold text-cyan-400">{{ userFragment }}</span>
             </div>
-            <div class="flex items-center gap-3 px-4 py-2 bg-gradient-to-r from-amber-500/10 to-orange-500/10 rounded-xl border border-amber-500/20">
-              <div class="w-8 h-8 rounded-full bg-gradient-to-br from-amber-400 to-orange-500 flex items-center justify-center">
+            <div class="flex items-center gap-3 px-4 py-2 gacha-points-bg rounded-xl border"
+              :style="{ background: 'var(--points-bg, #1e293b)', borderColor: 'var(--border-color, #334155)' }">
+              <div class="w-8 h-8 rounded-full gacha-points-icon flex items-center justify-center"
+                style="background: linear-gradient(135deg, #6366F1, #3B82F6);">
                 <span class="text-sm">💰</span>
               </div>
               <div>
