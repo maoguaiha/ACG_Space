@@ -72,6 +72,7 @@ public class BizArticleReactionServiceImpl extends ServiceImpl<BizArticleReactio
      */
     public Integer getReactionStatus(Long articleId, Long userId) {
         BizArticleReaction reaction = baseMapper.selectOneWithDeleted(articleId, userId);
+        System.out.println("[DEBUG selectOneWithDeleted] articleId=" + articleId + " userId=" + userId + " found=" + (reaction != null) + " reactionType=" + (reaction != null ? reaction.getReactionType() : "null"));
         return reaction != null ? reaction.getReactionType() : null;
     }
 }
