@@ -447,7 +447,7 @@ async function loadArticle() {
 async function loadArticleReaction() {
   if (!article.value?.id) return
   try {
-    const status = await getArticleReactionStatus(article.value.id.toString()]
+    const status = await getArticleReactionStatus(article.value.id.toString())
     articleReaction.value = status ?? null
   } catch (e) {
     console.error('加载文章反应状态失败', e)
@@ -523,14 +523,14 @@ async function loadComments() {
 async function loadCommentReactionStatus() {
   for (const comment of comments.value) {
     try {
-      const status = await getArticleCommentReactionStatus(comment.id.toString()]
+      const status = await getArticleCommentReactionStatus(comment.id.toString())
       if (status !== null) {
         commentReactionStatus.value[comment.id.toString()] = status
       }
       // 同时加载回复的反应状态
       if (comment.replies) {
         for (const reply of comment.replies) {
-          const replyStatus = await getArticleCommentReactionStatus(reply.id.toString()]
+          const replyStatus = await getArticleCommentReactionStatus(reply.id.toString())
           if (replyStatus !== null) {
             replyReactionStatus.value[reply.id.toString()] = replyStatus
           }
