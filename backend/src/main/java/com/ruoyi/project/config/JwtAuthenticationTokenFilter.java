@@ -40,6 +40,14 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
     protected boolean shouldNotFilter(HttpServletRequest request) {
         String path = request.getRequestURI();
         String method = request.getMethod();
+
+        // 如果请求带了 Authorization header，走正常解析流程（不跳过）
+        // 这样公开 GET 接口也能识别当前登录用户（如 reaction-status）
+        String authHeader = request.getHeader("Authorization");
+        if (StringUtils.hasText(authHeader) && authHeader.startsWith("Bearer ")) {
+            return false;
+        }
+
         // GET 请求的公开路径不需要 Token 校验
         if ("GET".equalsIgnoreCase(method)) {
             return PUBLIC_PREFIXES.stream().anyMatch(path::startsWith);
