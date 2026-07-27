@@ -379,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, onMounted, watch } from .vue.
+import { ref, onMounted, watch } from 'vue'
 import { useUserStore } from '~/stores/user'
 import { fetchArticleDetail, publishArticleComment, fetchArticleCommentPage, reactArticle, reactArticleComment, getArticleReactionStatus, getArticleCommentReactionStatus, replyArticleComment, fetchArticleCommentReplies, type ArticleDetail, type ArticleCommentVO } from '~/composables/useApi'
 
