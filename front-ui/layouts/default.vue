@@ -1903,14 +1903,14 @@ const handleLogout = () => {
 
 /* 分享按钮 */
 .theme-dark .theme-btn-share {
-  background: linear-gradient(135deg, rgba(71, 85, 105, 0.8), rgba(100, 116, 139, 0.8));
-  color: #cbd5e1;
-  border: 1px solid rgba(100, 116, 139, 0.5);
+  background: linear-gradient(135deg, #6366f1, #a78bfa) !important;
+  color: white !important;
+  border: 1px solid transparent !important;
 }
 .theme-dark .theme-btn-share:hover {
-  background: linear-gradient(135deg, #64748b, #94a3b8);
-  color: white;
-  border-color: #94a3b8;
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important;
+  color: white !important;
+  border-color: transparent !important;
 }
 
 .theme-light .theme-btn-share {
