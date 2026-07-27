@@ -1,7 +1,7 @@
 <template>
   <div>
     <section class="relative h-[450px] overflow-hidden">
-      <div class="absolute inset-0 bg-gradient-to-b from-purple-900/30 via-slate-900 to-slate-900"></div>
+      <div class="absolute inset-0 bg-gradient-to-b" :style="{ background: `linear-gradient(to bottom, var(--gacha-hero-from), var(--gacha-hero-via), var(--gacha-hero-to))` }"></div>
       <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-600/20 rounded-full blur-[120px]"></div>
 
       <div class="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center">

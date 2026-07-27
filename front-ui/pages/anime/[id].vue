@@ -20,6 +20,11 @@
     <template v-else>
       <!-- Hero Banner 区域 -->
       <div class="relative w-full h-[420px] overflow-hidden">
+        <!-- 返回按钮 -->
+        <NuxtLink to="/anime" class="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-sm rounded-lg transition-colors border border-white/10">
+          <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
+          返回番剧库
+        </NuxtLink>
         <!-- 模糊背景封面 -->
         <div class="absolute inset-0">
           <img
@@ -32,6 +37,8 @@
           <!-- 遮罩层适配主题 -->
           <div class="absolute inset-0" :style="{ background: `linear-gradient(to top, var(--hero-bg-from), var(--hero-bg-to) 100%)` }"></div>
           <div class="absolute inset-0" :style="{ background: `linear-gradient(to right, var(--hero-bg-from) 0%, transparent 100%)` }"></div>
+          <!-- 额外遮罩：浅色/粉色模式下确保白字可读 -->
+          <div class="absolute inset-0" :style="{ background: `linear-gradient(to top, var(--hero-overlay) 0%, transparent 60%)` }"></div>
         </div>
 
         <!-- 内容层 -->

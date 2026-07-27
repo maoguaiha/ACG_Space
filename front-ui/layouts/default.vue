@@ -193,6 +193,10 @@ const handleLogout = () => {
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
+  --hero-overlay: rgba(15, 23, 42, 0.85);
+  --gacha-hero-from: rgba(88, 28, 135, 0.3);
+  --gacha-hero-via: rgba(15, 23, 42, 1);
+  --gacha-hero-to: rgba(15, 23, 42, 1);
 }
 
 /* 浅色变量 (Light) - 清新简约风 */
@@ -213,6 +217,10 @@ const handleLogout = () => {
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
+  --hero-overlay: rgba(2, 6, 23, 0.95);
+  --gacha-hero-from: rgba(14, 165, 233, 0.2);
+  --gacha-hero-via: rgba(255, 255, 255, 1);
+  --gacha-hero-to: rgba(248, 250, 252, 1);
 }
 
 /* 粉色变量 (Pink) - 温馨甜美风 */
@@ -233,6 +241,10 @@ const handleLogout = () => {
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
+  --hero-overlay: rgba(131, 24, 67, 0.95);
+  --gacha-hero-from: rgba(236, 72, 153, 0.3);
+  --gacha-hero-via: rgba(255, 255, 255, 1);
+  --gacha-hero-to: rgba(255, 241, 242, 1);
 }
 
 /* 应用变量 */
