@@ -218,9 +218,9 @@ const handleLogout = () => {
   --warning: #f59e0b;
   --danger: #ef4444;
   --hero-overlay: rgba(2, 6, 23, 0.95);
-  --gacha-hero-from: rgba(14, 165, 233, 0.2);
+  --gacha-hero-from: rgba(59, 130, 246, 0.25);
   --gacha-hero-via: rgba(255, 255, 255, 1);
-  --gacha-hero-to: rgba(248, 250, 252, 1);
+  --gacha-hero-to: rgba(238, 242, 255, 1);
 }
 
 /* 粉色变量 (Pink) - 温馨甜美风 */
