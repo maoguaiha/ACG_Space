@@ -32,7 +32,7 @@
               >
                 <div class="relative h-[160px] md:h-[180px] overflow-hidden">
                   <img :src="pool.banner || 'https://picsum.photos/seed/default/640/320'" class="w-full h-full object-cover" />
-                  <div class="absolute inset-0 bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
+                  <div class="absolute inset-0 gacha-banner-overlay bg-gradient-to-t from-slate-900 via-slate-900/50 to-transparent"></div>
                   <div class="absolute top-2 right-2 px-2.5 py-1 rounded-full text-xs font-bold bg-gradient-to-r from-amber-400 to-orange-500 text-slate-900 shadow-lg">
                     {{ pool.rarity }}
                   </div>
@@ -40,17 +40,17 @@
                     {{ formatEndTime(pool.endTime) }}
                   </div>
                 </div>
-                <div class="p-4 bg-slate-900/90 backdrop-blur-md">
-                  <h3 class="text-base font-bold text-white mb-1.5">{{ pool.name }}</h3>
+                <div class="p-4 gacha-card-body bg-slate-900/90 backdrop-blur-md">
+                  <h3 class="text-base font-bold gacha-banner-title text-white mb-1.5">{{ pool.name }}</h3>
                   <div class="flex items-center justify-between text-sm">
-                    <span class="text-slate-400">剩余库存</span>
+                    <span class="gacha-banner-muted text-slate-400">剩余库存</span>
                     <span class="font-bold" :class="pool.remainingStock > 100 ? 'text-emerald-400' : pool.remainingStock > 20 ? 'text-amber-400' : 'text-rose-400'">
                       {{ pool.remainingStock.toLocaleString() }}
                     </span>
                   </div>
-                  <div class="mt-2 h-1.5 bg-slate-800 rounded-full overflow-hidden">
+                  <div class="mt-2 h-1.5 gacha-progress-track bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                      class="h-full gacha-progress-fill bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
                       :style="{ width: `${(pool.remainingStock / (pool.totalStock || 1)) * 100}%` }"
                     ></div>
                   </div>
@@ -68,8 +68,8 @@
           <div class="flex-shrink-0">
             <div class="relative w-[200px] h-[200px] mx-auto">
               <div class="absolute inset-0 rounded-full bg-gradient-to-br from-amber-400/20 via-purple-500/20 to-pink-500/20 blur-xl animate-pulse"></div>
-              <div class="relative w-full h-full rounded-full overflow-hidden border-4 border-slate-700 shadow-2xl" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);">
-                <div class="absolute inset-4 rounded-full bg-gradient-to-br from-purple-600 to-indigo-800 flex items-center justify-center">
+              <div class="relative w-full h-full gacha-ring rounded-full overflow-hidden border-4 border-slate-700 shadow-2xl" style="background: linear-gradient(135deg, #1e1b4b 0%, #312e81 50%, #1e1b4b 100%);">
+                <div class="absolute inset-4 gacha-ring-inner rounded-full bg-gradient-to-br from-purple-600 to-indigo-800 flex items-center justify-center">
                   <div class="text-center">
                     <span class="text-5xl">🎰</span>
                   </div>
@@ -110,16 +110,17 @@
               <button
                 @click="handleDraw(1)"
                 :disabled="isDrawing || !currentPool"
-                class="flex-1 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                class="flex-1 py-4 rounded-xl font-bold gacha-btn-single border transition-all bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ isDrawing ? '抽取中...' : '单抽' }}
               </button>
               <button
                 @click="handleDraw(10)"
                 :disabled="isDrawing || !currentPool"
-                class="flex-1 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                class="flex-1 py-4 rounded-xl font-bold gacha-btn-ten text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                :style="{ background: 'linear-gradient(135deg, #F0C27A 0%, #FC5C7D 100%)', boxShadow: '0 4px 20px rgba(252, 92, 125, 0.3)' }"
               >
-                {{ isDrawing ? '抽取中...' : '十连' }}
+                {{ isDrawing ? '抽取中...' : '十连 ' }}
               </button>
             </div>
           </div>
@@ -209,8 +210,8 @@
               </button>
               <button
                 @click="handleDraw(drawType)"
-                class="flex-1 py-3 rounded-xl font-bold text-white transition-all"
-                :class="drawType === 10 ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50' : 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50'"
+                class="flex-1 py-3 rounded-xl font-bold text-white transition-all gacha-btn-continue"
+                :style="{ background: 'linear-gradient(135deg, #F0C27A 0%, #FC5C7D 100%)', boxShadow: '0 4px 20px rgba(252, 92, 125, 0.3)' }"
               >
                 再抽{{ drawType }}次
               </button>

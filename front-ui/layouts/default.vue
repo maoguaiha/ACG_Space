@@ -221,6 +221,16 @@ const handleLogout = () => {
   --gacha-hero-from: rgba(233, 64, 87, 0.2);
   --gacha-hero-via: rgba(255, 255, 255, 1);
   --gacha-hero-to: rgba(255, 245, 245, 1);
+  /* 浅色 gacha 卡片专用 */
+  --gacha-stellar-bg: rgba(223, 200, 240, 0.3);
+  --gacha-normal-bg: rgba(200, 220, 240, 0.3);
+  --gacha-card-text: #334155;
+  --gacha-card-muted: #64748b;
+  --gacha-ten-bg-start: #F0C27A;
+  --gacha-ten-bg-end: #FC5C7D;
+  --gacha-single-bg: #f8fafc;
+  --gacha-progress-ring: #c8b6e8;
+  --gacha-progress-track: #e2e8f0;
 }
 
 /* 粉色变量 (Pink) - 温馨甜美风 */
@@ -484,6 +494,54 @@ const handleLogout = () => {
 .theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
 .theme-pink .bg-gradient-to-br.from-indigo-500.to-purple-500 {
   background: linear-gradient(to bottom right, var(--accent), var(--accent-secondary)) !important;
+}
+
+/* ═══════════════════════════════════════════
+   浅色主题 gacha 页轻量化
+   ═══════════════════════════════════════════ */
+.theme-light .gacha-navbar {
+  background: rgba(255,255,255,0.88) !important;
+  border-color: #e2e8f0 !important;
+  backdrop-filter: blur(16px) !important;
+}
+.theme-light .gacha-card-body {
+  background: rgba(255,255,255,0.85) !important;
+  backdrop-filter: blur(12px) !important;
+}
+.theme-light .gacha-banner-overlay {
+  background: linear-gradient(to top, rgba(255,255,255,0.9), transparent) !important;
+}
+.theme-light .gacha-banner-title { color: #1e293b !important; }
+.theme-light .gacha-banner-muted { color: #64748b !important; }
+.theme-light .gacha-progress-track { background: #e2e8f0 !important; }
+.theme-light .gacha-progress-fill {
+  background: linear-gradient(to right, #c8b6e8, #94a3f0) !important;
+}
+.theme-light .gacha-ring {
+  border-color: #e2e8f0 !important;
+  background: linear-gradient(135deg, #f5f3ff, #ede9fe, #f5f3ff) !important;
+}
+.theme-light .gacha-ring-inner {
+  background: linear-gradient(135deg, #ddd6fe, #c4b5fd) !important;
+}
+.theme-light .gacha-btn-single {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #475569 !important;
+  box-shadow: none !important;
+}
+.theme-light .gacha-btn-single:hover {
+  background: #f1f5f9 !important;
+  border-color: #cbd5e1 !important;
+}
+.theme-light .gacha-btn-recharge {
+  border: 1px solid #E94057 !important;
+  color: #E94057 !important;
+  background: transparent !important;
+  box-shadow: none !important;
+}
+.theme-light .gacha-btn-recharge:hover {
+  background: rgba(233, 64, 87, 0.08) !important;
 }
 
 /* 消息气泡适配 */

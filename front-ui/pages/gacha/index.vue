@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen pb-20">
     <!-- Sub-navigation with Points Display -->
-    <div class="sticky top-16 z-40 bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
+    <div class="sticky top-16 z-40 gacha-navbar bg-slate-900/95 backdrop-blur-xl border-b border-slate-700/50">
       <div class="container mx-auto px-4">
         <div class="flex items-center justify-between py-3">
           <!-- Tab Navigation -->
@@ -10,12 +10,13 @@
               v-for="tab in tabs"
               :key="tab.id"
               @click="activeTab = tab.id"
-              class="px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all"
+              class="relative px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all"
               :class="activeTab === tab.id
-                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
-                : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white'"
+                ? 'text-slate-900 dark:text-white'
+                : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white'"
             >
               {{ tab.icon }} {{ tab.name }}
+              <span v-if="activeTab === tab.id" class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" :class="['theme-primary-bg']"></span>
             </button>
           </div>
 
@@ -36,7 +37,7 @@
             </div>
             <button
               @click="showRecharge = true"
-              class="px-4 py-2 rounded-xl text-sm font-bold bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg hover:shadow-emerald-500/30 transition-all"
+              class="px-3 py-1.5 rounded-lg text-xs font-bold border transition-all gacha-btn-recharge bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg hover:shadow-emerald-500/30"
             >
               充值
             </button>
