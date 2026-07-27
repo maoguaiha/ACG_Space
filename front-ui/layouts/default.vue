@@ -227,8 +227,8 @@ const handleLogout = () => {
   /* gacha Banner 卡片 */
   --gacha-stellar-bg: linear-gradient(to bottom, #f5f3ff, #ffffff);
   --gacha-normal-bg: linear-gradient(to bottom, #eff6ff, #ffffff);
-  --banner-stellar-title: #4C1D95;
-  --banner-normal-title: #1E3A5F;
+  --banner-stellar-title: #312E81;
+  --banner-normal-title: #0C4A6E;
   --gacha-card-text: #334155;
   --gacha-card-muted: #64748b;
   /* gacha 按钮 */
@@ -533,7 +533,7 @@ const handleLogout = () => {
 .theme-light .gacha-banner-overlay {
   background: linear-gradient(to top, rgba(255,255,255,0.9), transparent) !important;
 }
-.theme-light .gacha-banner-title { color: var(--text-main) !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
+.theme-light .gacha-banner-title { text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
 .theme-light .gacha-banner-muted { color: #64748b !important; }
 .theme-light .gacha-progress-track { background: #e2e8f0 !important; }
 .theme-light .gacha-progress-stellar {
