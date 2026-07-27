@@ -211,9 +211,9 @@ const handleLogout = () => {
   --text-main: #1e293b;
   --text-muted: #64748b;
   --text-dim: #94a3b8;
-  --accent: #4f46e5;
-  --accent-hover: #4338ca;
-  --accent-secondary: #6366f1;
+  --accent: #2563eb;
+  --accent-hover: #1d4ed8;
+  --accent-secondary: #0ea5e9;
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
@@ -417,24 +417,71 @@ const handleLogout = () => {
   border-color: #ffffff !important;
 }
 
-/* 渐变按钮适配 */
-.theme-light .from-indigo-600, .theme-pink .from-indigo-600,
-.theme-light .to-purple-600, .theme-pink .to-purple-600,
-.theme-light .from-blue-600, .theme-pink .from-blue-600,
-.theme-light .to-indigo-600, .theme-pink .to-indigo-600 {
+/* 渐变按钮适配 — 浅色和粉色主题用 --accent 替换所有偏紫渐变 */
+.theme-light .from-indigo-500, .theme-light .from-indigo-600, .theme-light .to-indigo-500, .theme-light .to-indigo-600,
+.theme-light .from-blue-500, .theme-light .from-blue-600, .theme-light .to-blue-500, .theme-light .to-blue-600,
+.theme-light .from-purple-500, .theme-light .from-purple-600, .theme-light .to-purple-500, .theme-light .to-purple-600,
+.theme-light .to-pink-500, .theme-light .to-pink-600,
+.theme-pink .from-indigo-500, .theme-pink .from-indigo-600, .theme-pink .to-indigo-500, .theme-pink .to-indigo-600,
+.theme-pink .from-blue-500, .theme-pink .from-blue-600, .theme-pink .to-blue-500, .theme-pink .to-blue-600,
+.theme-pink .from-purple-500, .theme-pink .from-purple-600, .theme-pink .to-purple-500, .theme-pink .to-purple-600,
+.theme-pink .to-pink-500, .theme-pink .to-pink-600 {
   background-color: transparent !important;
 }
 
+/* 单色（非渐变）的 indigo/purple 在浅色/粉色下替换为 --accent */
+.theme-light .bg-indigo-500, .theme-pink .bg-indigo-500,
+.theme-light .bg-indigo-600, .theme-pink .bg-indigo-600,
+.theme-light .bg-purple-500, .theme-pink .bg-purple-500,
+.theme-light .bg-purple-600, .theme-pink .bg-purple-600 {
+  background-color: var(--accent) !important;
+}
+
+/* text-indigo-* 在浅色/粉色下替换为 --accent 颜色 */
+.theme-light .text-indigo-500, .theme-pink .text-indigo-500,
+.theme-light .text-indigo-600, .theme-pink .text-indigo-600,
+.theme-light .text-indigo-400, .theme-pink .text-indigo-400,
+.theme-light .text-purple-500, .theme-pink .text-purple-500,
+.theme-light .text-purple-600, .theme-pink .text-purple-600,
+.theme-light .text-purple-400, .theme-pink .text-purple-400 {
+  color: var(--accent) !important;
+}
+
+.theme-light .bg-gradient-to-r.from-indigo-500.to-purple-500,
 .theme-light .bg-gradient-to-r.from-indigo-600.to-purple-600,
-.theme-pink .bg-gradient-to-r.from-indigo-600.to-purple-600,
+.theme-light .bg-gradient-to-r.from-purple-500.to-pink-500,
+.theme-light .bg-gradient-to-r.from-purple-600.to-pink-600,
+.theme-light .bg-gradient-to-r.from-blue-500.to-indigo-500,
 .theme-light .bg-gradient-to-r.from-blue-600.to-indigo-600,
+.theme-pink .bg-gradient-to-r.from-indigo-500.to-purple-500,
+.theme-pink .bg-gradient-to-r.from-indigo-600.to-purple-600,
+.theme-pink .bg-gradient-to-r.from-purple-500.to-pink-500,
+.theme-pink .bg-gradient-to-r.from-purple-600.to-pink-600,
+.theme-pink .bg-gradient-to-r.from-blue-500.to-indigo-500,
 .theme-pink .bg-gradient-to-r.from-blue-600.to-indigo-600 {
   background: linear-gradient(to right, var(--accent), var(--accent-secondary)) !important;
 }
 
+.theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
+.theme-light .bg-gradient-to-br.from-indigo-600.to-purple-600,
+.theme-light .bg-gradient-to-br.from-purple-500.to-pink-500,
+.theme-light .bg-gradient-to-br.from-purple-600.to-pink-600,
+.theme-light .bg-gradient-to-br.from-blue-500.to-indigo-500,
+.theme-light .bg-gradient-to-br.from-blue-600.to-indigo-600,
+.theme-pink .bg-gradient-to-br.from-indigo-500.to-purple-500,
+.theme-pink .bg-gradient-to-br.from-indigo-600.to-purple-600,
+.theme-pink .bg-gradient-to-br.from-purple-500.to-pink-500,
+.theme-pink .bg-gradient-to-br.from-purple-600.to-pink-600,
+.theme-pink .bg-gradient-to-br.from-blue-500.to-indigo-500,
+.theme-pink .bg-gradient-to-br.from-blue-600.to-indigo-600 {
+  background: linear-gradient(to bottom right, var(--accent), var(--accent-secondary)) !important;
+}
+
 /* 头像渐变背景适配 */
 .theme-light .bg-gradient-to-br.from-indigo-600.to-purple-600,
-.theme-pink .bg-gradient-to-br.from-indigo-600.to-purple-600 {
+.theme-pink .bg-gradient-to-br.from-indigo-600.to-purple-600,
+.theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
+.theme-pink .bg-gradient-to-br.from-indigo-500.to-purple-500 {
   background: linear-gradient(to bottom right, var(--accent), var(--accent-secondary)) !important;
 }
 
