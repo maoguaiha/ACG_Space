@@ -34,11 +34,8 @@
             referrerpolicy="no-referrer"
             class="w-full h-full object-cover blur-xl scale-110 opacity-40"
           />
-          <!-- 遮罩层适配主题 -->
-          <div class="absolute inset-0" :style="{ background: `linear-gradient(to top, var(--hero-bg-from), var(--hero-bg-to) 100%)` }"></div>
-          <div class="absolute inset-0" :style="{ background: `linear-gradient(to right, var(--hero-bg-from) 0%, transparent 100%)` }"></div>
-          <!-- 额外遮罩：浅色/粉色模式下确保白字可读 -->
-          <div class="absolute inset-0" :style="{ background: `linear-gradient(to top, var(--hero-overlay) 0%, transparent 60%)` }"></div>
+          <!-- 遮罩层：主题变量 hero-overlay-gradient -->
+          <div class="absolute inset-0" :style="{ background: 'var(--hero-overlay-gradient)' }"></div>
         </div>
 
         <!-- 内容层 -->
@@ -73,8 +70,8 @@
                 </span>
               </div>
 
-              <!-- 标题 (强制白色，因为在深色 banner 上) -->
-              <h1 class="text-3xl md:text-5xl font-black text-white force-white leading-tight mb-2 drop-shadow-2xl">
+              <!-- 标题 -->
+              <h1 class="text-3xl md:text-5xl font-black text-white force-white leading-tight mb-2 drop-shadow-xl" style="text-shadow: 0 2px 10px rgba(0,0,0,0.15);">
                 {{ anime.title }}
               </h1>
               <p v-if="anime.titleOriginal" class="text-white/60 force-white text-sm mb-6">{{ anime.titleOriginal }}</p>
@@ -106,7 +103,8 @@
                   :href="`https://bgm.tv/subject/${anime.bgmId}`"
                   target="_blank"
                   rel="noopener noreferrer"
-                  class="inline-flex items-center gap-2 px-5 py-2.5 bg-rose-500/20 hover:bg-rose-500/40 text-rose-300 rounded-xl text-sm font-bold transition-all border border-rose-500/30 backdrop-blur-md"
+                  class="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl text-sm font-bold transition-all border backdrop-blur-md hero-btn-bangumi"
+                  :style="{ background: 'var(--hero-btn-bg, rgba(255,255,255,0.4))', color: 'var(--hero-btn-text, #1E293B)', borderColor: 'var(--border-color, rgba(255,255,255,0.1))' }"
                 >
                   <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"/><polyline points="15 3 21 3 21 9"/><line x1="10" y1="14" x2="21" y2="3"/></svg>
                   在 Bangumi 查看
@@ -115,10 +113,8 @@
                 <!-- 追番按钮 -->
                 <button
                   @click="handleFollow"
-                  class="inline-flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-black transition-all border shadow-xl active:scale-95"
-                  :class="isFollowed 
-                    ? 'bg-rose-600/30 border-rose-500/50 text-rose-400 hover:bg-rose-600/40' 
-                    : 'bg-indigo-600 border-indigo-500 text-white force-white hover:bg-indigo-500 shadow-indigo-600/30'"
+                  class="inline-flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-black transition-all border shadow-xl active:scale-95 hero-btn-follow"
+                  :style="{ background: isFollowed ? 'rgba(255,255,255,0.3)' : 'var(--hero-btn-bg, rgba(255,255,255,0.4))', color: isFollowed ? 'var(--hero-btn-text, #1E293B)' : '#fff', borderColor: isFollowed ? 'var(--border-color, rgba(255,255,255,0.1))' : 'rgba(255,255,255,0.2)' }"
                 >
                   <svg v-if="isFollowed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                   <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>

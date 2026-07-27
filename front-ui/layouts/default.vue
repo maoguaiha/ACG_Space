@@ -197,6 +197,7 @@ const handleLogout = () => {
   --gacha-hero-from: rgba(88, 28, 135, 0.3);
   --gacha-hero-via: rgba(15, 23, 42, 1);
   --gacha-hero-to: rgba(15, 23, 42, 1);
+  --hero-overlay-gradient: linear-gradient(to bottom, rgba(15, 23, 42, 0.3) 0%, rgba(15, 23, 42, 1) 100%);
 }
 
 /* 浅色变量 (Light) - 清透白昼风 */
@@ -242,6 +243,15 @@ const handleLogout = () => {
   --chart-ring-inner: #e2e8f0;
   /* 进度条 */
   --gacha-progress-track: #e2e8f0;
+  --hero-overlay-gradient: linear-gradient(to bottom, rgba(248, 250, 252, 0.3) 0%, #F8FAFC 100%);
+  --hero-btn-bg: rgba(255, 255, 255, 0.4);
+  --hero-btn-text: #1E293B;
+  --hero-btn-hover: rgba(255, 255, 255, 0.7);
+}
+/* 浅色主题 hero 按钮 hover */
+.theme-light .hero-btn-bangumi:hover,
+.theme-light .hero-btn-follow:not(.hero-btn-followed):hover {
+  background: var(--hero-btn-hover) !important;
 }
 
 /* 粉色变量 (Pink) - 温馨甜美风 */
@@ -284,6 +294,10 @@ const handleLogout = () => {
   --points-bg-icon: linear-gradient(135deg, #EC4899, #F472B6);
   --chart-ring-outer: #fbcfe8;
   --chart-ring-inner: #ec4899;
+  --hero-overlay-gradient: linear-gradient(to bottom, rgba(250, 250, 250, 0.3) 0%, #FAFAFA 100%);
+  --hero-btn-bg: rgba(255, 255, 255, 0.5);
+  --hero-btn-text: #BE185D;
+  --hero-btn-hover: rgba(255, 255, 255, 0.8);
 }
 
 /* 应用变量 */
