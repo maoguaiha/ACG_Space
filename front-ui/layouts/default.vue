@@ -511,28 +511,40 @@ const handleLogout = () => {
 .theme-light .gacha-banner-overlay {
   background: linear-gradient(to top, rgba(255,255,255,0.9), transparent) !important;
 }
-.theme-light .gacha-banner-title { color: #1e293b !important; }
+.theme-light .gacha-banner-title { color: #1e293b !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
 .theme-light .gacha-banner-muted { color: #64748b !important; }
 .theme-light .gacha-progress-track { background: #e2e8f0 !important; }
 .theme-light .gacha-progress-fill {
   background: linear-gradient(to right, #c8b6e8, #94a3f0) !important;
+}
+.theme-light .gacha-progress-stellar {
+  background: linear-gradient(to right, #8A2387, #E94057) !important;
+}
+.theme-light .gacha-progress-normal {
+  background: linear-gradient(to right, #3b82f6, #0ea5e9) !important;
 }
 .theme-light .gacha-ring {
   border-color: #e2e8f0 !important;
   background: linear-gradient(135deg, #f5f3ff, #ede9fe, #f5f3ff) !important;
 }
 .theme-light .gacha-ring-inner {
-  background: linear-gradient(135deg, #ddd6fe, #c4b5fd) !important;
+  background: linear-gradient(135deg, #e9d5ff, #d8b4fe) !important;
 }
 .theme-light .gacha-btn-single {
-  background: #f8fafc !important;
-  border-color: #e2e8f0 !important;
-  color: #475569 !important;
+  background: #fff0f5 !important;
+  border-color: #fbcfe8 !important;
+  color: #831843 !important;
   box-shadow: none !important;
+  font-weight: 600 !important;
 }
 .theme-light .gacha-btn-single:hover {
-  background: #f1f5f9 !important;
-  border-color: #cbd5e1 !important;
+  background: #fce7f3 !important;
+  border-color: #f9a8d4 !important;
+}
+.theme-light .gacha-badge {
+  background: rgba(138, 35, 135, 0.08) !important;
+  color: #8A2387 !important;
+  border-color: rgba(138, 35, 135, 0.2) !important;
 }
 .theme-light .gacha-btn-recharge {
   border: 1px solid #E94057 !important;

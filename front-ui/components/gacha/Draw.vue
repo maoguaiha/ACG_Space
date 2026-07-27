@@ -6,7 +6,7 @@
 
       <div class="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center">
         <div class="text-center mb-8">
-          <span class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-wider bg-gradient-to-r from-amber-400/20 to-orange-500/20 text-amber-400 border border-amber-400/30 mb-4">
+          <span class="inline-block px-4 py-1.5 rounded-full text-xs font-bold tracking-wider gacha-badge bg-gradient-to-r from-amber-400/20 to-orange-500/20 text-amber-400 border border-amber-400/30 mb-4">
             LIMITED GACHA
           </span>
           <h1 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
@@ -50,7 +50,8 @@
                   </div>
                   <div class="mt-2 h-1.5 gacha-progress-track bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      class="h-full gacha-progress-fill bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
+                      class="h-full gacha-progress-fill rounded-full transition-all duration-500"
+                      :class="index === 0 ? 'gacha-progress-stellar' : 'gacha-progress-normal'"
                       :style="{ width: `${(pool.remainingStock / (pool.totalStock || 1)) * 100}%` }"
                     ></div>
                   </div>
@@ -110,15 +111,15 @@
               <button
                 @click="handleDraw(1)"
                 :disabled="isDrawing || !currentPool"
-                class="flex-1 py-4 rounded-xl font-bold gacha-btn-single border transition-all bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed"
+                class="flex-1 py-4 rounded-xl font-bold gacha-btn-single border transition-all disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {{ isDrawing ? '抽取中...' : '单抽' }}
               </button>
               <button
                 @click="handleDraw(10)"
                 :disabled="isDrawing || !currentPool"
-                class="flex-1 py-4 rounded-xl font-bold gacha-btn-ten text-white shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all"
-                :style="{ background: 'linear-gradient(135deg, #F0C27A 0%, #FC5C7D 100%)', boxShadow: '0 4px 20px rgba(252, 92, 125, 0.3)' }"
+                class="flex-1 py-4 rounded-xl font-bold gacha-btn-ten transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                style="background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%); color: #fff; box-shadow: 0 4px 20px rgba(233, 64, 87, 0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.25);"
               >
                 {{ isDrawing ? '抽取中...' : '十连 ' }}
               </button>
@@ -210,8 +211,8 @@
               </button>
               <button
                 @click="handleDraw(drawType)"
-                class="flex-1 py-3 rounded-xl font-bold text-white transition-all gacha-btn-continue"
-                :style="{ background: 'linear-gradient(135deg, #F0C27A 0%, #FC5C7D 100%)', boxShadow: '0 4px 20px rgba(252, 92, 125, 0.3)' }"
+                class="flex-1 py-3 rounded-xl font-bold gacha-btn-continue transition-all"
+                style="background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%); color: #fff; box-shadow: 0 4px 20px rgba(233, 64, 87, 0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.25);"
               >
                 再抽{{ drawType }}次
               </button>
