@@ -379,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted } from 'vue'
+import { ref, reactive, onMounted, watch } from 'vue'
 import { useUserStore } from '~/stores/user'
 import { fetchArticleDetail, publishArticleComment, fetchArticleCommentPage, reactArticle, reactArticleComment, getArticleReactionStatus, getArticleCommentReactionStatus, replyArticleComment, fetchArticleCommentReplies, type ArticleDetail, type ArticleCommentVO } from '~/composables/useApi'
 
@@ -445,7 +445,7 @@ async function loadArticle() {
 }
 
 async function loadArticleReaction() {
-  if (!article.value?.id || !userStore.isLoggedIn) return
+  if (!article.value?.id) return
   try {
     const status = await getArticleReactionStatus(article.value.id.toString())
     articleReaction.value = status ?? null
@@ -521,7 +521,6 @@ async function loadComments() {
 }
 
 async function loadCommentReactionStatus() {
-  if (!userStore.isLoggedIn) return
   for (const comment of comments.value) {
     try {
       const status = await getArticleCommentReactionStatus(comment.id.toString())
@@ -783,6 +782,14 @@ onMounted(async () => {
   if (article.value?.id) {
     await loadComments()
     await loadArticleReaction()
+  }
+})
+
+// 用户登录态变化后重新加载点赞状态
+watch(() => userStore.isLoggedIn, (val) => {
+  if (val && article.value?.id) {
+    loadArticleReaction()
+    loadCommentReactionStatus()
   }
 })
 
