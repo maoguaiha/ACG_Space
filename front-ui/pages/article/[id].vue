@@ -447,9 +447,11 @@ async function loadArticle() {
 async function loadArticleReaction() {
   try {
     const id = route.params.id as string
-    if (!id) return
+    if (!id) { console.log('[DEBUG loadArticleReaction] route.params.id 为空'); return }
     const status = await getArticleReactionStatus(id)
+    console.log('[DEBUG loadArticleReaction] status:', status)
     articleReaction.value = status ?? null
+    console.log('[DEBUG loadArticleReaction] articleReaction.value:', articleReaction.value)
   } catch (e) {
     console.error('加载文章反应状态失败', e)
   }
@@ -522,6 +524,7 @@ async function loadComments() {
 }
 
 async function loadCommentReactionStatus() {
+  console.log('[DEBUG] loadCommentReactionStatus 执行, comments.length:', comments.value.length)
   for (const comment of comments.value) {
     try {
       const status = await getArticleCommentReactionStatus(comment.id.toString())
