@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen">
     <div v-if="pending" class="container mx-auto px-4 py-20 flex flex-col items-center justify-center">
-      <div class="w-12 h-12 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin mb-4"></div>
+      <div class="w-12 h-12 rounded-full border-4 border-indigo-500/30 border-t-indigo-500 animate-spin mb-4" style="border-top-color: var(--accent, #6366F1); border-color: rgba(99, 102, 241, 0.15);"></div>
       <p class="text-slate-400">加载文章中…</p>
     </div>
 
@@ -9,7 +9,7 @@
       <svg xmlns="http://www.w3.org/2000/svg" width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1" class="mb-6 text-slate-600"><circle cx="12" cy="12" r="10"/><line x1="12" y1="8" x2="12" y2="12"/><line x1="12" y1="16" x2="12.01" y2="16"/></svg>
       <h2 class="text-xl font-bold mb-2 text-slate-200">文章不存在或加载失败</h2>
       <p class="text-slate-500 mb-6">{{ error?.message || '无法获取文章数据' }}</p>
-      <NuxtLink to="/community" class="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white rounded-full transition-colors">
+      <NuxtLink to="/community" class="px-6 py-2 rounded-full transition-colors force-white" style="background: var(--hero-btn-bg, rgba(99, 102, 241, 0.8)); color: var(--text-main, #fff);">
         返回社区
       </NuxtLink>
     </div>
@@ -18,7 +18,7 @@
       <!-- 文章封面 -->
       <div class="relative w-full h-[350px] overflow-hidden">
         <img v-if="article.coverUrl" :src="article.coverUrl" :alt="article.title" class="w-full h-full object-cover" />
-        <div class="absolute inset-0 bg-gradient-to-t from-black/90 via-black/30 to-transparent"></div>
+        <div class="absolute inset-0 theme-article-cover" :style="{ background: 'var(--hero-overlay-gradient, linear-gradient(to top, rgba(15,23,42,0.9), rgba(15,23,42,0.3), transparent))' }"></div>
       </div>
 
       <div class="container mx-auto px-4 py-8">
@@ -115,7 +115,7 @@
                       :key="reason"
                       @click="confirmDislike(reason)"
                       class="w-full text-left px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-                      :class="selectedReason === reason ? 'bg-indigo-600/30 text-indigo-300' : ''"
+                      :class="selectedReason === reason ? 'theme-btn-filter-active' : ''"
                     >
                       {{ reason }}
                     </button>
@@ -224,6 +224,7 @@
                       @click="handleCommentReaction(comment.id.toString(), 1)"
                       class="group flex items-center gap-1.5 transition-colors"
                       :class="commentReactionStatus.get(comment.id.toString()) === 1 ? 'text-rose-400' : 'text-slate-500 hover:text-rose-400'"
+                      :style="commentReactionStatus.get(comment.id.toString()) === 1 ? { color: 'var(--accent, #EC4899)' } : {}"
                     >
                       <svg class="w-4 h-4 transition-transform group-hover:scale-110" :fill="commentReactionStatus.get(comment.id.toString()) === 1 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
@@ -234,6 +235,7 @@
                       @click="handleCommentReaction(comment.id.toString(), 2)"
                       class="group flex items-center gap-1.5 transition-colors"
                       :class="commentReactionStatus.get(comment.id.toString()) === 2 ? 'text-slate-400' : 'text-slate-500 hover:text-slate-400'"
+                      :style="commentReactionStatus.get(comment.id.toString()) === 2 ? { color: 'var(--text-muted, #94a3b8)' } : {}"
                     >
                       <svg class="w-4 h-4 transition-transform group-hover:scale-110" :fill="commentReactionStatus.get(comment.id.toString()) === 2 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h-4.764a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
@@ -297,6 +299,7 @@
                               @click="handleReplyReaction(reply.id.toString(), 1)"
                               class="group flex items-center gap-1 transition-colors"
                               :class="replyReactionStatus.get(reply.id.toString()) === 1 ? 'text-rose-400' : 'text-slate-500 hover:text-rose-400'"
+                              :style="replyReactionStatus.get(reply.id.toString()) === 1 ? { color: 'var(--accent, #EC4899)' } : {}"
                             >
                               <svg class="w-3.5 h-3.5" :fill="replyReactionStatus.get(reply.id.toString()) === 1 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />

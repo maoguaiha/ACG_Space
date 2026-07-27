@@ -390,6 +390,16 @@ const handleLogout = () => {
   color: var(--text-main) !important;
 }
 
+/* text-[color]-* 在浅色/粉色下替换为 --accent */
+.theme-light .text-indigo-400, .theme-light .text-indigo-500, .theme-light .text-indigo-600,
+.theme-light .text-purple-400, .theme-light .text-purple-500, .theme-light .text-purple-600,
+.theme-light .text-amber-400, .theme-light .text-cyan-400, .theme-light .text-blue-400, .theme-light .text-rose-400,
+.theme-pink .text-indigo-400, .theme-pink .text-indigo-500, .theme-pink .text-indigo-600,
+.theme-pink .text-purple-400, .theme-pink .text-purple-500, .theme-pink .text-purple-600,
+.theme-pink .text-amber-400, .theme-pink .text-cyan-400, .theme-pink .text-blue-400, .theme-pink .text-rose-400 {
+  color: var(--accent) !important;
+}
+
 /* 强制让高亮按钮内的文字保持白色 */
 .theme-light .bg-indigo-600 .text-white, .theme-pink .bg-indigo-600 .text-white,
 .theme-light .bg-indigo-600 span, .theme-pink .bg-indigo-600 span,
@@ -476,50 +486,79 @@ const handleLogout = () => {
   border-color: #ffffff !important;
 }
 
-/* 渐变按钮适配 — 浅色和粉色主题用 --accent 替换所有偏紫渐变 */
+/* ═══════════════════════════════════════════
+   渐变按钮全局覆盖 - 浅色/粉色统一
+   所有 from-indigo/purple/blue/amber/cyan/emerald 渐变 → accent 色
+   ═══════════════════════════════════════════ */
+
+/* 清除背景 — 防止旧色叠加 */
 .theme-light .from-indigo-500, .theme-light .from-indigo-600, .theme-light .to-indigo-500, .theme-light .to-indigo-600,
 .theme-light .from-blue-500, .theme-light .from-blue-600, .theme-light .to-blue-500, .theme-light .to-blue-600,
 .theme-light .from-purple-500, .theme-light .from-purple-600, .theme-light .to-purple-500, .theme-light .to-purple-600,
 .theme-light .to-pink-500, .theme-light .to-pink-600,
+.theme-light .from-amber-500, .theme-light .from-amber-400, .theme-light .to-orange-500, .theme-light .to-orange-400,
+.theme-light .from-cyan-500, .theme-light .from-cyan-400, .theme-light .to-blue-500, .theme-light .to-blue-400,
+.theme-light .from-emerald-500, .theme-light .to-teal-500,
 .theme-pink .from-indigo-500, .theme-pink .from-indigo-600, .theme-pink .to-indigo-500, .theme-pink .to-indigo-600,
 .theme-pink .from-blue-500, .theme-pink .from-blue-600, .theme-pink .to-blue-500, .theme-pink .to-blue-600,
 .theme-pink .from-purple-500, .theme-pink .from-purple-600, .theme-pink .to-purple-500, .theme-pink .to-purple-600,
-.theme-pink .to-pink-500, .theme-pink .to-pink-600 {
+.theme-pink .to-pink-500, .theme-pink .to-pink-600,
+.theme-pink .from-amber-500, .theme-pink .from-amber-400, .theme-pink .to-orange-500, .theme-pink .to-orange-400,
+.theme-pink .from-cyan-500, .theme-pink .from-cyan-400, .theme-pink .to-blue-500, .theme-pink .to-blue-400,
+.theme-pink .from-emerald-500, .theme-pink .to-teal-500 {
   background-color: transparent !important;
 }
-
-/* 单色（非渐变）的 indigo/purple 在浅色/粉色下替换为 --accent */
-.theme-light .bg-indigo-500, .theme-pink .bg-indigo-500,
-.theme-light .bg-indigo-600, .theme-pink .bg-indigo-600,
-.theme-light .bg-purple-500, .theme-pink .bg-purple-500,
-.theme-light .bg-purple-600, .theme-pink .bg-purple-600 {
-  background-color: var(--accent) !important;
-}
-
-/* text-indigo-* 在浅色/粉色下替换为 --accent 颜色 */
-.theme-light .text-indigo-500, .theme-pink .text-indigo-500,
-.theme-light .text-indigo-600, .theme-pink .text-indigo-600,
-.theme-light .text-indigo-400, .theme-pink .text-indigo-400,
-.theme-light .text-purple-500, .theme-pink .text-purple-500,
-.theme-light .text-purple-600, .theme-pink .text-purple-600,
-.theme-light .text-purple-400, .theme-pink .text-purple-400 {
-  color: var(--accent) !important;
-}
-
+/* 浅色主题 → 星空蓝 */
 .theme-light .bg-gradient-to-r.from-indigo-500.to-purple-500,
 .theme-light .bg-gradient-to-r.from-indigo-600.to-purple-600,
 .theme-light .bg-gradient-to-r.from-purple-500.to-pink-500,
 .theme-light .bg-gradient-to-r.from-purple-600.to-pink-600,
 .theme-light .bg-gradient-to-r.from-blue-500.to-indigo-500,
 .theme-light .bg-gradient-to-r.from-blue-600.to-indigo-600,
+.theme-light .bg-gradient-to-r.from-cyan-500.to-blue-500,
+.theme-light .bg-gradient-to-r.from-amber-500.to-orange-500,
+.theme-light .bg-gradient-to-r.from-blue-400.to-cyan-500,
+.theme-light .bg-gradient-to-r.from-cyan-400.to-blue-500,
+.theme-light .bg-gradient-to-r.from-emerald-500.to-teal-500,
+.theme-light .bg-gradient-to-r.from-amber-400.to-orange-500,
 .theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
 .theme-light .bg-gradient-to-br.from-indigo-600.to-purple-600,
 .theme-light .bg-gradient-to-br.from-purple-500.to-pink-500,
 .theme-light .bg-gradient-to-br.from-purple-600.to-pink-600,
 .theme-light .bg-gradient-to-br.from-blue-500.to-indigo-500,
-.theme-light .bg-gradient-to-br.from-blue-600.to-indigo-600 {
-  background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%) !important;
-  box-shadow: 0 4px 15px rgba(233, 64, 87, 0.4) !important;
+.theme-light .bg-gradient-to-br.from-blue-600.to-indigo-600,
+.theme-light .bg-gradient-to-br.from-amber-400.to-orange-500,
+.theme-light .bg-gradient-to-br.from-cyan-400.to-blue-500,
+.theme-light .bg-gradient-to-br.from-blue-400.to-cyan-500,
+.theme-light .bg-gradient-to-br.from-purple-400.to-pink-500 {
+  background: linear-gradient(135deg, #6366F1 0%, #3B82F6 100%) !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
+}
+/* 粉色主题 → 粉色 */
+.theme-pink .bg-gradient-to-r.from-indigo-500.to-purple-500,
+.theme-pink .bg-gradient-to-r.from-indigo-600.to-purple-600,
+.theme-pink .bg-gradient-to-r.from-purple-500.to-pink-500,
+.theme-pink .bg-gradient-to-r.from-purple-600.to-pink-600,
+.theme-pink .bg-gradient-to-r.from-blue-500.to-indigo-500,
+.theme-pink .bg-gradient-to-r.from-blue-600.to-indigo-600,
+.theme-pink .bg-gradient-to-r.from-cyan-500.to-blue-500,
+.theme-pink .bg-gradient-to-r.from-amber-500.to-orange-500,
+.theme-pink .bg-gradient-to-r.from-blue-400.to-cyan-500,
+.theme-pink .bg-gradient-to-r.from-cyan-400.to-blue-500,
+.theme-pink .bg-gradient-to-r.from-emerald-500.to-teal-500,
+.theme-pink .bg-gradient-to-r.from-amber-400.to-orange-500,
+.theme-pink .bg-gradient-to-br.from-indigo-500.to-purple-500,
+.theme-pink .bg-gradient-to-br.from-indigo-600.to-purple-600,
+.theme-pink .bg-gradient-to-br.from-purple-500.to-pink-500,
+.theme-pink .bg-gradient-to-br.from-purple-600.to-pink-600,
+.theme-pink .bg-gradient-to-br.from-blue-500.to-indigo-500,
+.theme-pink .bg-gradient-to-br.from-blue-600.to-indigo-600,
+.theme-pink .bg-gradient-to-br.from-amber-400.to-orange-500,
+.theme-pink .bg-gradient-to-br.from-cyan-400.to-blue-500,
+.theme-pink .bg-gradient-to-br.from-blue-400.to-cyan-500,
+.theme-pink .bg-gradient-to-br.from-purple-400.to-pink-500 {
+  background: linear-gradient(to right, var(--accent), var(--accent-secondary)) !important;
+  box-shadow: 0 4px 15px rgba(236, 72, 153, 0.3) !important;
 }
 
 .theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
@@ -1074,9 +1113,10 @@ const handleLogout = () => {
   box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
 }
 .theme-light .theme-btn-filter-active {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  color: white;
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: #6366F1 !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
+  box-shadow: none !important;
 }
 .theme-pink .theme-btn-filter-active {
   background: linear-gradient(135deg, #ec4899, #f472b6);
@@ -1741,14 +1781,14 @@ const handleLogout = () => {
   color: #f8fafc;
 }
 .theme-light .theme-btn-filter-active {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  border-color: #4f46e5;
-  color: #f8fafc;
+  background: rgba(99, 102, 241, 0.12) !important;
+  color: #6366F1 !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
 }
 .theme-pink .theme-btn-filter-active {
-  background: linear-gradient(135deg, #ec4899, #f472b6);
-  border-color: #ec4899;
-  color: #f8fafc;
+  background: rgba(236, 72, 153, 0.12) !important;
+  color: #DB2777 !important;
+  border-color: rgba(236, 72, 153, 0.2) !important;
 }
 
 /* === 大尺寸点赞/点踩按钮 === */
