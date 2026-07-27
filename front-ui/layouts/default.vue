@@ -211,16 +211,16 @@ const handleLogout = () => {
   --text-main: #1e293b;
   --text-muted: #64748b;
   --text-dim: #94a3b8;
-  --accent: #2563eb;
-  --accent-hover: #1d4ed8;
-  --accent-secondary: #0ea5e9;
+  --accent: #667eea;
+  --accent-hover: #764ba2;
+  --accent-secondary: #764ba2;
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --hero-overlay: rgba(2, 6, 23, 0.95);
-  --gacha-hero-from: rgba(59, 130, 246, 0.25);
+  --hero-overlay: rgba(30, 10, 60, 0.92);
+  --gacha-hero-from: rgba(102, 126, 234, 0.25);
   --gacha-hero-via: rgba(255, 255, 255, 1);
-  --gacha-hero-to: rgba(238, 242, 255, 1);
+  --gacha-hero-to: rgba(245, 243, 255, 1);
 }
 
 /* 粉色变量 (Pink) - 温馨甜美风 */
@@ -453,13 +453,14 @@ const handleLogout = () => {
 .theme-light .bg-gradient-to-r.from-purple-600.to-pink-600,
 .theme-light .bg-gradient-to-r.from-blue-500.to-indigo-500,
 .theme-light .bg-gradient-to-r.from-blue-600.to-indigo-600,
-.theme-pink .bg-gradient-to-r.from-indigo-500.to-purple-500,
-.theme-pink .bg-gradient-to-r.from-indigo-600.to-purple-600,
-.theme-pink .bg-gradient-to-r.from-purple-500.to-pink-500,
-.theme-pink .bg-gradient-to-r.from-purple-600.to-pink-600,
-.theme-pink .bg-gradient-to-r.from-blue-500.to-indigo-500,
-.theme-pink .bg-gradient-to-r.from-blue-600.to-indigo-600 {
-  background: linear-gradient(to right, var(--accent), var(--accent-secondary)) !important;
+.theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
+.theme-light .bg-gradient-to-br.from-indigo-600.to-purple-600,
+.theme-light .bg-gradient-to-br.from-purple-500.to-pink-500,
+.theme-light .bg-gradient-to-br.from-purple-600.to-pink-600,
+.theme-light .bg-gradient-to-br.from-blue-500.to-indigo-500,
+.theme-light .bg-gradient-to-br.from-blue-600.to-indigo-600 {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
+  box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4) !important;
 }
 
 .theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
