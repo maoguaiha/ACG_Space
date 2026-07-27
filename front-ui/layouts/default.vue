@@ -547,14 +547,16 @@ const handleLogout = () => {
   border-color: rgba(138, 35, 135, 0.2) !important;
 }
 .theme-light .gacha-btn-recharge {
-  border: 1px solid #E94057 !important;
-  color: #E94057 !important;
-  background: transparent !important;
+  background: #FFF7ED !important;
+  color: #EA580C !important;
+  border: 1px solid #fed7aa !important;
   box-shadow: none !important;
 }
 .theme-light .gacha-btn-recharge:hover {
-  background: rgba(233, 64, 87, 0.08) !important;
+  background: #FFEDD5 !important;
 }
+/* 池卡片未选中环 */
+.theme-light .gacha-pool-card .ring-slate-700 { border-color: #e2e8f0 !important; color: #e2e8f0 !important; }
 
 /* 消息气泡适配 */
 .theme-light .bg-slate-800\/90, .theme-pink .bg-slate-800\/90 {

@@ -10,7 +10,7 @@
             LIMITED GACHA
           </span>
           <h1 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
-            <span class="bg-gradient-to-r from-amber-200 via-yellow-300 to-amber-200 bg-clip-text text-transparent">
+            <span class="gacha-hero-title bg-gradient-to-r from-purple-400 via-fuchsia-500 to-orange-400 bg-clip-text text-transparent">
               限定奖池
             </span>
           </h1>
@@ -27,8 +27,8 @@
               @click="selectPool(index)"
             >
               <div
-                class="relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl"
-                :class="selectedPoolIndex === index ? 'ring-2 ring-amber-400 shadow-amber-400/30 shadow-2xl' : 'ring-1 ring-slate-700'"
+                class="relative rounded-2xl overflow-hidden cursor-pointer transition-all duration-500 hover:scale-[1.02] hover:shadow-2xl gacha-pool-card"
+                :class="selectedPoolIndex === index ? 'ring-2 ring-purple-500 shadow-[0_0_15px_rgba(168,85,247,0.3)] scale-[1.02] shadow-2xl' : 'ring-1 ring-slate-700'"
               >
                 <div class="relative h-[160px] md:h-[180px] overflow-hidden">
                   <img :src="pool.banner || 'https://picsum.photos/seed/default/640/320'" class="w-full h-full object-cover" />
