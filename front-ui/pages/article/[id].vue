@@ -445,9 +445,10 @@ async function loadArticle() {
 }
 
 async function loadArticleReaction() {
-  if (!article.value?.id) return
   try {
-    const status = await getArticleReactionStatus(article.value.id.toString())
+    const id = route.params.id as string
+    if (!id) return
+    const status = await getArticleReactionStatus(id)
     articleReaction.value = status ?? null
   } catch (e) {
     console.error('加载文章反应状态失败', e)
@@ -781,13 +782,14 @@ onMounted(async () => {
   await loadArticle()
   if (article.value?.id) {
     await loadComments()
-    await loadArticleReaction()
   }
+  // 点赞状态不依赖 article.value.id，直接从 route 拿
+  await loadArticleReaction()
 })
 
 // 用户登录态变化后重新加载点赞状态
 watch(() => userStore.isLoggedIn, (val) => {
-  if (val && article.value?.id) {
+  if (val) {
     loadArticleReaction()
     loadCommentReactionStatus()
   }
