@@ -113,7 +113,7 @@
               <button
                 @click="openSynthesizeModal('SR')"
                 :disabled="srCount < 10"
-                class="px-4 py-1.5 rounded-lg text-sm font-bold bg-purple-500/20 text-purple-400 hover:bg-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                class="px-4 py-1.5 rounded-lg text-sm font-bold bg-blue-500/20 text-blue-400 hover:bg-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 合成
               </button>
@@ -151,7 +151,7 @@
           @click="activeTab = tab.id"
           class="px-4 py-2 rounded-xl text-sm font-medium whitespace-nowrap transition-all"
           :class="activeTab === tab.id
-            ? 'bg-gradient-to-r from-indigo-500 to-purple-500 text-white shadow-lg'
+            ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
             : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700'"
         >
           {{ tab.name }}
@@ -313,7 +313,7 @@
               <button
                 @click="handleSynthesize"
                 :disabled="maxSynthesizeTimes < 1 || synthesizing"
-                class="flex-1 py-3 rounded-xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-purple-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                class="flex-1 py-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg hover:shadow-blue-500/30 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {{ synthesizing ? '合成中...' : `确认合成 (${maxSynthesizeTimes}次)` }}
               </button>
@@ -397,7 +397,7 @@
               消耗{{ lastSynthesizeTimes * 10 }}个{{ synthesizeSource }}品质物品<br/>
               获得 <span class="font-bold text-white">{{ lastSynthesizeTimes }}个 {{ getResultName() }}</span>
             </p>
-            <button @click="closeSynthesisResult" class="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg hover:shadow-purple-500/30 transition-all">
+            <button @click="closeSynthesisResult" class="w-full py-3 rounded-xl font-bold bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg hover:shadow-blue-500/30 transition-all">
               确定
             </button>
           </div>

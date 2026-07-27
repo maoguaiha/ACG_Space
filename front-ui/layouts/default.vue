@@ -419,12 +419,16 @@ const handleLogout = () => {
 
 /* 渐变按钮适配 */
 .theme-light .from-indigo-600, .theme-pink .from-indigo-600,
-.theme-light .to-purple-600, .theme-pink .to-purple-600 {
+.theme-light .to-purple-600, .theme-pink .to-purple-600,
+.theme-light .from-blue-600, .theme-pink .from-blue-600,
+.theme-light .to-indigo-600, .theme-pink .to-indigo-600 {
   background-color: transparent !important;
 }
 
 .theme-light .bg-gradient-to-r.from-indigo-600.to-purple-600,
-.theme-pink .bg-gradient-to-r.from-indigo-600.to-purple-600 {
+.theme-pink .bg-gradient-to-r.from-indigo-600.to-purple-600,
+.theme-light .bg-gradient-to-r.from-blue-600.to-indigo-600,
+.theme-pink .bg-gradient-to-r.from-blue-600.to-indigo-600 {
   background: linear-gradient(to right, var(--accent), var(--accent-secondary)) !important;
 }
 

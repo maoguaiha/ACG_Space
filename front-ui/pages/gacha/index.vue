@@ -12,7 +12,7 @@
               @click="activeTab = tab.id"
               class="px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all"
               :class="activeTab === tab.id
-                ? 'bg-gradient-to-r from-purple-500 to-pink-500 text-white shadow-lg'
+                ? 'bg-gradient-to-r from-blue-500 to-indigo-500 text-white shadow-lg'
                 : 'bg-slate-800/50 text-slate-400 hover:bg-slate-700 hover:text-white'"
             >
               {{ tab.icon }} {{ tab.name }}

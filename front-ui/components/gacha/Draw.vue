@@ -2,7 +2,7 @@
   <div>
     <section class="relative h-[450px] overflow-hidden">
       <div class="absolute inset-0 bg-gradient-to-b" :style="{ background: `linear-gradient(to bottom, var(--gacha-hero-from), var(--gacha-hero-via), var(--gacha-hero-to))` }"></div>
-      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-purple-600/20 rounded-full blur-[120px]"></div>
+      <div class="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-500/20 rounded-full blur-[120px]"></div>
 
       <div class="relative z-10 container mx-auto px-4 h-full flex flex-col justify-center">
         <div class="text-center mb-8">
@@ -50,7 +50,7 @@
                   </div>
                   <div class="mt-2 h-1.5 bg-slate-800 rounded-full overflow-hidden">
                     <div
-                      class="h-full bg-gradient-to-r from-purple-500 to-pink-500 rounded-full transition-all duration-500"
+                      class="h-full bg-gradient-to-r from-blue-500 to-indigo-500 rounded-full transition-all duration-500"
                       :style="{ width: `${(pool.remainingStock / (pool.totalStock || 1)) * 100}%` }"
                     ></div>
                   </div>
@@ -110,7 +110,7 @@
               <button
                 @click="handleDraw(1)"
                 :disabled="isDrawing || !currentPool"
-                class="flex-1 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
+                class="flex-1 py-4 rounded-xl font-bold text-white bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50 disabled:opacity-50 disabled:cursor-not-allowed transition-all"
               >
                 {{ isDrawing ? '抽取中...' : '单抽' }}
               </button>
@@ -210,7 +210,7 @@
               <button
                 @click="handleDraw(drawType)"
                 class="flex-1 py-3 rounded-xl font-bold text-white transition-all"
-                :class="drawType === 10 ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50' : 'bg-gradient-to-r from-purple-600 to-pink-600 shadow-lg shadow-purple-500/30 hover:shadow-purple-500/50'"
+                :class="drawType === 10 ? 'bg-gradient-to-r from-amber-500 to-orange-500 shadow-lg shadow-amber-500/30 hover:shadow-amber-500/50' : 'bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg shadow-blue-500/30 hover:shadow-blue-500/50'"
               >
                 再抽{{ drawType }}次
               </button>
