@@ -21,7 +21,8 @@
       <!-- Hero Banner 区域 -->
       <div class="relative w-full h-[420px] overflow-hidden">
         <!-- 返回按钮 -->
-        <NuxtLink to="/anime" class="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 bg-black/40 hover:bg-black/60 backdrop-blur-sm text-white text-sm rounded-lg transition-colors border border-white/10">
+        <NuxtLink to="/anime" class="absolute top-4 left-4 z-20 inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-bold transition-all border backdrop-blur-sm hero-btn-back"
+          :style="{ background: 'var(--hero-btn-bg, rgba(255,255,255,0.4))', color: 'var(--hero-btn-text, #1E293B)', borderColor: 'var(--border-color, rgba(255,255,255,0.2))' }">
           <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="m15 18-6-6 6-6"/></svg>
           返回番剧库
         </NuxtLink>
@@ -57,15 +58,18 @@
             <div class="flex-1 pb-2">
               <div class="flex items-center flex-wrap gap-2 mb-4">
                 <span
-                  class="text-xs font-bold text-white force-white px-3 py-1 rounded-full"
+                  class="text-xs font-bold px-3 py-1 rounded-full hero-meta-tag"
                   :class="animeStore.getStatusClass(anime.status)"
+                  :style="{ color: 'var(--hero-btn-text, #1E293B)', textShadow: '0 1px 4px rgba(0,0,0,0.12)' }"
                 >
                   {{ animeStore.getStatusLabel(anime.status) }}
                 </span>
-                <span v-if="anime.publishYear" class="text-xs text-white force-white bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <span v-if="anime.publishYear" class="text-xs px-3 py-1 rounded-full border hero-meta-tag"
+                  :style="{ color: 'var(--hero-btn-text, #1E293B)', background: 'var(--hero-btn-bg, rgba(255,255,255,0.4))', borderColor: 'var(--border-color, rgba(255,255,255,0.2))', textShadow: '0 1px 4px rgba(0,0,0,0.12)' }">
                   {{ anime.publishYear }} 年
                 </span>
-                <span v-if="anime.totalEpisodes" class="text-xs text-white force-white bg-white/10 backdrop-blur-md px-3 py-1 rounded-full border border-white/20">
+                <span v-if="anime.totalEpisodes" class="text-xs px-3 py-1 rounded-full border hero-meta-tag"
+                  :style="{ color: 'var(--hero-btn-text, #1E293B)', background: 'var(--hero-btn-bg, rgba(255,255,255,0.4))', borderColor: 'var(--border-color, rgba(255,255,255,0.2))', textShadow: '0 1px 4px rgba(0,0,0,0.12)' }">
                   共 {{ anime.totalEpisodes }} 集
                 </span>
               </div>
@@ -114,7 +118,7 @@
                 <button
                   @click="handleFollow"
                   class="inline-flex items-center gap-2 px-8 py-2.5 rounded-xl text-sm font-black transition-all border shadow-xl active:scale-95 hero-btn-follow"
-                  :style="{ background: isFollowed ? 'rgba(255,255,255,0.3)' : 'var(--hero-btn-bg, rgba(255,255,255,0.4))', color: isFollowed ? 'var(--hero-btn-text, #1E293B)' : '#fff', borderColor: isFollowed ? 'var(--border-color, rgba(255,255,255,0.1))' : 'rgba(255,255,255,0.2)' }"
+                  :style="{ background: isFollowed ? 'rgba(255,255,255,0.3)' : 'var(--hero-btn-bg, rgba(255,255,255,0.4))', color: 'var(--hero-btn-text, #1E293B)', borderColor: isFollowed ? 'var(--border-color, rgba(255,255,255,0.1))' : 'rgba(255,255,255,0.2)' }"
                 >
                   <svg v-if="isFollowed" xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
                   <svg v-else xmlns="http://www.w3.org/2000/svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>

@@ -250,7 +250,13 @@ const handleLogout = () => {
 }
 /* 浅色主题 hero 按钮 hover */
 .theme-light .hero-btn-bangumi:hover,
-.theme-light .hero-btn-follow:not(.hero-btn-followed):hover {
+.theme-light .hero-btn-follow:not(.hero-btn-followed):hover,
+.theme-light .hero-btn-back:hover {
+  background: var(--hero-btn-hover) !important;
+}
+.theme-pink .hero-btn-bangumi:hover,
+.theme-pink .hero-btn-follow:not(.hero-btn-followed):hover,
+.theme-pink .hero-btn-back:hover {
   background: var(--hero-btn-hover) !important;
 }
 
