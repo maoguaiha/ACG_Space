@@ -1914,14 +1914,14 @@ const handleLogout = () => {
 }
 
 .theme-light .theme-btn-share {
-  background: linear-gradient(135deg, #e2e8f0, #cbd5e1);
-  color: #475569;
-  border: 1px solid #cbd5e1;
+  background: linear-gradient(135deg, #3B82F6, #6366F1) !important;
+  color: white !important;
+  border: 1px solid transparent !important;
 }
 .theme-light .theme-btn-share:hover {
-  background: linear-gradient(135deg, #cbd5e1, #94a3b8);
-  color: white;
-  border-color: #94a3b8;
+  background: linear-gradient(135deg, #2563EB, #4F46E5) !important;
+  color: white !important;
+  border-color: transparent !important;
 }
 
 .theme-pink .theme-btn-share {
