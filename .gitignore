@@ -33,3 +33,12 @@ out/
 # Logs
 *.log
 logs/
+
+# Maven tmp
+.maventmp/
+
+# Workspace memory (per-project tool data)
+.workbuddy/memory/
+.workbuddy/projects/
+.workbuddy/blobs/
+.workbuddy/clipboard-images/

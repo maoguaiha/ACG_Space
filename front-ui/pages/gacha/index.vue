@@ -12,11 +12,11 @@
               @click="activeTab = tab.id"
               class="relative px-5 py-2.5 rounded-xl text-sm font-bold whitespace-nowrap transition-all"
               :class="activeTab === tab.id
-                ? 'text-slate-900 dark:text-white'
-                : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-white'"
+                ? 'gacha-tab-active text-slate-900 dark:text-white'
+                : 'text-slate-400 dark:text-slate-400 hover:text-slate-600 dark:hover:text-slate-100'"
             >
               {{ tab.icon }} {{ tab.name }}
-              <span v-if="activeTab === tab.id" class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-6 h-0.5 rounded-full" :class="['theme-primary-bg']"></span>
+              <span v-if="activeTab === tab.id" class="absolute bottom-0.5 left-1/2 -translate-x-1/2 w-8 h-1 rounded-full" :class="['theme-primary-bg']"></span>
             </button>
           </div>
 

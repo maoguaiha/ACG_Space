@@ -537,6 +537,18 @@ const handleLogout = () => {
 }
 .theme-light .gacha-banner-stellar { color: var(--banner-stellar-title, #312E81) !important; }
 .theme-light .gacha-banner-normal { color: var(--banner-normal-title, #0C4A6E) !important; }
+.theme-light .gacha-tab-active {
+  background: var(--bg-secondary, #f1f5f9) !important;
+  color: var(--text-main, #0F172A) !important;
+}
+.theme-dark .gacha-tab-active {
+  background: rgba(99, 102, 241, 0.18) !important;
+  color: #f8fafc !important;
+}
+.theme-pink .gacha-tab-active {
+  background: rgba(236, 72, 153, 0.12) !important;
+  color: #831843 !important;
+}
 .theme-light .gacha-navbar {
   background: rgba(255,255,255,0.88) !important;
   border-color: #e2e8f0 !important;
