@@ -223,10 +223,10 @@
                     <button
                       @click="handleCommentReaction(comment.id.toString(), 1)"
                       class="group flex items-center gap-1.5 transition-colors"
-                      :class="commentReactionStatus.get(comment.id.toString()) === 1 ? 'text-rose-400' : 'text-slate-500 hover:text-rose-400'"
-                      :style="commentReactionStatus.get(comment.id.toString()) === 1 ? { color: 'var(--accent, #EC4899)' } : {}"
+                      :class="commentReactionStatus[comment.id.toString()] === 1 ? 'text-rose-400' : 'text-slate-500 hover:text-rose-400'"
+                      :style="commentReactionStatus[comment.id.toString()] === 1 ? { color: 'var(--accent, #EC4899)' } : {}"
                     >
-                      <svg class="w-4 h-4 transition-transform group-hover:scale-110" :fill="commentReactionStatus.get(comment.id.toString()) === 1 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg class="w-4 h-4 transition-transform group-hover:scale-110" :fill="commentReactionStatus[comment.id.toString()] === 1 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                       </svg>
                       <span>{{ comment.likes || 0 }}</span>
@@ -234,10 +234,10 @@
                     <button
                       @click="handleCommentReaction(comment.id.toString(), 2)"
                       class="group flex items-center gap-1.5 transition-colors"
-                      :class="commentReactionStatus.get(comment.id.toString()) === 2 ? 'text-slate-400' : 'text-slate-500 hover:text-slate-400'"
-                      :style="commentReactionStatus.get(comment.id.toString()) === 2 ? { color: 'var(--text-muted, #94a3b8)' } : {}"
+                      :class="commentReactionStatus[comment.id.toString()] === 2 ? 'text-slate-400' : 'text-slate-500 hover:text-slate-400'"
+                      :style="commentReactionStatus[comment.id.toString()] === 2 ? { color: 'var(--text-muted, #94a3b8)' } : {}"
                     >
-                      <svg class="w-4 h-4 transition-transform group-hover:scale-110" :fill="commentReactionStatus.get(comment.id.toString()) === 2 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                      <svg class="w-4 h-4 transition-transform group-hover:scale-110" :fill="commentReactionStatus[comment.id.toString()] === 2 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h-4.764a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
                       </svg>
                       <span>{{ comment.dislikes || 0 }}</span>
@@ -298,10 +298,10 @@
                             <button
                               @click="handleReplyReaction(reply.id.toString(), 1)"
                               class="group flex items-center gap-1 transition-colors"
-                              :class="replyReactionStatus.get(reply.id.toString()) === 1 ? 'text-rose-400' : 'text-slate-500 hover:text-rose-400'"
-                              :style="replyReactionStatus.get(reply.id.toString()) === 1 ? { color: 'var(--accent, #EC4899)' } : {}"
+                              :class="replyReactionStatus[reply.id.toString()] === 1 ? 'text-rose-400' : 'text-slate-500 hover:text-rose-400'"
+                              :style="replyReactionStatus[reply.id.toString()] === 1 ? { color: 'var(--accent, #EC4899)' } : {}"
                             >
-                              <svg class="w-3.5 h-3.5" :fill="replyReactionStatus.get(reply.id.toString()) === 1 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <svg class="w-3.5 h-3.5" :fill="replyReactionStatus[reply.id.toString()] === 1 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h4.764a2 2 0 011.789 2.894l-3.5 7A2 2 0 0115.263 21h-4.017c-.163 0-.326-.02-.485-.06L7 20m7-10V5a2 2 0 00-2-2h-.095c-.5 0-.905.405-.905.905 0 .714-.211 1.412-.608 2.006L7 11v9m7-10h-2M7 20H5a2 2 0 01-2-2v-6a2 2 0 012-2h2.5" />
                               </svg>
                               <span>{{ reply.likes || 0 }}</span>
@@ -309,9 +309,9 @@
                             <button
                               @click="handleReplyReaction(reply.id.toString(), 2)"
                               class="group flex items-center gap-1 transition-colors"
-                              :class="replyReactionStatus.get(reply.id.toString()) === 2 ? 'text-slate-400' : 'text-slate-500 hover:text-slate-400'"
+                              :class="replyReactionStatus[reply.id.toString()] === 2 ? 'text-slate-400' : 'text-slate-500 hover:text-slate-400'"
                             >
-                              <svg class="w-3.5 h-3.5" :fill="replyReactionStatus.get(reply.id.toString()) === 2 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                              <svg class="w-3.5 h-3.5" :fill="replyReactionStatus[reply.id.toString()] === 2 ? 'currentColor' : 'none'" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M14 10h-4.764a2 2 0 01-1.789-2.894l3.5-7A2 2 0 018.737 3h4.018a2 2 0 01.485.06l3.76.94m-7 10v5a2 2 0 002 2h.096c.5 0 .905-.405.905-.904 0-.715.211-1.413.608-2.008L17 13V4m-7 10h2m5-10h2a2 2 0 012 2v6a2 2 0 01-2 2h-2.5" />
                               </svg>
                               <span>{{ reply.dislikes || 0 }}</span>
@@ -379,7 +379,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, reactive, onMounted, watch } from 'vue'
+import { ref, onMounted, watch } from .vue.
 import { useUserStore } from '~/stores/user'
 import { fetchArticleDetail, publishArticleComment, fetchArticleCommentPage, reactArticle, reactArticleComment, getArticleReactionStatus, getArticleCommentReactionStatus, replyArticleComment, fetchArticleCommentReplies, type ArticleDetail, type ArticleCommentVO } from '~/composables/useApi'
 
@@ -399,7 +399,7 @@ const commentPage = ref(1)
 const commentPageSize = 10
 const commentPages = ref(1)
 const showDislikeDialog = ref(false)
-const commentReactionStatus = reactive(new Map<string, number>())
+const commentReactionStatus = ref<Record<string, number>>({})
 const reactionLoading = ref(false)
 const articleReaction = ref<number | null>(null)
 const selectedReason = ref('')
@@ -412,7 +412,7 @@ const showingReplies = ref<Set<string>>(new Set())
 const commentRepliesMap = ref<Record<string, ArticleCommentVO[]>>({})
 
 // 回复的反应状态
-const replyReactionStatus = reactive(new Map<string, number>())
+const replyReactionStatus = ref<Record<string, number>>({})
 
 // 回复回复相关
 const replyReplyTargetId = ref<string | null>(null)
@@ -447,7 +447,7 @@ async function loadArticle() {
 async function loadArticleReaction() {
   if (!article.value?.id) return
   try {
-    const status = await getArticleReactionStatus(article.value.id.toString())
+    const status = await getArticleReactionStatus(article.value.id.toString()]
     articleReaction.value = status ?? null
   } catch (e) {
     console.error('加载文章反应状态失败', e)
@@ -523,16 +523,16 @@ async function loadComments() {
 async function loadCommentReactionStatus() {
   for (const comment of comments.value) {
     try {
-      const status = await getArticleCommentReactionStatus(comment.id.toString())
+      const status = await getArticleCommentReactionStatus(comment.id.toString()]
       if (status !== null) {
-        commentReactionStatus.set(comment.id.toString(), status)
+        commentReactionStatus.value[comment.id.toString()] = status
       }
       // 同时加载回复的反应状态
       if (comment.replies) {
         for (const reply of comment.replies) {
-          const replyStatus = await getArticleCommentReactionStatus(reply.id.toString())
+          const replyStatus = await getArticleCommentReactionStatus(reply.id.toString()]
           if (replyStatus !== null) {
-            replyReactionStatus.set(reply.id.toString(), replyStatus)
+            replyReactionStatus.value[reply.id.toString()] = replyStatus
           }
         }
       }
@@ -554,7 +554,7 @@ async function handleCommentReaction(commentId: string, reactionType: number) {
   
   // 点踩：如果已点踩则直接取消，否则弹出理由选择
   if (reactionType === 2) {
-    const currentStatus = commentReactionStatus.get(commentId)
+    const currentStatus = commentReactionStatus.value[commentId]
     if (currentStatus === 2) {
       // 已点踩，直接取消
       await performCommentReaction(commentId, reactionType)
@@ -572,7 +572,7 @@ async function handleCommentReaction(commentId: string, reactionType: number) {
 async function performCommentReaction(commentId: string, reactionType: number, reason?: string) {
   try {
     const newStatus = await reactArticleComment(commentId, reactionType)
-    commentReactionStatus.set(commentId, newStatus)
+    commentReactionStatus.value[commentId] = newStatus
     await loadComments()
   } catch (e: any) {
     console.error('反应失败:', e)
@@ -606,7 +606,7 @@ async function handleReplyReaction(replyId: string, reactionType: number) {
   }
   
   if (reactionType === 2) {
-    const currentStatus = replyReactionStatus.get(replyId)
+    const currentStatus = replyReactionStatus.value[replyId]
     if (currentStatus === 2) {
       await performReplyReaction(replyId, reactionType)
       return
@@ -622,9 +622,9 @@ async function handleReplyReaction(replyId: string, reactionType: number) {
 async function performReplyReaction(replyId: string, reactionType: number, reason?: string) {
   try {
     // 获取当前状态（切换前的状态）
-    const currentStatus = replyReactionStatus.get(replyId)
+    const currentStatus = replyReactionStatus.value[replyId]
     const newStatus = await reactArticleComment(replyId, reactionType)
-    replyReactionStatus.set(replyId, newStatus)
+    replyReactionStatus.value[replyId] = newStatus
     
     // 刷新回复列表
     for (const comment of comments.value) {
