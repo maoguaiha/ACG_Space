@@ -41,14 +41,14 @@ public class BizArticleReactionServiceImpl extends ServiceImpl<BizArticleReactio
             }
         }
 
-        // 3. 插入新记录
+        // 3. 插入新记录 — 使用 upsert 强制 del_flag = 0
         BizArticleReaction reaction = new BizArticleReaction();
         reaction.setArticleId(articleId);
         reaction.setUserId(userId);
         reaction.setReactionType(reactionType);
         reaction.setReason(reason);
-        reaction.setDelFlag(0); // 必须显式设置，否则默认 null 会被逻辑删除过滤掉
-        this.save(reaction);
+        reaction.setDelFlag(0);
+        baseMapper.upsert(reaction);
 
         // 4. 更新计数
         updateArticleCount(articleId, reactionType, 1);
