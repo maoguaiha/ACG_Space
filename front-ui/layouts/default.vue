@@ -211,16 +211,16 @@ const handleLogout = () => {
   --text-main: #1e293b;
   --text-muted: #64748b;
   --text-dim: #94a3b8;
-  --accent: #667eea;
-  --accent-hover: #764ba2;
-  --accent-secondary: #764ba2;
+  --accent: #8A2387;
+  --accent-hover: #E94057;
+  --accent-secondary: #F27121;
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --hero-overlay: rgba(30, 10, 60, 0.92);
-  --gacha-hero-from: rgba(102, 126, 234, 0.25);
+  --hero-overlay: rgba(60, 10, 30, 0.92);
+  --gacha-hero-from: rgba(233, 64, 87, 0.2);
   --gacha-hero-via: rgba(255, 255, 255, 1);
-  --gacha-hero-to: rgba(245, 243, 255, 1);
+  --gacha-hero-to: rgba(255, 245, 245, 1);
 }
 
 /* 粉色变量 (Pink) - 温馨甜美风 */
@@ -459,8 +459,8 @@ const handleLogout = () => {
 .theme-light .bg-gradient-to-br.from-purple-600.to-pink-600,
 .theme-light .bg-gradient-to-br.from-blue-500.to-indigo-500,
 .theme-light .bg-gradient-to-br.from-blue-600.to-indigo-600 {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  box-shadow: 0 4px 15px rgba(118, 75, 162, 0.4) !important;
+  background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%) !important;
+  box-shadow: 0 4px 15px rgba(233, 64, 87, 0.4) !important;
 }
 
 .theme-light .bg-gradient-to-br.from-indigo-500.to-purple-500,
