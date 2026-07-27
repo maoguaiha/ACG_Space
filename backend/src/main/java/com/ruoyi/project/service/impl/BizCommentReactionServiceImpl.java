@@ -40,6 +40,7 @@ public class BizCommentReactionServiceImpl extends ServiceImpl<BizCommentReactio
         reaction.setCommentId(commentId);
         reaction.setUserId(userId);
         reaction.setReactionType(reactionType);
+        reaction.setDelFlag(0);
         baseMapper.upsert(reaction);
 
         if (old != null) {

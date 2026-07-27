@@ -42,6 +42,7 @@ public class BizArticleCommentReactionServiceImpl extends ServiceImpl<BizArticle
         reaction.setArticleCommentId(commentId);
         reaction.setUserId(userId);
         reaction.setReactionType(reactionType);
+        reaction.setDelFlag(0);
         this.save(reaction);
 
         updateLikesCount(commentId, reactionType, 1);

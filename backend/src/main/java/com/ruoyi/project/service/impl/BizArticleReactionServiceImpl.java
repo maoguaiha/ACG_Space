@@ -48,6 +48,7 @@ public class BizArticleReactionServiceImpl extends ServiceImpl<BizArticleReactio
         reaction.setUserId(userId);
         reaction.setReactionType(reactionType);
         reaction.setReason(reason);
+        reaction.setDelFlag(0); // 必须显式设置，否则默认 null 会被逻辑删除过滤掉
         this.save(reaction);
 
         // 4. 更新计数
