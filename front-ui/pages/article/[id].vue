@@ -528,6 +528,15 @@ async function loadCommentReactionStatus() {
       if (status !== null) {
         commentReactionStatus.value.set(comment.id.toString(), status)
       }
+      // 同时加载回复的反应状态
+      if (comment.replies) {
+        for (const reply of comment.replies) {
+          const replyStatus = await getArticleCommentReactionStatus(reply.id.toString())
+          if (replyStatus !== null) {
+            replyReactionStatus.value.set(reply.id.toString(), replyStatus)
+          }
+        }
+      }
     } catch (e) {
       console.error('加载反应状态失败', e)
     }

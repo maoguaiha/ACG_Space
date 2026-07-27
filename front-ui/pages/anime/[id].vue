@@ -78,7 +78,7 @@
               <h1 class="text-3xl md:text-5xl font-black text-white force-white leading-tight mb-2 drop-shadow-xl" style="text-shadow: 0 2px 10px rgba(0,0,0,0.15);">
                 {{ anime.title }}
               </h1>
-              <p v-if="anime.titleOriginal" class="text-white/60 force-white text-sm mb-6">{{ anime.titleOriginal }}</p>
+              <p v-if="anime.titleOriginal" class="text-sm mb-6" :style="{ color: 'var(--text-muted, #94a3b8)', textShadow: '0 1px 4px rgba(0,0,0,0.1)' }">{{ anime.titleOriginal }}</p>
 
               <!-- 评分 -->
               <div v-if="anime.rating" class="flex items-center gap-2 mb-6">

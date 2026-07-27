@@ -890,12 +890,12 @@ const handleLogout = () => {
   background: linear-gradient(135deg, #4f46e5, #8b5cf6);
 }
 .theme-light .theme-btn-primary {
-  background: linear-gradient(135deg, #4f46e5, #6366f1);
-  color: white;
-  box-shadow: 0 10px 25px rgba(79, 70, 229, 0.2);
+  background: linear-gradient(135deg, #6366F1, #3B82F6) !important;
+  color: white !important;
+  box-shadow: 0 4px 15px rgba(99, 102, 241, 0.3) !important;
 }
 .theme-light .theme-btn-primary:hover {
-  background: linear-gradient(135deg, #4338ca, #4f46e5);
+  background: linear-gradient(135deg, #4F46E5, #2563EB) !important;
 }
 .theme-pink .theme-btn-primary {
   background: linear-gradient(135deg, #ec4899, #f472b6);
@@ -1113,9 +1113,9 @@ const handleLogout = () => {
   box-shadow: 0 10px 25px rgba(99, 102, 241, 0.3);
 }
 .theme-light .theme-btn-filter-active {
-  background: rgba(99, 102, 241, 0.12) !important;
-  color: #6366F1 !important;
-  border-color: rgba(99, 102, 241, 0.2) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #3B82F6 !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
   box-shadow: none !important;
 }
 .theme-pink .theme-btn-filter-active {
@@ -1781,9 +1781,9 @@ const handleLogout = () => {
   color: #f8fafc;
 }
 .theme-light .theme-btn-filter-active {
-  background: rgba(99, 102, 241, 0.12) !important;
-  color: #6366F1 !important;
-  border-color: rgba(99, 102, 241, 0.2) !important;
+  background: rgba(59, 130, 246, 0.12) !important;
+  color: #3B82F6 !important;
+  border-color: rgba(59, 130, 246, 0.2) !important;
 }
 .theme-pink .theme-btn-filter-active {
   background: rgba(236, 72, 153, 0.12) !important;
