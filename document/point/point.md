@@ -56,6 +56,15 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 - ✅ 修复 `BizTransactionServiceTest` 的 `selectOne` stub：`getOne` 调用 `selectOne(wrapper, true)`（第二参为 primitive boolean），统一改用 `selectOne(any(), anyBoolean())`
 - ✅ 仅改动 `src/test`（`TestInfraConfig` / `InMemoryValueOperations` / `BizTransactionServiceTest`），未触碰任何生产代码，不影响后端正常功能
 
+### Agent 应用（用户端 AI 助手，2026-07-27 设计稿）
+- ✅ 完成详细设计方案：`document/develop/V2/4.Agent应用设计方案.md`
+- 范围确认：用户端对话式助手 + 云端大模型 API + 纯 RAG 问答（不执行写操作）
+- 技术选型：langchain4j(OpenAI 兼容 Chat+Embedding) + InMemoryEmbeddingStore(MySQL 持久化向量) + SSE 流式
+- 复用：BizMessage/Conversation 消息范式、Bangumi/番剧库语料、Resilience4j 限流、三主题 UI
+- 新增包：`com.ruoyi.project.agent`（controller/service/client/config/domain/mapper）
+- 新增表：`agent_conversation` / `agent_message` / `agent_knowledge`(含 embedding)
+- 待确认：①供应商(chat+embedding 一家 or DeepSeek+其他) ②初始语料来源 ③是否 V1.1 管理端 ④番剧库全量向量化评估
+
 ## 待完成
 
 1. **P0优先级**：测试完整兑换流程（商品查询→UR碎片扣除→订单创建→前端反馈）
@@ -63,3 +72,4 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 3. **P1优先级**：优化兑换商品列表分页和筛选功能
 4. **P2优先级**：完善DTO参数校验注解
 5. **P2优先级**：补充单元测试用例
+6. **Agent 应用（新增）**：确认供应商与语料来源后，按 `4.Agent应用设计方案.md` 进入 Phase 0~7 实现
