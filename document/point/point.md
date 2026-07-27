@@ -49,6 +49,13 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 - ✅ 兑换订单表字段扩展：添加product_id、product_name、product_image、ur_fragment_cost、points_cost字段
 - ✅ 兑换订单表遗留字段修改：asset_id、item_id、item_name改为允许NULL
 
+### 测试设施修复（2026-07-27）
+
+- ✅ test profile 5 个测试类全部通过（45 用例，0 失败 0 错误）：CoreBusinessFlowTest / BizMarketServiceIntegrationTest / BizGachaPoolServiceTest / BizSynthesizeServiceTest / BizTransactionServiceTest
+- ✅ 修复 `ClassCastException: String cannot be cast to [C`：raw-type `ValueOperations` Mockito mock 触发泛型桥方法强转；改为在 `TestInfraConfig` 中用有状态内存实现 `InMemoryValueOperations` 支撑 `opsForValue()`，积分可正确累加
+- ✅ 修复 `BizTransactionServiceTest` 的 `selectOne` stub：`getOne` 调用 `selectOne(wrapper, true)`（第二参为 primitive boolean），统一改用 `selectOne(any(), anyBoolean())`
+- ✅ 仅改动 `src/test`（`TestInfraConfig` / `InMemoryValueOperations` / `BizTransactionServiceTest`），未触碰任何生产代码，不影响后端正常功能
+
 ## 待完成
 
 1. **P0优先级**：测试完整兑换流程（商品查询→UR碎片扣除→订单创建→前端反馈）

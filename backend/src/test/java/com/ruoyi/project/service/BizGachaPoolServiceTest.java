@@ -11,6 +11,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 import java.util.Arrays;
@@ -38,6 +39,11 @@ class BizGachaPoolServiceTest {
 
     @BeforeEach
     void setUp() {
+        // MyBatis-Plus ServiceImpl stores the mapper in an inherited generic field
+        // `baseMapper`; Mockito @InjectMocks cannot wire generic-typed fields, so we
+        // inject it explicitly. Test-only wiring, no production code changed.
+        ReflectionTestUtils.setField(gachaPoolService, "baseMapper", gachaPoolMapper);
+
         testPool = new BizGachaPool();
         testPool.setId(1L);
         testPool.setName("测试奖池");

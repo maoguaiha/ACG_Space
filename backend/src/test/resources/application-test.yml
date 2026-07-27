@@ -1,24 +1,25 @@
 spring:
-  profiles:
-    active: test
   datasource:
     driver-class-name: org.h2.Driver
     url: jdbc:h2:mem:acg_test;MODE=MYSQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE
     username: sa
     password:
-  data:
-    redis:
-      host: localhost
-      port: 6379
-      timeout: 3000ms
+  sql:
+    init:
+      mode: always
+      schema-locations: classpath:schema.sql
+  autoconfigure:
+    exclude:
+      # 测试不连真实中间件：排除 Redis / Redisson / RocketMQ 自动配置
+      - org.redisson.spring.boot.autoconfigure.RedissonAutoConfiguration
+      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
+      - org.apache.rocketmq.spring.autoconfigure.RocketMQAutoConfiguration
+  cache:
+    type: none
   security:
     user:
       name: admin
       password: admin123
-  autoconfigure:
-    exclude:
-      - org.redisson.spring.boot.autoconfigure.RedissonAutoConfiguration
-      - org.springframework.boot.autoconfigure.data.redis.RedisAutoConfiguration
 
 mybatis-plus:
   global-config:
@@ -29,9 +30,6 @@ mybatis-plus:
       logic-not-delete-value: 0
   configuration:
     map-underscore-to-camel-case: true
-
-rocketmq:
-  name-server: localhost:9876
 
 token:
   secret: test_secret_key_for_jwt_testing_12345678

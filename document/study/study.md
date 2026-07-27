@@ -27,6 +27,8 @@
 
 - [2026-05-07] 错误：数据库默认密码硬编码 | 原因：application-dev.yml中配置了默认密码 | 防范：生产环境强制使用环境变量覆盖
 - [2026-05-07] 错误：部分DTO缺少参数校验注解 | 原因：Controller方法参数未添加@Validated注解 | 防范：所有DTO字段必须添加校验注解
+- [2026-07-27] 错误：test profile 下 RedisTemplate.opsForValue().get 抛 ClassCastException(String cannot be cast to [C) | 原因：用 Mockito 对 raw-type 的 ValueOperations 做 get/set 的 stub，触发泛型桥方法的错误强转 | 防范：测试中需要对泛型返回类型（如 ValueOperations.get）做有状态 stub 时，不要用 raw-type Mockito mock，应提供具体的有状态实现类（如 InMemoryValueOperations）替代，彻底规避泛型桥方法强转
+- [2026-07-27] 错误：BaseMapper.selectOne 的 stub 报 PotentialStubbingProblem / InvalidUseOfMatchersException(NullPointerException Boolean.booleanValue) | 原因：MyBatis-Plus 的 getOne 内部调用 selectOne(wrapper, true)，第二参是 primitive boolean；用 selectOne(any(), any()) 时 any() 返回 null 无法拆箱为 boolean，且 selectOne(any()) 单参与双参调用不匹配 | 防范：对 primitive 参数必须用 anyBoolean()/anyInt() 等原始类型 matcher，且 stub 的参数量必须与真实调用完全一致
 
 ## 代码审查记录
 

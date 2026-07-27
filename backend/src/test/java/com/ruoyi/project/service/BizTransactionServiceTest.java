@@ -13,11 +13,13 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDateTime;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyBoolean;
 import static org.mockito.Mockito.*;
 
 /**
@@ -47,6 +49,11 @@ class BizTransactionServiceTest {
 
     @BeforeEach
     void setUp() {
+        // MyBatis-Plus ServiceImpl stores the mapper in an inherited generic field
+        // `baseMapper`; Mockito @InjectMocks cannot wire generic-typed fields, so we
+        // inject it explicitly. Test-only wiring, no production code changed.
+        ReflectionTestUtils.setField(transactionService, "baseMapper", transactionMapper);
+
         transaction = new BizTransaction();
         transaction.setId(1L);
         transaction.setOrderId("TXN202401010000012345");
@@ -126,7 +133,7 @@ class BizTransactionServiceTest {
     @Test
     @DisplayName("处理交易成功回调 - 成功")
     void handleTransactionSuccess_Success() {
-        when(transactionMapper.selectOne(any())).thenReturn(transaction);
+        when(transactionMapper.selectOne(any(), anyBoolean())).thenReturn(transaction);
         when(transactionMapper.updateById(any(BizTransaction.class))).thenReturn(1);
         BizUserAsset asset = new BizUserAsset();
         asset.setId(100L);
@@ -147,7 +154,7 @@ class BizTransactionServiceTest {
     @Test
     @DisplayName("处理交易成功回调 - 订单不存在")
     void handleTransactionSuccess_NotFound() {
-        when(transactionMapper.selectOne(any())).thenReturn(null);
+        when(transactionMapper.selectOne(any(), anyBoolean())).thenReturn(null);
 
         boolean result = transactionService.handleTransactionSuccess("TXN_NOT_EXIST", "rmq-1");
 
@@ -159,7 +166,7 @@ class BizTransactionServiceTest {
     @Test
     @DisplayName("处理交易失败回调 - 成功")
     void handleTransactionFailed_Success() {
-        when(transactionMapper.selectOne(any())).thenReturn(transaction);
+        when(transactionMapper.selectOne(any(), anyBoolean())).thenReturn(transaction);
         when(transactionMapper.updateById(any(BizTransaction.class))).thenReturn(1);
 
         boolean result = transactionService.handleTransactionFailed("TXN202401010000012345", "余额不足");
@@ -173,7 +180,7 @@ class BizTransactionServiceTest {
     @Test
     @DisplayName("补偿交易 - 成功")
     void compensate_Success() {
-        when(transactionMapper.selectOne(any())).thenReturn(transaction);
+        when(transactionMapper.selectOne(any(), anyBoolean())).thenReturn(transaction);
         when(transactionMapper.updateById(any(BizTransaction.class))).thenReturn(1);
         BizUserAsset asset = new BizUserAsset();
         asset.setId(100L);
@@ -190,7 +197,7 @@ class BizTransactionServiceTest {
     @Test
     @DisplayName("重试交易 - 成功")
     void retry_Success() {
-        when(transactionMapper.selectOne(any())).thenReturn(transaction);
+        when(transactionMapper.selectOne(any(), anyBoolean())).thenReturn(transaction);
         when(transactionMapper.updateById(any(BizTransaction.class))).thenReturn(1);
 
         boolean result = transactionService.retry("TXN202401010000012345");
