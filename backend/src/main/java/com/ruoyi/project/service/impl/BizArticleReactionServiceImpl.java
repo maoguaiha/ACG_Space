@@ -1,6 +1,5 @@
 package com.ruoyi.project.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.project.common.utils.SecurityUtils;
 import com.ruoyi.project.domain.entity.BizArticle;
@@ -69,13 +68,10 @@ public class BizArticleReactionServiceImpl extends ServiceImpl<BizArticleReactio
 
     /**
      * 获取用户对文章的反应状态
-     * @return 1-已点赞, 2-已点踩, null-未反应
+     * @return 1-已点赞, 2-已点踩, 0-未反应
      */
     public Integer getReactionStatus(Long articleId, Long userId) {
-        LambdaQueryWrapper<BizArticleReaction> wrapper = new LambdaQueryWrapper<>();
-        wrapper.eq(BizArticleReaction::getArticleId, articleId)
-                .eq(BizArticleReaction::getUserId, userId);
-        BizArticleReaction reaction = this.getOne(wrapper);
+        BizArticleReaction reaction = baseMapper.selectOneWithDeleted(articleId, userId);
         return reaction != null ? reaction.getReactionType() : null;
     }
 }
