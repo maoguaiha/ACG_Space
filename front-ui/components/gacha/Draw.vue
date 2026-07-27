@@ -10,7 +10,7 @@
             LIMITED GACHA
           </span>
           <h1 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
-            <span class="gacha-hero-title bg-gradient-to-r from-purple-400 via-fuchsia-500 to-orange-400 bg-clip-text text-transparent">
+            <span style="background: linear-gradient(to right, #A855F7, #D946EF, #F97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
               限定奖池
             </span>
           </h1>
