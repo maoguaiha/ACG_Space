@@ -89,10 +89,10 @@ public class BizCommentController {
     public Result<Integer> getReactionStatus(@PathVariable Long id) {
         Long userId = SecurityUtils.getUserId();
         if (userId == null) {
-            return Result.success(null); // 未登录返回null
+            return Result.success(0);
         }
         Integer status = commentReactionService.getReactionStatus(id, userId);
-        return Result.success(status);
+        return Result.success(status == null ? 0 : status);
     }
 
     @Data
