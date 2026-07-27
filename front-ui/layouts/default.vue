@@ -538,8 +538,8 @@ const handleLogout = () => {
 .theme-light .gacha-banner-stellar { color: var(--banner-stellar-title, #312E81) !important; }
 .theme-light .gacha-banner-normal { color: var(--banner-normal-title, #0C4A6E) !important; }
 .theme-light .gacha-tab-active {
-  background: var(--bg-secondary, #f1f5f9) !important;
-  color: var(--text-main, #0F172A) !important;
+  background: #EEF2FF !important;
+  color: #4338CA !important;
 }
 .theme-dark .gacha-tab-active {
   background: rgba(99, 102, 241, 0.18) !important;
