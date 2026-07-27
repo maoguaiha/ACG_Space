@@ -28,8 +28,7 @@
             </div>
             <div class="flex items-center gap-3 px-4 py-2 gacha-points-bg rounded-xl border"
               :style="{ background: 'var(--points-bg, #1e293b)', borderColor: 'var(--border-color, #334155)' }">
-              <div class="w-8 h-8 rounded-full gacha-points-icon flex items-center justify-center"
-                style="background: linear-gradient(135deg, #6366F1, #3B82F6);">
+              <div class="w-8 h-8 rounded-full gacha-points-icon flex items-center justify-center">
                 <span class="text-sm">💰</span>
               </div>
               <div>

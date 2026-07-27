@@ -237,6 +237,7 @@ const handleLogout = () => {
   --gacha-single-border: #e2e8f0;
   /* 积分 & 环形图 */
   --points-bg: #F1F5F9;
+  --points-bg-icon: linear-gradient(135deg, #6366F1, #3B82F6);
   --chart-ring-outer: #A78BFA;
   --chart-ring-inner: #e2e8f0;
   /* 进度条 */
@@ -273,10 +274,16 @@ const handleLogout = () => {
   --gacha-ten-bg-start: #F472B6;
   --gacha-ten-bg-end: #FB7185;
   --gacha-single-bg: #fff1f2;
-  --gacha-title-grad: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
+  --gacha-title-grad: linear-gradient(135deg, #EC4899 0%, #F472B6 50%, #FB7185 100%);
   --gacha-ten-bg: linear-gradient(135deg, #F472B6 0%, #FB7185 100%);
   --gacha-progress-ring: #d8b4fe;
   --gacha-progress-track: #e9d5ff;
+  --banner-stellar-title: #831843;
+  --banner-normal-title: #be185d;
+  --points-bg: #fdf2f8;
+  --points-bg-icon: linear-gradient(135deg, #EC4899, #F472B6);
+  --chart-ring-outer: #fbcfe8;
+  --chart-ring-inner: #ec4899;
 }
 
 /* 应用变量 */
@@ -521,6 +528,15 @@ const handleLogout = () => {
 /* ═══════════════════════════════════════════
    浅色主题 gacha 页 — 蓝紫白昼风
    ═══════════════════════════════════════════ */
+.theme-light .gacha-points-bg {
+  background: var(--points-bg, #f1f5f9) !important;
+  border-color: var(--border-color, #e2e8f0) !important;
+}
+.theme-light .gacha-points-icon {
+  background: var(--points-bg-icon) !important;
+}
+.theme-light .gacha-banner-stellar { color: var(--banner-stellar-title, #312E81) !important; }
+.theme-light .gacha-banner-normal { color: var(--banner-normal-title, #0C4A6E) !important; }
 .theme-light .gacha-navbar {
   background: rgba(255,255,255,0.88) !important;
   border-color: #e2e8f0 !important;
@@ -579,6 +595,15 @@ const handleLogout = () => {
 /* ═══════════════════════════════════════════
    粉色主题 gacha 页 — 全粉化（非紫）
    ═══════════════════════════════════════════ */
+.theme-pink .gacha-points-bg {
+  background: var(--points-bg, #fdf2f8) !important;
+  border-color: var(--border-color, #fbcfe8) !important;
+}
+.theme-pink .gacha-points-icon {
+  background: var(--points-bg-icon) !important;
+}
+.theme-pink .gacha-banner-stellar { color: var(--banner-stellar-title, #831843) !important; }
+.theme-pink .gacha-banner-normal { color: var(--banner-normal-title, #be185d) !important; }
 .theme-pink .gacha-navbar {
   background: rgba(255,255,255,0.88) !important;
   border-color: #fbcfe8 !important;
@@ -591,8 +616,7 @@ const handleLogout = () => {
 .theme-pink .gacha-banner-overlay {
   background: linear-gradient(to top, rgba(255,255,255,0.9), transparent) !important;
 }
-.theme-pink .gacha-banner-title { color: #831843 !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
-.theme-pink .gacha-banner-muted { color: #be185d !important; }
+.theme-pink .gacha-banner-title { text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }.theme-pink .gacha-banner-muted { color: #be185d !important; }
 .theme-pink .gacha-progress-track { background: #fce7f3 !important; }
 .theme-pink .gacha-progress-stellar {
   background: linear-gradient(to right, #EC4899, #F472B6) !important;

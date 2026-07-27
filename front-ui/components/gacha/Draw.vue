@@ -41,7 +41,7 @@
                   </div>
                 </div>
                 <div class="p-4 gacha-card-body bg-slate-900/90 backdrop-blur-md">
-                  <h3 class="text-base font-bold gacha-banner-title mb-1.5" :style="{ color: index === 0 ? 'var(--banner-stellar-title)' : 'var(--banner-normal-title)' }">{{ pool.name }}</h3>
+                  <h3 class="text-base font-bold gacha-banner-title mb-1.5" :class="index === 0 ? 'gacha-banner-stellar' : 'gacha-banner-normal'">{{ pool.name }}</h3>
                   <div class="flex items-center justify-between text-sm">
                     <span class="gacha-banner-muted text-slate-400">剩余库存</span>
                     <span class="font-bold" :class="pool.remainingStock > 100 ? 'text-emerald-400' : pool.remainingStock > 20 ? 'text-amber-400' : 'text-rose-400'">
