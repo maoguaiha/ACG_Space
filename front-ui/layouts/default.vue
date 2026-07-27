@@ -245,24 +245,26 @@ const handleLogout = () => {
   --text-main: #831843;
   --text-muted: #be185d;
   --text-dim: #db2777;
-  --accent: #A855F7;
-  --accent-hover: #9333EA;
-  --accent-secondary: #C084FC;
+  --accent: #EC4899;
+  --accent-hover: #DB2777;
+  --accent-secondary: #F472B6;
   --success: #22c55e;
   --warning: #f59e0b;
   --danger: #ef4444;
-  --hero-overlay: rgba(88, 28, 135, 0.92);
-  --gacha-hero-from: rgba(168, 85, 247, 0.2);
+  --hero-overlay: rgba(136, 19, 55, 0.92);
+  --gacha-hero-from: rgba(236, 72, 153, 0.2);
   --gacha-hero-via: rgba(255, 255, 255, 1);
-  --gacha-hero-to: rgba(250, 245, 255, 1);
+  --gacha-hero-to: rgba(255, 241, 242, 1);
   /* 粉色 gacha 卡片专用 */
-  --gacha-stellar-bg: rgba(233, 213, 255, 0.3);
-  --gacha-normal-bg: rgba(213, 230, 250, 0.3);
-  --gacha-card-text: #334155;
-  --gacha-card-muted: #64748b;
-  --gacha-ten-bg-start: #8A2387;
-  --gacha-ten-bg-end: #E94057;
-  --gacha-single-bg: #fdf2f8;
+  --gacha-stellar-bg: rgba(252, 231, 243, 0.4);
+  --gacha-normal-bg: rgba(224, 242, 254, 0.4);
+  --gacha-card-text: #831843;
+  --gacha-card-muted: #be185d;
+  --gacha-ten-bg-start: #F472B6;
+  --gacha-ten-bg-end: #FB7185;
+  --gacha-single-bg: #fff1f2;
+  --gacha-title-grad: linear-gradient(135deg, #FF9A9E 0%, #FECFEF 100%);
+  --gacha-ten-bg: linear-gradient(135deg, #F472B6 0%, #FB7185 100%);
   --gacha-progress-ring: #d8b4fe;
   --gacha-progress-track: #e9d5ff;
 }
@@ -569,11 +571,11 @@ const handleLogout = () => {
 .theme-light .gacha-pool-card .ring-slate-700 { border-color: #e2e8f0 !important; color: #e2e8f0 !important; }
 
 /* ═══════════════════════════════════════════
-   粉色主题 gacha 页轻量化（与浅色对称）
+   粉色主题 gacha 页 — 全粉化（非紫）
    ═══════════════════════════════════════════ */
 .theme-pink .gacha-navbar {
   background: rgba(255,255,255,0.88) !important;
-  border-color: #e9d5ff !important;
+  border-color: #fbcfe8 !important;
   backdrop-filter: blur(16px) !important;
 }
 .theme-pink .gacha-card-body {
@@ -583,48 +585,48 @@ const handleLogout = () => {
 .theme-pink .gacha-banner-overlay {
   background: linear-gradient(to top, rgba(255,255,255,0.9), transparent) !important;
 }
-.theme-pink .gacha-banner-title { color: #4C1D95 !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
-.theme-pink .gacha-banner-muted { color: #7c3aed !important; }
-.theme-pink .gacha-progress-track { background: #e9d5ff !important; }
+.theme-pink .gacha-banner-title { color: #831843 !important; text-shadow: 0 1px 3px rgba(255,255,255,0.6) !important; }
+.theme-pink .gacha-banner-muted { color: #be185d !important; }
+.theme-pink .gacha-progress-track { background: #fce7f3 !important; }
 .theme-pink .gacha-progress-stellar {
-  background: linear-gradient(to right, #7E22CE, #A855F7) !important;
+  background: linear-gradient(to right, #EC4899, #F472B6) !important;
 }
 .theme-pink .gacha-progress-normal {
-  background: linear-gradient(to right, #3b82f6, #6366f1) !important;
+  background: linear-gradient(to right, #7DD3FC, #BAE6FD) !important;
 }
 .theme-pink .gacha-ring {
-  border-color: #e9d5ff !important;
-  background: linear-gradient(135deg, #faf5ff, #f3e8ff, #faf5ff) !important;
+  border-color: #fbcfe8 !important;
+  background: linear-gradient(135deg, #fdf2f8, #fce7f3, #fdf2f8) !important;
 }
 .theme-pink .gacha-ring-inner {
-  background: linear-gradient(135deg, #e9d5ff, #d8b4fe) !important;
+  background: linear-gradient(135deg, #fbcfe8, #f9a8d4) !important;
 }
 .theme-pink .gacha-btn-single {
-  background: #faf5ff !important;
-  border-color: #e9d5ff !important;
-  color: #7E22CE !important;
+  background: #fff1f2 !important;
+  border-color: #fecdd3 !important;
+  color: #E11D48 !important;
   box-shadow: none !important;
   font-weight: 600 !important;
 }
 .theme-pink .gacha-btn-single:hover {
-  background: #f3e8ff !important;
-  border-color: #d8b4fe !important;
+  background: #ffe4e6 !important;
+  border-color: #fda4af !important;
 }
 .theme-pink .gacha-badge {
-  background: rgba(126, 34, 206, 0.08) !important;
-  color: #7E22CE !important;
-  border-color: rgba(168, 85, 247, 0.2) !important;
+  background: rgba(236, 72, 153, 0.08) !important;
+  color: #EC4899 !important;
+  border-color: rgba(236, 72, 153, 0.2) !important;
 }
 .theme-pink .gacha-btn-recharge {
-  background: #faf5ff !important;
-  color: #7E22CE !important;
-  border: 1px solid #e9d5ff !important;
+  background: #fdf2f8 !important;
+  color: #DB2777 !important;
+  border: 1px solid #fbcfe8 !important;
   box-shadow: none !important;
 }
 .theme-pink .gacha-btn-recharge:hover {
-  background: #f3e8ff !important;
+  background: #fce7f3 !important;
 }
-.theme-pink .gacha-pool-card .ring-slate-700 { border-color: #e9d5ff !important; color: #e9d5ff !important; }
+.theme-pink .gacha-pool-card .ring-slate-700 { border-color: #fbcfe8 !important; color: #fbcfe8 !important; }
 
 /* 消息气泡适配 */
 .theme-light .bg-slate-800\/90, .theme-pink .bg-slate-800\/90 {

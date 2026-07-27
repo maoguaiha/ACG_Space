@@ -10,7 +10,7 @@
             LIMITED GACHA
           </span>
           <h1 class="text-4xl md:text-5xl font-black tracking-tight mb-4">
-            <span style="background: linear-gradient(to right, #A855F7, #D946EF, #F97316); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+            <span class="gacha-hero-title" style="background: var(--gacha-title-grad, linear-gradient(to right, #A855F7, #D946EF, #F97316)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
               限定奖池
             </span>
           </h1>
@@ -119,7 +119,7 @@
                 @click="handleDraw(10)"
                 :disabled="isDrawing || !currentPool"
                 class="flex-1 py-4 rounded-xl font-bold gacha-btn-ten transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                style="background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%); color: #fff; box-shadow: 0 4px 20px rgba(233, 64, 87, 0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.25);"
+                style="background: var(--gacha-ten-bg, linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%)); color: #fff; box-shadow: 0 4px 20px rgba(233, 64, 87, 0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.25);"
               >
                 {{ isDrawing ? '抽取中...' : '十连 ' }}
               </button>
@@ -212,7 +212,7 @@
               <button
                 @click="handleDraw(drawType)"
                 class="flex-1 py-3 rounded-xl font-bold gacha-btn-continue transition-all"
-                style="background: linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%); color: #fff; box-shadow: 0 4px 20px rgba(233, 64, 87, 0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.25);"
+                style="background: var(--gacha-ten-bg, linear-gradient(135deg, #8A2387 0%, #E94057 50%, #F27121 100%)); color: #fff; box-shadow: 0 4px 20px rgba(233, 64, 87, 0.35); text-shadow: 0 1px 2px rgba(0,0,0,0.25);"
               >
                 再抽{{ drawType }}次
               </button>
