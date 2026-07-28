@@ -8,9 +8,11 @@ load_dotenv()
 
 class Settings:
     # Chat 模型：LongCat（美团"龙猫"，OpenAI 兼容）。
+    # 真实 OpenAI 兼容端点：base_url=https://api.longcat.chat/openai
+    #   → 完整 chat 路径 https://api.longcat.chat/openai/v1/chat/completions
     # 注：LongCat 无对外 embedding 接口，embedding 见下方"通义"配置（双供应商）。
-    # base_url / 模型名以你在 LongCat API 开放平台申请的接入文档为准。
-    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.longcat.ai/v1")
+    # api.longcat.ai 是错误域名（不存在），正确为 api.longcat.chat。
+    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.longcat.chat/openai")
     llm_api_key_chat: str = os.getenv("LLM_API_KEY_CHAT", "")
     llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "LongCat-Flash-Chat")
 
