@@ -197,10 +197,17 @@ async function handleSend(content: string) {
     // AbortError = 用户手动停止，不显示错误
     if (e.name !== 'AbortError') {
       const errText = e.message || '服务异常'
-      messages.value.push({ id: nextMsgId(), role: 'assistant', content: `❌ ${errText}`, isError: true })
+      // 若流式内容为空（首 token 都没拿到），补一条错误消息
+      if (!streamingContent.value) {
+        messages.value.push({ id: nextMsgId(), role: 'assistant', content: `❌ ${errText}`, isError: true })
+      }
     }
+  } finally {
+    // 兜底重置：无论 resolve / throw / AbortError / onDone 异常，全部复位状态。
+    // 这是修复「AI 思考/输出后停止按钮卡住、无法继续发消息」的关键防线。
     isStreaming.value = false
     streamingContent.value = ''
+    abortController.value = null
   }
 }
 

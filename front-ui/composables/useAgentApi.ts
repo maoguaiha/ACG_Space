@@ -93,38 +93,53 @@ export async function streamChat(
   const reader = response.body!.getReader()
   const decoder = new TextDecoder()
   let buffer = ''
+  let finished = false  // 防止 done + 异常路径双重调用 onDone
+
+  /** 安全调用 onDone（仅一次） */
+  const finishOnce = () => {
+    if (finished) return
+    finished = true
+    onDone()
+  }
 
   const pump = async (): Promise<void> => {
-    const { done, value } = await reader.read()
-    if (done) {
-      onDone()
-      return
-    }
+    try {
+      const { done, value } = await reader.read()
+      if (done) {
+        finishOnce()
+        return
+      }
 
-    buffer += decoder.decode(value, { stream: true })
+      buffer += decoder.decode(value, { stream: true })
 
-    // Python SSE 帧以 \n\n 分隔；保留未完整接收的尾部
-    const parts = buffer.split('\n\n')
-    buffer = parts.pop() || ''
+      // Python SSE 帧以 \n\n 分隔；保留未完整接收的尾部
+      const parts = buffer.split('\n\n')
+      buffer = parts.pop() || ''
 
-    for (const part of parts) {
-      const line = part.trim()
-      if (line.startsWith('data:')) {
-        try {
-          const json = JSON.parse(line.slice(5).trim())
-          if (json.type === 'token' && json.content) {
-            onToken(json.content)
-          } else if (json.type === 'error') {
-            onError(json.content || '未知错误')
+      for (const part of parts) {
+        const line = part.trim()
+        if (line.startsWith('data:')) {
+          try {
+            const json = JSON.parse(line.slice(5).trim())
+            if (json.type === 'token' && json.content) {
+              onToken(json.content)
+            } else if (json.type === 'error') {
+              onError(json.content || '未知错误')
+            }
+            // type === 'done' 由流关闭自然触发，不单独回调
+          } catch {
+            // 非 JSON data 帧（如 Server-Sent Events ping）忽略
           }
-          // type === 'done' 由流关闭自然触发，不单独回调
-        } catch {
-          // 非 JSON data 帧（如 Server-Sent Events ping）忽略
         }
       }
-    }
 
-    return pump()
+      return pump()
+    } catch (e: any) {
+      // 兜底：reader 抛错（如网络抖动 / proxy EOF 漏传）也必须通知调用方结束，
+      // 否则 isStreaming 永远 true、停止按钮卡死、用户无法继续发消息
+      finishOnce()
+      throw e
+    }
   }
 
   return pump()
