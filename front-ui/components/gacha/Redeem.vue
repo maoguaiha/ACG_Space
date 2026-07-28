@@ -152,16 +152,28 @@
               </div>
               <div class="grid grid-cols-3 gap-2">
                 <div>
-                  <label class="block text-sm text-slate-400 mb-2">省</label>
-                  <input v-model="redeemForm.province" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors text-sm" placeholder="省" />
+                  <label class="block text-sm text-slate-400 mb-2">省 *</label>
+                  <select v-model="redeemForm.province" @change="onProvinceChange"
+                    class="w-full px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700 text-white focus:border-emerald-500 focus:outline-none transition-colors text-sm">
+                    <option value="" disabled>选择省</option>
+                    <option v-for="p in provinces" :key="p.name" :value="p.name">{{ p.name }}</option>
+                  </select>
                 </div>
                 <div>
-                  <label class="block text-sm text-slate-400 mb-2">市</label>
-                  <input v-model="redeemForm.city" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors text-sm" placeholder="市" />
+                  <label class="block text-sm text-slate-400 mb-2">市 *</label>
+                  <select v-model="redeemForm.city" @change="onCityChange"
+                    class="w-full px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700 text-white focus:border-emerald-500 focus:outline-none transition-colors text-sm">
+                    <option value="" disabled>选择市</option>
+                    <option v-for="c in cities" :key="c.name" :value="c.name">{{ c.name }}</option>
+                  </select>
                 </div>
                 <div>
                   <label class="block text-sm text-slate-400 mb-2">区</label>
-                  <input v-model="redeemForm.district" type="text" class="w-full px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700 text-white placeholder-slate-500 focus:border-emerald-500 focus:outline-none transition-colors text-sm" placeholder="区" />
+                  <select v-model="redeemForm.district"
+                    class="w-full px-3 py-2 rounded-lg bg-slate-900/50 border border-slate-700 text-white focus:border-emerald-500 focus:outline-none transition-colors text-sm">
+                    <option value="" disabled>选择区</option>
+                    <option v-for="d in districts" :key="d.name" :value="d.name">{{ d.name }}</option>
+                  </select>
                 </div>
               </div>
               <div>
@@ -192,6 +204,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '~/stores/user'
+import { getAllProvinces, getCitiesByProvince, getDistrictsByCity } from '~/composables/useRegions'
 
 const props = defineProps<{
   userPoints: number
@@ -257,6 +270,22 @@ const redeemForm = ref({
   district: '',
   address: ''
 })
+
+const provinces = ref(getAllProvinces())
+const cities = ref<(typeof provinces.value)[number]['cities']>([])
+const districts = ref<(typeof provinces.value)[number]['cities']>([])
+
+function onProvinceChange() {
+  redeemForm.value.city = ''
+  redeemForm.value.district = ''
+  cities.value = getCitiesByProvince(redeemForm.value.province)
+  districts.value = []
+}
+
+function onCityChange() {
+  redeemForm.value.district = ''
+  districts.value = getDistrictsByCity(redeemForm.value.province, redeemForm.value.city)
+}
 
 const canSubmitRedeem = computed(() => {
   return redeemForm.value.receiver.trim() &&
@@ -353,6 +382,8 @@ function openRedeemModal(product: RedeemProduct) {
 function closeRedeemModal() {
   showRedeemModal.value = false
   selectedProduct.value = null
+  cities.value = []
+  districts.value = []
 }
 
 async function handleConfirmRedeem() {
