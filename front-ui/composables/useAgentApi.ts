@@ -33,6 +33,19 @@ export async function deleteConversation(id: string): Promise<boolean> {
   return apiFetch<boolean>(`/agent/conversations/${id}`, { method: 'DELETE' })
 }
 
+/** 重命名会话标题 */
+export async function renameConversation(id: string, title: string): Promise<boolean> {
+  return apiFetch<boolean>(`/agent/conversations/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ title }),
+  })
+}
+
+/** 清空当前用户的所有会话（级联删除消息） */
+export async function clearAllConversations(): Promise<boolean> {
+  return apiFetch<boolean>('/agent/conversations', { method: 'DELETE' })
+}
+
 // ======================== SSE 流式对话 ========================
 
 /**

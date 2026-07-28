@@ -1,6 +1,7 @@
 package com.ruoyi.project.agent.controller;
 
 import com.ruoyi.project.agent.domain.dto.AgentChatRequest;
+import com.ruoyi.project.agent.domain.dto.AgentRenameRequest;
 import com.ruoyi.project.agent.domain.entity.AgentConversation;
 import com.ruoyi.project.agent.service.IAgentService;
 import com.ruoyi.project.common.api.Result;
@@ -14,6 +15,7 @@ import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -82,5 +84,30 @@ public class AgentController {
             return Result.error(BizErrorCode.UNAUTHORIZED);
         }
         return Result.success(agentService.deleteConversation(userId, id));
+    }
+
+    /**
+     * 重命名会话标题。
+     */
+    @PutMapping("/conversations/{id}")
+    public Result<Boolean> renameConversation(@PathVariable String id,
+                                              @Valid @RequestBody AgentRenameRequest req) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.renameConversation(userId, id, req.getTitle()));
+    }
+
+    /**
+     * 清空当前用户的所有会话（级联删除消息）。
+     */
+    @DeleteMapping("/conversations")
+    public Result<Boolean> clearConversations() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.clearConversations(userId));
     }
 }

@@ -5,9 +5,10 @@
  * 功能：
  *   - 新建会话按钮
  *   - 会话列表（点击选中高亮）
- *   - 删除按钮（hover 显示 ×）
- *   - 底部返回首页入口
+ *   - 悬浮操作：编辑标题（✏️）/ 删除（🗑️）
+ *   - 底部固定区（不随列表滚动）：AI 设置 / 清除所有对话 / 返回首页
  */
+import { ref, nextTick } from 'vue'
 import type { ConversationItem } from '~/composables/useAgentApi'
 import { useRouter } from 'vue-router'
 
@@ -20,9 +21,45 @@ const emit = defineEmits<{
   select: [id: string]
   create: []
   delete: [id: string]
+  rename: [id: string, title: string]
+  clearAll: []
+  openSettings: []
 }>()
 
 const router = useRouter()
+
+/** 行内编辑状态 */
+const editingId = ref<string | null>(null)
+const editingTitle = ref('')
+const editInputRef = ref<HTMLInputElement>()
+
+function startEdit(conv: ConversationItem, e: Event) {
+  e.stopPropagation()
+  editingId.value = conv.id
+  editingTitle.value = conv.title || ''
+  nextTick(() => editInputRef.value?.focus())
+}
+
+function saveEdit(id: string) {
+  const title = editingTitle.value.trim()
+  if (title) {
+    emit('rename', id, title)
+  }
+  editingId.value = null
+}
+
+function cancelEdit() {
+  editingId.value = null
+}
+
+const confirmingClear = ref(false)
+function onClearAll() {
+  if (confirmingClear.value) return
+  if (window.confirm('确定要清除所有对话吗？此操作不可恢复。')) {
+    emit('clearAll')
+  }
+  confirmingClear.value = false
+}
 
 /** 格式化相对时间 */
 function formatDate(iso: string): string {
@@ -58,7 +95,7 @@ function formatDate(iso: string): string {
       </button>
     </div>
 
-    <!-- 会话列表 -->
+    <!-- 会话列表（可滚动） -->
     <div class="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
       <div
         v-for="conv in conversations"
@@ -66,7 +103,7 @@ function formatDate(iso: string): string {
         class="group relative"
       >
         <button
-          @click="emit('select', conv.id)"
+          @click="editingId === conv.id ? null : emit('select', conv.id)"
           class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors"
           :class="
             activeId === conv.id
@@ -74,24 +111,54 @@ function formatDate(iso: string): string {
               : ['theme-card', 'theme-card-hover', 'theme-text-main']
           "
         >
-          <span class="truncate block">{{ conv.title || '新的对话' }}</span>
-          <span class="text-xs mt-0.5 block truncate" :class="activeId === conv.id ? 'text-white/60' : 'opacity-50'">
-            {{ formatDate(conv.updateTime) }}
-          </span>
+          <!-- 行内编辑态 -->
+          <input
+            v-if="editingId === conv.id"
+            ref="editInputRef"
+            v-model="editingTitle"
+            @click.stop
+            @keydown.enter.prevent="saveEdit(conv.id)"
+            @keydown.esc.prevent="cancelEdit"
+            @blur="saveEdit(conv.id)"
+            class="w-full bg-transparent outline-none border-b border-dashed border-white/60 text-white placeholder-white/60"
+            :class="activeId === conv.id ? '' : 'theme-text-main'"
+          />
+          <template v-else>
+            <span class="truncate block pr-14">{{ conv.title || '新的对话' }}</span>
+            <span class="text-xs mt-0.5 block truncate" :class="activeId === conv.id ? 'text-white/60' : 'opacity-50'">
+              {{ formatDate(conv.updateTime) }}
+            </span>
+          </template>
         </button>
 
-        <!-- 删除按钮（hover 显示） -->
-        <button
-          @click.stop="emit('delete', conv.id)"
-          class="absolute right-1 top-1/2 -translate-y-1/2 p-1 rounded-md opacity-0 group-hover:opacity-100 transition-opacity"
-          :class="activeId === conv.id ? 'text-white/60 hover:text-white' : 'theme-text-muted hover:text-red-400'"
-          title="删除会话"
+        <!-- 悬浮操作：编辑 / 删除 -->
+        <div
+          v-if="editingId !== conv.id"
+          class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
         >
-          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-            <line x1="18" y1="6" x2="6" y2="18" />
-            <line x1="6" y1="6" x2="18" y2="18" />
-          </svg>
-        </button>
+          <button
+            @click="startEdit(conv, $event)"
+            class="p-1 rounded-md transition-colors"
+            :class="activeId === conv.id ? 'text-white/70 hover:text-white hover:bg-white/20' : 'theme-text-muted hover:text-indigo-400 hover:bg-black/5'"
+            title="编辑标题"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
+              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
+            </svg>
+          </button>
+          <button
+            @click.stop="emit('delete', conv.id)"
+            class="p-1 rounded-md transition-colors"
+            :class="activeId === conv.id ? 'text-white/70 hover:text-white hover:bg-white/20' : 'theme-text-muted hover:text-red-400 hover:bg-black/5'"
+            title="删除会话"
+          >
+            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <polyline points="3 6 5 6 21 6" />
+              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+            </svg>
+          </button>
+        </div>
       </div>
 
       <!-- 无会话空态 -->
@@ -100,8 +167,35 @@ function formatDate(iso: string): string {
       </div>
     </div>
 
-    <!-- 底部：返回首页 -->
-    <div class="p-3 border-t" :class="['theme-border']">
+    <!-- 底部固定区（不随列表滚动） -->
+    <div class="p-3 border-t space-y-2" :class="['theme-border']">
+      <button
+        @click="emit('openSettings')"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors"
+        :class="['theme-card', 'theme-card-hover', 'theme-text-main']"
+        title="AI 设置（设定 System Prompt、选择模型）"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="12" cy="12" r="3" />
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+        </svg>
+        AI 设置
+      </button>
+
+      <button
+        @click="onClearAll"
+        class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors text-red-400 hover:bg-red-500/10"
+        title="清除所有对话"
+      >
+        <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <polyline points="3 6 5 6 21 6" />
+          <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+          <line x1="10" y1="11" x2="10" y2="17" />
+          <line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
+        清除所有对话
+      </button>
+
       <button
         @click="router.push('/')"
         class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors"

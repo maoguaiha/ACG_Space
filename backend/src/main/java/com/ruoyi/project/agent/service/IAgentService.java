@@ -34,4 +34,14 @@ public interface IAgentService {
      * 删除会话（逻辑删除 + 级联消息逻辑删除），仅本人可删。
      */
     boolean deleteConversation(Long userId, String id);
+
+    /**
+     * 重命名会话标题，仅本人可改。
+     */
+    boolean renameConversation(Long userId, String id, String title);
+
+    /**
+     * 清空当前用户的所有会话（级联删除其消息）。
+     */
+    boolean clearConversations(Long userId);
 }

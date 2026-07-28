@@ -232,6 +232,44 @@ public class AgentServiceImpl implements IAgentService {
         }
     }
 
+    @Override
+    public boolean renameConversation(Long userId, String id, String title) {
+        try {
+            Long cid = Long.parseLong(id);
+            AgentConversation conv = conversationMapper.selectById(cid);
+            if (conv == null || !userId.equals(conv.getUserId())) {
+                return false;
+            }
+            conv.setTitle(title.trim());
+            conv.setUpdateTime(LocalDateTime.now());
+            conv.setUpdateBy(String.valueOf(userId));
+            return conversationMapper.updateById(conv) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean clearConversations(Long userId) {
+        try {
+            List<AgentConversation> convs = conversationMapper.selectList(
+                    new LambdaQueryWrapper<AgentConversation>().eq(AgentConversation::getUserId, userId));
+            if (convs.isEmpty()) {
+                return true;
+            }
+            List<Long> ids = convs.stream().map(AgentConversation::getId).toList();
+            // 级联删除全部消息
+            messageMapper.delete(new LambdaQueryWrapper<AgentMessage>()
+                    .in(AgentMessage::getConversationId, ids));
+            conversationMapper.delete(new LambdaQueryWrapper<AgentConversation>()
+                    .in(AgentConversation::getId, ids));
+            return true;
+        } catch (Exception e) {
+            log.error("清空会话失败 userId={}", userId, e);
+            return false;
+        }
+    }
+
     // ============================ 私有方法 ============================
 
     private String resolveConversation(Long userId, String conversationId, String firstMessage) {
