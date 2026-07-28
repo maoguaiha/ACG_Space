@@ -16,11 +16,25 @@ export interface ConversationItem {
   updateTime: string
 }
 
+/** 后端 AgentMessage 实体（与 Java AgentMessage 字段对应） */
+export interface AgentMessageItem {
+  id: number
+  role: 'user' | 'assistant' | string
+  content: string
+  tokens?: number | null
+  createTime?: string
+}
+
 // ======================== 会话 CRUD（走 api-proxy 中间件） ========================
 
 /** 当前用户的会话列表 */
 export async function fetchConversations(): Promise<ConversationItem[]> {
   return apiFetch<ConversationItem[]>('/agent/conversations')
+}
+
+/** 查询指定会话的消息历史（按时间正序） */
+export async function fetchMessages(conversationId: string): Promise<AgentMessageItem[]> {
+  return apiFetch<AgentMessageItem[]>(`/agent/conversations/${conversationId}/messages`)
 }
 
 /** 新建会话，返回会话 ID（字符串，避免前端 Number 精度丢失） */

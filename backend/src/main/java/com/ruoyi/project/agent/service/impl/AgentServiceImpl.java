@@ -204,6 +204,26 @@ public class AgentServiceImpl implements IAgentService {
     }
 
     @Override
+    public List<AgentMessage> listMessages(Long userId, String conversationId) {
+        if (conversationId == null || conversationId.isBlank()) {
+            return Collections.emptyList();
+        }
+        try {
+            Long cid = Long.parseLong(conversationId);
+            AgentConversation conv = conversationMapper.selectById(cid);
+            if (conv == null || !userId.equals(conv.getUserId())) {
+                // 越权或会话不存在 → 视为空列表（前端拿到空数组就清空 UI，不报错打扰用户）
+                return Collections.emptyList();
+            }
+            return messageMapper.selectList(new LambdaQueryWrapper<AgentMessage>()
+                    .eq(AgentMessage::getConversationId, cid)
+                    .orderByAsc(AgentMessage::getCreateTime));
+        } catch (NumberFormatException e) {
+            return Collections.emptyList();
+        }
+    }
+
+    @Override
     public String createConversation(Long userId) {
         AgentConversation conv = new AgentConversation();
         conv.setUserId(userId);

@@ -3231,12 +3231,35 @@ const handleLogout = () => {
   border-right: 1px solid var(--theme-border-color);
 }
 
-/* —— 任务 2：顶部 Header 毛玻璃 + 边界感 —— */
+/* —— 任务 2：顶部 Header 毛玻璃 + 边界感 ——
+   底边线比 --theme-border-color 更细，深色下仅 5% 不透明度，几乎隐入背景 */
 .agent-header {
   background-color: rgba(var(--bg-main-rgb), 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.08);
+}
+.theme-dark .agent-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+.theme-light .agent-header,
+.theme-pink .agent-header {
+  border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+/* —— 任务 2.5：补全死类 .theme-border —— 修复前因为没有真实 CSS，
+   所有 border-t theme-border 走 currentColor，在深色模式下显白。
+   统一用更淡的色值（比 --theme-border-color 还轻），适配聊天输入框 / 侧边栏底
+   分割线等所有位置，避免突兀白线 */
+.theme-border {
+  border-color: rgba(128, 128, 128, 0.12);
+}
+.theme-dark .theme-border {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+.theme-light .theme-border,
+.theme-pink .theme-border {
+  border-color: rgba(0, 0, 0, 0.05);
 }
 
 /* —— 任务 3：清空按钮 Hover 圆形背景强化 —— */

@@ -17,11 +17,13 @@ import { ref, computed, onMounted } from 'vue'
 import {
   streamChat,
   fetchConversations,
+  fetchMessages,
   createConversation,
   deleteConversation,
   renameConversation,
   clearAllConversations,
   type ConversationItem,
+  type AgentMessageItem,
 } from '~/composables/useAgentApi'
 import { useAppStore } from '~/stores/app'
 
@@ -55,6 +57,7 @@ const abortController = ref<AbortController | null>(null)
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
 const loading = ref(true)
+const historyLoading = ref(false)  // 切换会话时加载历史的 loading（不阻塞空态）
 
 /** 当前会话标题（顶栏居中显示） */
 const activeTitle = computed(() => {
@@ -72,7 +75,10 @@ async function loadConversations() {
     conversations.value = await fetchConversations()
     // 默认选中第一条，若无则新建
     if (conversations.value.length > 0) {
-      activeConversationId.value = conversations.value[0].id
+      const firstId = conversations.value[0].id
+      activeConversationId.value = firstId
+      // 拉取并展示历史消息（修复"之前的聊天记录看不到"）
+      await loadHistoryInto(firstId)
     } else {
       await handleCreateConv()
     }
@@ -97,10 +103,34 @@ async function handleCreateConv() {
   }
 }
 
+/** 拉取指定会话的历史消息并塞入 messages 列表（用于切换 / 挂载场景） */
+async function loadHistoryInto(id: string) {
+  historyLoading.value = true
+  try {
+    const list = await fetchMessages(id)
+    messages.value = list.map(toLocalMessage)
+  } catch (e) {
+    console.error('加载历史消息失败', e)
+    messages.value = []
+  } finally {
+    historyLoading.value = false
+  }
+}
+
+/** 后端 AgentMessage → 前端 LocalMessage */
+function toLocalMessage(m: AgentMessageItem): LocalMessage {
+  return {
+    id: String(m.id),
+    role: m.role === 'assistant' ? 'assistant' : 'user',
+    content: m.content || '',
+  }
+}
+
 async function handleSelectConv(id: string) {
   if (id === activeConversationId.value) return
   activeConversationId.value = id
-  messages.value = [] // 切换会话时清空（历史由 Java 后端透传给 LLM）
+  // 拉取该会话的历史消息（修复"看不到历史"）
+  await loadHistoryInto(id)
 }
 
 async function handleDeleteConv(id: string) {
@@ -110,11 +140,13 @@ async function handleDeleteConv(id: string) {
     if (activeConversationId.value === id) {
       // 当前会话被删，选第一条或新建
       if (conversations.value.length > 0) {
-        activeConversationId.value = conversations.value[0].id
+        const newActive = conversations.value[0].id
+        activeConversationId.value = newActive
+        // 加载新选中的会话历史（保持 UI 与侧边栏选中一致）
+        await loadHistoryInto(newActive)
       } else {
         await handleCreateConv()
       }
-      messages.value = []
     }
   } catch (e) {
     console.error('删除会话失败', e)

@@ -2,6 +2,7 @@ package com.ruoyi.project.agent.service;
 
 import com.ruoyi.project.agent.domain.dto.AgentChatRequest;
 import com.ruoyi.project.agent.domain.entity.AgentConversation;
+import com.ruoyi.project.agent.domain.entity.AgentMessage;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
 import java.util.List;
@@ -44,4 +45,13 @@ public interface IAgentService {
      * 清空当前用户的所有会话（级联删除其消息）。
      */
     boolean clearConversations(Long userId);
+
+    /**
+     * 查询指定会话的消息历史（按时间正序）。仅本人会话可查；越权或会话不存在返回空列表。
+     *
+     * @param userId        当前登录用户ID
+     * @param conversationId 会话ID
+     * @return 该会话的全部消息（按创建时间正序）
+     */
+    List<AgentMessage> listMessages(Long userId, String conversationId);
 }

@@ -3,6 +3,7 @@ package com.ruoyi.project.agent.controller;
 import com.ruoyi.project.agent.domain.dto.AgentChatRequest;
 import com.ruoyi.project.agent.domain.dto.AgentRenameRequest;
 import com.ruoyi.project.agent.domain.entity.AgentConversation;
+import com.ruoyi.project.agent.domain.entity.AgentMessage;
 import com.ruoyi.project.agent.service.IAgentService;
 import com.ruoyi.project.common.api.Result;
 import com.ruoyi.project.common.exception.BizErrorCode;
@@ -72,6 +73,18 @@ public class AgentController {
             return Result.error(BizErrorCode.UNAUTHORIZED);
         }
         return Result.success(agentService.createConversation(userId));
+    }
+
+    /**
+     * 查询指定会话的消息历史（按时间正序）。仅本人会话可查。
+     */
+    @GetMapping("/conversations/{id}/messages")
+    public Result<List<AgentMessage>> listMessages(@PathVariable String id) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.listMessages(userId, id));
     }
 
     /**
