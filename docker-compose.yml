@@ -89,17 +89,10 @@ services:
     container_name: acg_python_agent
     ports:
       - "8000:8000"
-    environment:
-      # 非敏感项给默认值；敏感密钥（API Key）由 env_file 注入（python-agent/.env）
-      LLM_BASE_URL_CHAT: ${LLM_BASE_URL_CHAT:-https://api.deepseek.com/v1}
-      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-deepseek-chat}
-      LLM_BASE_URL_EMBED: ${LLM_BASE_URL_EMBED:-https://dashscope.aliyuncs.com/compatible-mode/v1}
-      LLM_EMBED_MODEL: ${LLM_EMBED_MODEL:-text-embedding-v3}
-      BANGUMI_BASE_URL: ${BANGUMI_BASE_URL:-https://bgmapi.anibt.net}
-      BANGUMI_USER_AGENT: ${BANGUMI_USER_AGENT:-AcgSpace/1.0 (https://github.com/your-repo)}
-      PYTHON_AGENT_PORT: "8000"
     env_file:
-      # 注入 LLM_API_KEY_CHAT / LLM_API_KEY_EMBED 等敏感密钥（不入镜像、不被 git 跟踪）
+      # 单一事实来源：python-agent/.env 已含 Chat(LongCat) / Embed(通义) / Bangumi / Port 全部配置。
+      # 注意：compose 中 environment 优先级高于 env_file，故此处不再用 environment 设 LLM_*，
+      # 否则 ${VAR:-deepseek默认值} 会覆盖 .env 的 LongCat 配置（之前踩过的坑）。
       - ./python-agent/.env
     volumes:
       # 知识库热更新：改 python-agent/corpus/ 后只需对容器调 POST /rebuild，无需重建镜像
