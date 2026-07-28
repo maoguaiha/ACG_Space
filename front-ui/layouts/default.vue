@@ -2356,15 +2356,13 @@ const handleLogout = () => {
   background: linear-gradient(135deg, #6366F1, #3B82F6) !important;
   color: white !important;
   border: none !important;
-}
   border-radius: 4px;
   font-size: 12px;
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .theme-light .theme-mode-switch:hover {
-  background: #4338ca;
+  background: linear-gradient(135deg, #4F46E5, #2563EB) !important;
 }
 
 .theme-pink .theme-mode-switch {
