@@ -183,4 +183,16 @@ public class BizMessageServiceImpl implements IBizMessageService {
     public boolean claimRegistrationBonus(Long userId) {
         return pointsLogService.awardRegistrationBonus(userId);
     }
+
+    @Override
+    @Transactional
+    public void sendSystemNotification(Long toUserId, String content) {
+        BizMessage message = new BizMessage();
+        message.setFromUserId(1L); // 系统管理员用户ID
+        message.setToUserId(toUserId);
+        message.setContent(content);
+        message.setIsRead(false);
+        message.setCreateTime(LocalDateTime.now());
+        messageMapper.insert(message);
+    }
 }

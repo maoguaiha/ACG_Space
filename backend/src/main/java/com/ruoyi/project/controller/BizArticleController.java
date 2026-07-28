@@ -7,6 +7,7 @@ import com.ruoyi.project.domain.entity.BizArticle;
 import com.ruoyi.project.domain.vo.ArticleDetailVO;
 import com.ruoyi.project.domain.vo.ArticleListVO;
 import com.ruoyi.project.service.IBizArticleService;
+import com.ruoyi.project.service.IBizMessageService;
 import com.ruoyi.project.service.impl.BizArticleReactionServiceImpl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -22,6 +23,7 @@ public class BizArticleController {
 
     private final IBizArticleService articleService;
     private final BizArticleReactionServiceImpl reactionService;
+    private final IBizMessageService messageService;
 
     @GetMapping("/list")
     public Result<Page<ArticleListVO>> list(
@@ -65,10 +67,18 @@ public class BizArticleController {
 
     @DeleteMapping("/{id}")
     public Result<Void> delete(@PathVariable Long id) {
+        // 先获取文章信息（作者、标题），删除后无法查询
+        BizArticle article = articleService.getById(id);
+        if (article == null) {
+            return Result.error("文章不存在");
+        }
         boolean removed = articleService.deleteArticle(id);
         if (!removed) {
-            return Result.error("删除失败：未找到对应文章");
+            return Result.error("删除失败");
         }
+        // 发送删除通知
+        messageService.sendSystemNotification(article.getAuthorId(),
+                "您的文章《" + article.getTitle() + "》已被管理员删除");
         return Result.success(null);
     }
 

@@ -7,6 +7,7 @@ import com.ruoyi.project.domain.dto.ArticleReviewRequestDTO;
 import com.ruoyi.project.domain.entity.BizArticle;
 import com.ruoyi.project.domain.vo.ArticleListVO;
 import com.ruoyi.project.service.IBizArticleService;
+import com.ruoyi.project.service.IBizMessageService;
 import com.ruoyi.project.service.ISysUserService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.web.bind.annotation.*;
@@ -22,6 +23,7 @@ public class AdminArticleController {
 
     private final IBizArticleService articleService;
     private final ISysUserService sysUserService;
+    private final IBizMessageService messageService;
 
     @GetMapping("/reviewList")
     public Result<Page<ArticleListVO>> reviewList(@RequestParam(defaultValue = "1") long page, @RequestParam(defaultValue = "10") long size) {
@@ -71,9 +73,16 @@ public class AdminArticleController {
         if (req.getApprove()) {
             article.setStatus(1);
             article.setRejectReason(null);
+            // 发送审核通过通知
+            messageService.sendSystemNotification(article.getAuthorId(),
+                    "🎉 您的文章《" + article.getTitle() + "》已审核通过并发布！");
         } else {
             article.setStatus(4);
             article.setRejectReason(req.getRejectReason());
+            // 发送审核拒绝通知
+            String reason = req.getRejectReason() != null ? "，原因：" + req.getRejectReason() : "";
+            messageService.sendSystemNotification(article.getAuthorId(),
+                    "您的文章《" + article.getTitle() + "》未通过审核" + reason);
         }
         articleService.updateArticle(article);
         return Result.success();

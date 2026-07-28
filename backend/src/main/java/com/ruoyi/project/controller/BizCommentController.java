@@ -8,6 +8,7 @@ import com.ruoyi.project.domain.dto.CommentRequestDTO;
 import com.ruoyi.project.domain.entity.BizComment;
 import com.ruoyi.project.domain.vo.CommentPageItemVO;
 import com.ruoyi.project.service.IBizCommentService;
+import com.ruoyi.project.service.IBizMessageService;
 import com.ruoyi.project.service.impl.BizCommentReactionServiceImpl;
 import lombok.Data;
 import lombok.RequiredArgsConstructor;
@@ -23,6 +24,7 @@ public class BizCommentController {
 
     private final IBizCommentService commentService;
     private final BizCommentReactionServiceImpl commentReactionService;
+    private final IBizMessageService messageService;
 
     @PostMapping("/publish")
     public Result<BizComment> publish(@Validated @RequestBody CommentRequestDTO requestDTO) {
@@ -48,7 +50,18 @@ public class BizCommentController {
 
     @DeleteMapping("/{id}")
     public Result<Boolean> delete(@PathVariable Long id) {
+        // 先获取评论信息（作者、内容），删除后无法查询
+        BizComment comment = commentService.getById(id);
+        if (comment == null) {
+            return Result.success(false);
+        }
         boolean success = commentService.deleteComment(id);
+        // 发送删除通知
+        String contentPreview = comment.getContent().length() > 30
+                ? comment.getContent().substring(0, 30) + "…"
+                : comment.getContent();
+        messageService.sendSystemNotification(comment.getUserId(),
+                "您的评论「" + contentPreview + "」已被管理员删除");
         return Result.success(success);
     }
 

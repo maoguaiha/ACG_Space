@@ -4,7 +4,9 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.ruoyi.project.domain.entity.BizRedeemOrder;
+import com.ruoyi.project.domain.entity.BizMessage;
 import com.ruoyi.project.domain.entity.BizUserAsset;
+import com.ruoyi.project.mapper.BizMessageMapper;
 import com.ruoyi.project.mapper.BizRedeemOrderMapper;
 import com.ruoyi.project.mapper.BizUserAssetMapper;
 import com.ruoyi.project.service.IBizRedeemOrderService;
@@ -22,6 +24,7 @@ import java.util.UUID;
 public class BizRedeemOrderServiceImpl extends ServiceImpl<BizRedeemOrderMapper, BizRedeemOrder> implements IBizRedeemOrderService {
 
     private final BizUserAssetMapper userAssetMapper;
+    private final BizMessageMapper messageMapper;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -65,6 +68,21 @@ public class BizRedeemOrderServiceImpl extends ServiceImpl<BizRedeemOrderMapper,
         userAssetMapper.updateById(asset);
 
         log.info("创建兑换订单: userId={}, assetId={}, orderNo={}", userId, assetId, order.getOrderNo());
+
+        // 发送系统通知
+        try {
+            BizMessage msg = new BizMessage();
+            msg.setFromUserId(1L);
+            msg.setToUserId(userId);
+            msg.setContent("🎉 您的兑换订单已创建成功！订单号：" + order.getOrderNo()
+                    + "，物品：" + (asset.getItemName() != null ? asset.getItemName() : "") + "，请等待发货。");
+            msg.setIsRead(false);
+            msg.setCreateTime(LocalDateTime.now());
+            messageMapper.insert(msg);
+        } catch (Exception e) {
+            log.warn("发送订单通知失败", e);
+        }
+
         return order;
     }
 

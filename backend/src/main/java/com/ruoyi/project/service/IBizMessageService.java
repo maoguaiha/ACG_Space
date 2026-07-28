@@ -23,4 +23,11 @@ public interface IBizMessageService {
      * @return 是否领取成功
      */
     boolean claimRegistrationBonus(Long userId);
+
+    /**
+     * 发送系统通知消息（fromUserId=1 系统管理员）
+     * @param toUserId 接收者用户ID
+     * @param content 消息内容
+     */
+    void sendSystemNotification(Long toUserId, String content);
 }
