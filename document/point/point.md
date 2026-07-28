@@ -39,9 +39,15 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 - ✅ InMemoryValueOperations 替代 Mockito raw-type mock
 
 ### Agent 应用（用户端 AI 助手）
-- ✅ 完成详细设计方案：`document/develop/V2/4.Agent应用设计方案.md`
-- ✅ 范围：用户端对话式助手 + 云端大模型 API + 纯 RAG 问答（不执行写操作）
-- ✅ 待确认：①供应商 ②初始语料来源 ③是否V1.1管理端 ④番剧库全量向量化评估
+- ✅ 完成详细设计方案 V1.1：`document/develop/V2/4.Agent应用设计方案.md`
+- ✅ 形态：**纯 Python agent 服务嵌入项目**，Java 守门面（鉴权+持久化+SSE代理），技术栈"加 Python"不"改 Java"
+- ✅ 能力：RAG 问答 + 一个**只读 Bangumi 查询工具（function calling）**，不执行写操作
+- ✅ 语料：平台规则文档 + 手写 FAQ + 本地番剧快照（70 条，随平台增长重导出）
+- ✅ 番剧推荐：从 **Bangumi 实时拉取**（api.bgm.tv，仅 GET+User-Agent 无密钥），与平台数据解耦，支撑未来扩充
+- ✅ 已锁定：用户选语料方案②（规则+FAQ+番剧快照）+ 番剧推荐走 Bangumi
+- ✅ 最终决策：①供应商=DeepSeek(chat)+通义(embedding) ②前端入口=A(Nuxt→Java门面→Python) ③管理端延后 ④番剧快照=脚本一次性+可重跑
+- ✅ Phase 0 已落地：python-agent 服务骨架（FastAPI + config/schemas/main 桩 + Dockerfile + .env.example）+ docker-compose 接入 + .gitignore 排除 .env
+- ✅ Phase 1 已落地：corpus/rules/PRD_V2.md（复制 PRD）+ corpus/faq.md（10 组高频问答）+ scripts/export_anime.py（只读导出，含 `--selftest` 字段映射自测通过）；anime.json 待 MySQL 可达时生成（沙箱 docker 守护进程未起，13306 不可达）
 
 ## 待完成
 
@@ -50,4 +56,4 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 3. **P1优先级**：优化兑换商品列表分页和筛选功能
 4. **P2优先级**：完善DTO参数校验注解
 5. **P2优先级**：补充单元测试用例
-6. **Agent 应用（新增）**：确认供应商与语料来源后，按 `4.Agent应用设计方案.md` 进入 Phase 0~7 实现
+6. **Agent 应用（新增）**：设计已锁定（Python agent 嵌入 + Bangumi 只读工具）。Phase 0~1 已落地（骨架 + 语料/导出脚本）；下一步 **Phase 2**（rag.py + llm.py 打通 RAG 流式问答）

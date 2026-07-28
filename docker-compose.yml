@@ -80,6 +80,27 @@ services:
       - ./broker.conf:/home/rocketmq/rocketmq-5.2.0/conf/broker.conf
     command: broker -n rmqnamesrv:9876 -c /home/rocketmq/rocketmq-5.2.0/conf/broker.conf
 
+  # 5. Python Agent 服务（AI 助手大脑，无状态，被 backend 门面代理调用）
+  python-agent:
+    build:
+      context: ./python-agent
+      dockerfile: Dockerfile
+    container_name: acg_python_agent
+    ports:
+      - "8000:8000"
+    environment:
+      # 非敏感项给默认值；敏感密钥（API Key）由宿主机/CI 注入或挂载 python-agent/.env
+      LLM_BASE_URL_CHAT: ${LLM_BASE_URL_CHAT:-https://api.deepseek.com/v1}
+      LLM_API_KEY_CHAT: ${LLM_API_KEY_CHAT:-}
+      LLM_CHAT_MODEL: ${LLM_CHAT_MODEL:-deepseek-chat}
+      LLM_BASE_URL_EMBED: ${LLM_BASE_URL_EMBED:-https://dashscope.aliyuncs.com/compatible-mode/v1}
+      LLM_API_KEY_EMBED: ${LLM_API_KEY_EMBED:-}
+      LLM_EMBED_MODEL: ${LLM_EMBED_MODEL:-text-embedding-v3}
+      BANGUMI_BASE_URL: ${BANGUMI_BASE_URL:-https://bgmapi.anibt.net}
+      BANGUMI_USER_AGENT: ${BANGUMI_USER_AGENT:-AcgSpace/1.0 (https://github.com/your-repo)}
+      PYTHON_AGENT_PORT: "8000"
+    restart: unless-stopped
+
 # 命名数据卷：业务数据落在此卷，docker compose down/up 重建容器不会丢失；
 # 注意仅 docker compose down -v 才会删除（仍会清，但命名卷不会被 docker volume prune 误清）。
 volumes:
