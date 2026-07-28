@@ -23,6 +23,7 @@ import com.ruoyi.project.service.ISysUserService;
 import com.ruoyi.project.service.impl.BizCommentReactionServiceImpl;
 import com.ruoyi.project.service.impl.BizArticleCommentReactionServiceImpl;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.ArrayList;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
 @RestController
 @RequestMapping("/api/user")
 @RequiredArgsConstructor
+@Slf4j
 public class UserProfileController {
 
     private final ISysUserService sysUserService;
@@ -92,21 +94,26 @@ public class UserProfileController {
      */
     @PutMapping("/profile")
     public Result<Void> updateProfile(@RequestBody SysUser update) {
-        Long userId = SecurityUtils.getUserId();
-        if (userId == null) {
-            return Result.error("请先登录");
+        try {
+            Long userId = SecurityUtils.getUserId();
+            if (userId == null) {
+                return Result.error("请先登录");
+            }
+            SysUser user = sysUserService.getById(userId);
+            if (user == null) {
+                return Result.error("用户不存在");
+            }
+            // 只允许修改这些字段
+            if (update.getNickname() != null) user.setNickname(update.getNickname());
+            if (update.getAvatar() != null) user.setAvatar(update.getAvatar());
+            if (update.getBio() != null) user.setBio(update.getBio());
+            if (update.getEmail() != null) user.setEmail(update.getEmail());
+            sysUserService.updateById(user);
+            return Result.success();
+        } catch (Exception e) {
+            log.error("更新用户资料失败", e);
+            return Result.error("更新失败: " + e.getMessage());
         }
-        SysUser user = sysUserService.getById(userId);
-        if (user == null) {
-            return Result.error("用户不存在");
-        }
-        // 只允许修改这些字段
-        if (update.getNickname() != null) user.setNickname(update.getNickname());
-        if (update.getAvatar() != null) user.setAvatar(update.getAvatar());
-        if (update.getBio() != null) user.setBio(update.getBio());
-        if (update.getEmail() != null) user.setEmail(update.getEmail());
-        sysUserService.updateById(user);
-        return Result.success();
     }
 
     /**
