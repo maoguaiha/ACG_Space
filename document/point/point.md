@@ -49,6 +49,7 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 - ✅ Phase 0 已落地：python-agent 服务骨架（FastAPI + config/schemas/main 桩 + Dockerfile + .env.example）+ docker-compose 接入 + .gitignore 排除 .env
 - ✅ Phase 1 已落地：corpus/rules/PRD_V2.md（复制 PRD）+ corpus/faq.md（10 组高频问答）+ scripts/export_anime.py（只读导出，含 `--selftest` 字段映射自测通过）；anime.json 待 MySQL 可达时生成（沙箱 docker 守护进程未起，13306 不可达）
 - ✅ Phase 2 已落地：app/rag.py（按 `## ` 切片 + 余弦检索，anime.json 缺失容错）+ app/llm.py（DeepSeek 流式 chat / 通义 embed）+ app/prompts.py（角色+安全边界+来源署名）；main.py /chat 接入「检索→拼提示→流式」。离线自测全过（rag 检索命中 + TestClient SSE 全链路）；live LLM 需 API Key。
+- ✅ Phase 3 已落地：app/tools/bangumi.py（search/detail/calendar 只读工具，仅 GET+UA、TTL 缓存，按真实镜像结构解析）+ app/tools/registry.py（3 个 function-calling schema）；main.py /chat 接入工具循环（首轮带 tools→执行→回填→流式）。离线自测全过 + 真实 Bangumi 冒烟通过。
 
 ## 待完成
 
@@ -57,4 +58,4 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 3. **P1优先级**：优化兑换商品列表分页和筛选功能
 4. **P2优先级**：完善DTO参数校验注解
 5. **P2优先级**：补充单元测试用例
-6. **Agent 应用（新增）**：设计已锁定（Python agent 嵌入 + Bangumi 只读工具）。Phase 0~2 已落地（骨架 + 语料/导出脚本 + RAG 流式）；下一步 **Phase 3**（tools/bangumi.py 只读工具 + function calling + TTL 缓存）
+6. **Agent 应用（新增）**：设计已锁定（Python agent 嵌入 + Bangumi 只读工具）。Phase 0~3 已落地（骨架 + 语料/导出脚本 + RAG 流式 + Bangumi 工具）；下一步 **Phase 4**（Java 门面：AgentController SSE 代理 + 会话/消息持久化 + Resilience4j 限流）

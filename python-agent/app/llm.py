@@ -63,3 +63,20 @@ def chat_stream(messages: list[dict], tools=None):
         delta = chunk.choices[0].delta
         if delta and delta.content:
             yield delta.content
+
+
+def chat_completion(messages: list[dict], tools=None):
+    """非流式对话，返回完整响应对象（用于检测 tool_calls）。
+
+    当 LLM 返回 tool_calls 时，调用方执行工具并把结果回填 messages，再做流式最终回答。
+    """
+    client = _chat_client()
+    kwargs = {
+        "model": settings.llm_chat_model,
+        "messages": messages,
+        "stream": False,
+        "temperature": 0.3,
+    }
+    if tools:
+        kwargs["tools"] = tools
+    return client.chat.completions.create(**kwargs)
