@@ -180,8 +180,7 @@ const handleLogout = () => {
 .theme-dark {
   --bg-main: #0f172a;
   --bg-main-rgb: 15, 23, 42;
-  --scrollbar-thumb: rgba(148, 163, 184, 0.3);
-  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
+  --theme-border-color: rgba(255, 255, 255, 0.08);
   --bg-secondary: #1e293b;
   --bg-card: rgba(30, 41, 59, 0.6);
   --bg-header: rgba(15, 23, 42, 0.85);
@@ -208,8 +207,7 @@ const handleLogout = () => {
 .theme-light {
   --bg-main: #F8FAFC;
   --bg-main-rgb: 248, 250, 252;
-  --scrollbar-thumb: rgba(100, 116, 139, 0.3);
-  --scrollbar-thumb-hover: rgba(100, 116, 139, 0.6);
+  --theme-border-color: rgba(0, 0, 0, 0.06);
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.9);
   --bg-header: rgba(255, 255, 255, 0.95);
@@ -271,8 +269,7 @@ const handleLogout = () => {
 .theme-pink {
   --bg-main: #fdf2f8;
   --bg-main-rgb: 253, 242, 248;
-  --scrollbar-thumb: rgba(190, 24, 93, 0.28);
-  --scrollbar-thumb-hover: rgba(190, 24, 93, 0.55);
+  --theme-border-color: rgba(0, 0, 0, 0.06);
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.8);
   --bg-header: rgba(255, 241, 242, 0.95);
@@ -3216,30 +3213,22 @@ const handleLogout = () => {
    AI 助手聊天页 — 细节质感优化（4 项）
    ═══════════════════════════════════════════ */
 
-/* —— 任务 1：自定义细滚动条（6px / 透明轨道 / 圆角滑块）——
-   浏览器原生 opacity 对 ::-webkit-scrollbar-thumb 无效，故用主题 rgba 变量实现半透明。 */
-.agent-scroll {
-  scrollbar-width: thin;               /* Firefox */
-  scrollbar-color: var(--scrollbar-thumb) transparent;
+/* —— 任务 1：彻底隐藏滚动条但保留原生滚动（聊天区 & 侧边栏通用）——
+   参考 Gemini 沉浸式体验：滚动条不可见，滚轮 / 触控滑动照常工作。 */
+.hide-scrollbar-container {
+  overflow-y: auto;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE / 旧 Edge */
 }
-.agent-scroll::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+.hide-scrollbar-container::-webkit-scrollbar {
+  display: none;                  /* WebKit (Chrome / Safari / 新版 Edge) */
+  width: 0;
+  height: 0;
 }
-.agent-scroll::-webkit-scrollbar-track {
-  background: transparent;
-}
-.agent-scroll::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb);
-  border-radius: 9999px;
-  transition: background-color 0.2s ease;
-}
-.agent-scroll::-webkit-scrollbar-thumb:hover {
-  background-color: var(--scrollbar-thumb-hover);
-}
-/* 键盘聚焦时给轨道一点可见性（无障碍） */
-.agent-scroll:focus-visible::-webkit-scrollbar-thumb {
-  background-color: var(--scrollbar-thumb-hover);
+
+/* —— 任务 2：侧边栏与聊天区的极细微分割线（深色模式为微弱高光线） —— */
+.agent-sidebar {
+  border-right: 1px solid var(--theme-border-color);
 }
 
 /* —— 任务 2：顶部 Header 毛玻璃 + 边界感 —— */

@@ -44,7 +44,7 @@ watch(() => props.streamingContent, scrollToBottom)
 </script>
 
 <template>
-  <div class="agent-chat-scroll flex-1 overflow-y-auto px-4 pt-14 pb-2">
+  <div class="hide-scrollbar-container flex-1 overflow-y-auto px-4 pt-14 pb-2">
     <!-- 空态：无消息且无流式  -->
     <div
       v-if="messages.length === 0 && !hasStreaming"

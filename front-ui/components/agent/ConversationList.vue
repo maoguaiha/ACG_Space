@@ -79,7 +79,7 @@ function formatDate(iso: string): string {
 </script>
 
 <template>
-  <div class="flex flex-col h-full border-r" :class="['theme-border', 'theme-bg-secondary']">
+  <div class="flex flex-col h-full agent-sidebar" :class="['theme-bg-secondary']">
     <!-- 新建会话 -->
     <div class="p-3">
       <button
@@ -96,7 +96,7 @@ function formatDate(iso: string): string {
     </div>
 
     <!-- 会话列表（可滚动） -->
-    <div class="agent-scroll flex-1 overflow-y-auto px-2 pb-2 space-y-1">
+    <div class="hide-scrollbar-container flex-1 overflow-y-auto px-2 pb-2 space-y-1">
       <div
         v-for="conv in conversations"
         :key="conv.id"

@@ -329,7 +329,7 @@ onMounted(() => { loadConversations() })
         <template v-else>
           <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col">
             <ChatWindow
-              class="agent-chat-scroll"
+              class="h-full"
               :messages="messages"
               :has-streaming="isStreaming"
               :streaming-content="streamingContent"
