@@ -8,7 +8,7 @@ TOOLS = [
         "type": "function",
         "function": {
             "name": "search_bangumi",
-            "description": "在 Bangumi 全局番剧库中按关键词搜索番剧，返回番名、中文名、简介、评分与链接。用于「类似 XX 的番」「有什么机战番」「搜索某番」等推荐/发现类问题。",
+            "description": "在 Bangumi 全局番剧库中按关键词搜索番剧，返回番名、中文名、简介、评分与链接。推荐类问题首选此工具，用于「类似 XX 的番」「有什么机战番」「搜索某番」等推荐/发现类问题。",
             "parameters": {
                 "type": "object",
                 "properties": {
