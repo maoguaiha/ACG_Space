@@ -84,7 +84,7 @@
             <p :class="['theme-text-muted']" v-if="searchKeyword">没有找到相关文章</p>
             <p :class="['theme-text-muted']" v-else>还没有文章</p>
           </div>
-          <div v-else class="space-y-4">
+          <TransitionGroup v-else name="list" tag="div" class="space-y-4 relative" style="min-height:100px">
             <article v-for="article in articles" :key="article.id"
               class="rounded-2xl border overflow-hidden transition-all group" :class="['theme-card', 'theme-card-hover']">
               <NuxtLink :to="`/article/${article.id}`" class="flex flex-col md:flex-row">
@@ -116,7 +116,7 @@
                 </div>
               </NuxtLink>
             </article>
-          </div>
+          </TransitionGroup>
         </div>
 
         <!-- 用户栏 -->

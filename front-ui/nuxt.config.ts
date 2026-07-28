@@ -49,6 +49,8 @@ export default defineNuxtConfig({
   },
 
   app: {
+    pageTransition: { name: 'page', mode: 'out-in' },
+    layoutTransition: { name: 'layout', mode: 'out-in' },
     head: {
       title: 'ACG Space - 动漫分享与资讯社区',
       htmlAttrs: { lang: 'zh-CN' },

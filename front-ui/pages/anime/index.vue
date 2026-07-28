@@ -206,7 +206,7 @@
         <div v-for="i in 10" :key="i" class="aspect-[3/4] bg-slate-800 dark:bg-slate-800 rounded-3xl animate-pulse" :class="['theme-card-loading']"></div>
       </div>
 
-      <div v-else class="grid grid-cols-2 lg:grid-cols-5 gap-6">
+      <TransitionGroup v-else name="list" tag="div" class="grid grid-cols-2 lg:grid-cols-5 gap-6 relative" style="min-height:200px">
         <NuxtLink
           v-for="anime in pagedFilteredAnimes"
           :key="anime.id"
@@ -226,7 +226,7 @@
             </div>
           </div>
         </NuxtLink>
-      </div>
+      </TransitionGroup>
 
       <div v-if="totalPages > 1" class="mt-8 flex items-center justify-center gap-2">
         <button
