@@ -47,11 +47,12 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 - ✅ 已锁定：用户选语料方案②（规则+FAQ+番剧快照）+ 番剧推荐走 Bangumi
 - ✅ 最终决策：①供应商=LongCat(chat)+通义(embedding)（双供应商；LongCat 无对外 embedding，故 embed 另配通义）②前端入口=A(Nuxt→Java门面→Python) ③管理端延后 ④番剧快照=脚本一次性+可重跑
 - ✅ **LongCat 真实端点已核实**：`base_url=https://api.longcat.chat/openai`（完整 chat 路径 `…/openai/v1/chat/completions`）。**`api.longcat.ai` 是错误域名（不存在）**，config.py/.env.example 默认值已纠正。通义 embedding 端点 `https://dashscope.aliyuncs.com/compatible-mode/v1` 正确。两供应商端点均探活返回 401（路径正确、可达），只差 key。
+- ✅ **LongCat 模型名纠正**：平台 models 接口仅暴露 `LongCat-2.0`（`LongCat-Flash-Chat` 为错误名，调用报 400 Unsupported model）。config.py/.env 默认 `LLM_CHAT_MODEL=LongCat-2.0` 已改。LongCat key 已写入 `.env`，**chat 实测通过**（返回 OK）。
 - ✅ Phase 0 已落地：python-agent 服务骨架（FastAPI + config/schemas/main 桩 + Dockerfile + .env.example）+ docker-compose 接入 + .gitignore 排除 .env
 - ✅ Phase 1 已落地：corpus/rules/PRD_V2.md（复制 PRD）+ corpus/faq.md（10 组高频问答）+ scripts/export_anime.py（只读导出，含 `--selftest` 字段映射自测通过）；anime.json 待 MySQL 可达时生成（沙箱 docker 守护进程未起，13306 不可达）
 - ✅ Phase 2 已落地：app/rag.py（按 `## ` 切片 + 余弦检索，anime.json 缺失容错）+ app/llm.py（LongCat 流式 chat / 通义 embed）+ app/prompts.py（角色+安全边界+来源署名）；main.py /chat 接入「检索→拼提示→流式」。离线自测全过（rag 检索命中 + TestClient SSE 全链路）；live LLM 需 API Key。
 - ✅ Phase 3 已落地：app/tools/bangumi.py（search/detail/calendar 只读工具，仅 GET+UA、TTL 缓存，按真实镜像结构解析）+ app/tools/registry.py（3 个 function-calling schema）；main.py /chat 接入工具循环（首轮带 tools→执行→回填→流式）。离线自测全过 + 真实 Bangumi 冒烟通过。
-- ✅ Phase A（live 实测）就绪：scripts/selftest_live.py 编写完成（含缺 key 防护）；python-agent/.env 已创建（gitignore）。待用户在 .env 填入 LongCat + 通义 key 后运行真实端到端（RAG 问答 + Bangumi 工具）。
+- ✅ Phase A（live 实测）就绪：scripts/selftest_live.py 编写完成（含缺 key 防护）；python-agent/.env 已创建（gitignore）。LongCat key 已填且 chat 验证通过；**待补通义 embedding key** 后即可跑完整端到端（RAG 问答 + Bangumi 工具）。
 
 ## 待完成
 

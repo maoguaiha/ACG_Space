@@ -14,7 +14,7 @@ class Settings:
     # api.longcat.ai 是错误域名（不存在），正确为 api.longcat.chat。
     llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.longcat.chat/openai")
     llm_api_key_chat: str = os.getenv("LLM_API_KEY_CHAT", "")
-    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "LongCat-Flash-Chat")
+    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "LongCat-2.0")
 
     # 通义千问 embedding（OpenAI 兼容 /compatible-mode）
     llm_base_url_embed: str = os.getenv(
