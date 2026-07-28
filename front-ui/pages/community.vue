@@ -85,8 +85,9 @@
             <p :class="['theme-text-muted']" v-else>还没有文章</p>
           </div>
           <TransitionGroup v-else name="list" tag="div" class="space-y-4 relative" style="min-height:100px">
-            <article v-for="article in articles" :key="article.id"
-              class="rounded-2xl border overflow-hidden transition-all group" :class="['theme-card', 'theme-card-hover']">
+            <article v-for="(article, index) in articles" :key="article.id"
+              class="rounded-2xl border overflow-hidden transition-all group stagger-item" :class="['theme-card', 'theme-card-hover']"
+              :style="{ animationDelay: `${index * 0.08}s` }">
               <NuxtLink :to="`/article/${article.id}`" class="flex flex-col md:flex-row">
                 <div v-if="article.coverUrl" class="md:w-48 w-full h-48 md:h-48 overflow-hidden flex-shrink-0">
                   <img :src="article.coverUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
@@ -134,9 +135,11 @@
             <p class="text-slate-500" v-if="searchKeyword">没有找到相关用户</p>
             <p class="text-slate-500" v-else>暂无用户</p>
           </div>
-          <div v-else class="space-y-3">
-            <NuxtLink v-for="user in users" :key="user.id" :to="`/user/${user.id}`"
-              class="flex items-center gap-4 bg-slate-800/40 rounded-2xl border border-slate-700/50 p-4 hover:border-indigo-500/30 transition-colors group">
+          <TransitionGroup v-else name="list" tag="div" class="space-y-3 relative" style="min-height:100px">
+            <NuxtLink v-for="(user, index) in users" :key="user.id" :to="`/user/${user.id}`"
+              class="flex items-center gap-4 bg-slate-800/40 rounded-2xl border border-slate-700/50 p-4 hover:border-indigo-500/30 transition-colors group stagger-item"
+              :style="{ animationDelay: `${index * 0.08}s` }"><!-- truncate opening tag above, keep rest unchanged -->
+
               <img v-if="user.avatar" :src="user.avatar" class="w-12 h-12 rounded-full object-cover flex-shrink-0" />
               <div v-else class="w-12 h-12 rounded-full bg-indigo-600 flex items-center justify-center text-lg font-bold text-white flex-shrink-0">
                 {{ (user.nickname || user.username || '?')[0] }}
@@ -147,7 +150,7 @@
               </div>
               <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" class="text-slate-600"><polyline points="9 18 15 12 9 6"/></svg>
             </NuxtLink>
-          </div>
+          </TransitionGroup>
         </div>
 
         <!-- 分页 -->

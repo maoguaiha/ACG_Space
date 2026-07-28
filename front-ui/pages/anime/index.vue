@@ -208,11 +208,12 @@
 
       <TransitionGroup v-else name="list" tag="div" class="grid grid-cols-2 lg:grid-cols-5 gap-6 relative" style="min-height:200px">
         <NuxtLink
-          v-for="anime in pagedFilteredAnimes"
+          v-for="(anime, index) in pagedFilteredAnimes"
           :key="anime.id"
           :to="`/anime/${anime.id}`"
-          class="group relative aspect-[3/4] rounded-3xl overflow-hidden transition-all duration-300"
+          class="group relative aspect-[3/4] rounded-3xl overflow-hidden transition-all duration-300 stagger-item"
           :class="['theme-anime-card']"
+          :style="{ animationDelay: `${index * 0.08}s` }"
         >
           <div class="relative w-full h-full">
             <img v-if="anime.coverUrl" :src="anime.coverUrl" referrerpolicy="no-referrer" class="w-full h-full object-cover group-hover:scale-110 transition-transform duration-500" loading="eager" />
