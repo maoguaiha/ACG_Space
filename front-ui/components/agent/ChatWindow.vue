@@ -4,12 +4,12 @@
  *
  * 特性：
  *   - 空态：首次进入显示欢迎引导 + 快捷提示词
- *   - 已有消息：最大宽度 3xl 居中，列表从 ChatMessage 组件渲染
- *   - 思考中：流式尚未返回首个 token 时，显示三点跳动指示器 + 文案
- *   - 流式进行中：追加一条"正在生成"的助手气泡（闪烁光标）
- *   - 自动滚动：新消息到达或 token 追加时，smooth 滚动到锚点
+ *   - 已有消息：内联渲染用户/助手气泡（不依赖 ChatMessage 子组件，避免自动导入命名问题）
+ *   - 思考中：流式尚未返回首个 token 时，显示三点跳动指示器 + 累计秒数
+ *   - 流式进行中：就地渲染内容 + 闪烁光标
+ *   - 自动滚动：仅在用户已处于底部时自动跟随，否则保持原位不打扰阅读
  */
-import { ref, watch, nextTick } from 'vue'
+import { ref, watch, nextTick, onUnmounted } from 'vue'
 
 const props = defineProps<{
   messages: Array<{
@@ -27,25 +27,61 @@ const emit = defineEmits<{
 }>()
 
 const anchorRef = ref<HTMLElement>()
+const scrollContainerRef = ref<HTMLElement>()
 
-/** 是否处于"等待首个 token"的思考状态 */
-const isThinking = () => props.hasStreaming && props.streamingContent.length === 0
+/** 思考累计秒数（hasStreaming 变 true 起 1s 一跳；变 false 清零） */
+const thinkingSeconds = ref(0)
+let thinkingTimer: ReturnType<typeof setInterval> | null = null
 
-/** 滚动到消息列表底部 */
+function startThinkingTimer() {
+  if (thinkingTimer) return
+  thinkingSeconds.value = 0
+  thinkingTimer = setInterval(() => { thinkingSeconds.value++ }, 1000)
+}
+
+function stopThinkingTimer() {
+  if (thinkingTimer) {
+    clearInterval(thinkingTimer)
+    thinkingTimer = null
+  }
+  thinkingSeconds.value = 0
+}
+
+// 跟随 isStreaming 启停计时器
+watch(() => props.hasStreaming, (streaming) => {
+  if (streaming) startThinkingTimer()
+  else stopThinkingTimer()
+}, { immediate: true })
+
+onUnmounted(stopThinkingTimer)
+
+/** 自动跟随：仅在用户已处于底部时滚动到底，避免阅读历史时被打断 */
+const stickToBottom = ref(true)
+function checkStickToBottom() {
+  const el = scrollContainerRef.value
+  if (!el) return
+  const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
+  stickToBottom.value = distFromBottom < 80
+}
+
 function scrollToBottom() {
+  if (!stickToBottom.value) return
   nextTick(() => {
     anchorRef.value?.scrollIntoView({ behavior: 'smooth' })
   })
 }
 
-// 新消息 / token 追加 → 自动滚动
-watch(() => props.messages.length, scrollToBottom)
-watch(() => props.streamingContent, scrollToBottom)
+watch(() => props.messages.length, () => { checkStickToBottom(); scrollToBottom() })
+watch(() => props.streamingContent, () => { scrollToBottom() })
 </script>
 
 <template>
-  <div class="hide-scrollbar-container flex-1 overflow-y-auto px-4 pt-14 pb-2">
-    <!-- 空态：无消息且无流式  -->
+  <div
+    ref="scrollContainerRef"
+    class="hide-scrollbar-container flex-1 overflow-y-auto px-4 pt-14 pb-2"
+    @scroll="checkStickToBottom"
+  >
+    <!-- 空态：无消息且无流式 -->
     <div
       v-if="messages.length === 0 && !hasStreaming"
       class="agent-empty-state h-full flex flex-col items-center justify-center text-center px-4"
@@ -75,15 +111,46 @@ watch(() => props.streamingContent, scrollToBottom)
       </div>
     </div>
 
-    <!-- 消息列表 -->
+    <!-- 消息列表（内联渲染，不依赖 ChatMessage 子组件，规避 pathPrefix 命名问题） -->
     <div class="max-w-3xl mx-auto">
-      <ChatMessage
-        v-for="msg in messages"
-        :key="msg.id"
-        :message="msg"
-      />
+      <template v-for="msg in messages" :key="msg.id">
+        <!-- 用户消息：右对齐，品牌主色气泡 -->
+        <div v-if="msg.role === 'user'" class="flex gap-3 py-3 justify-end">
+          <div
+            class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
+            :class="['theme-primary-bg', 'text-white']"
+          >
+            {{ msg.content }}
+          </div>
+          <div
+            class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center select-none"
+            :class="['theme-card', 'theme-text-muted']"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2" />
+              <circle cx="12" cy="7" r="4" />
+            </svg>
+          </div>
+        </div>
 
-      <!-- 思考中：等待首个 token -->
+        <!-- 助手消息：左对齐；错误态用红色半透明背景 -->
+        <div v-else class="flex gap-3 py-3 justify-start">
+          <div
+            class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
+            :class="['theme-primary-bg', 'text-white']"
+          >
+            AI
+          </div>
+          <div
+            class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
+            :class="msg.isError ? ['bg-red-500/10', 'border', 'border-red-500/30', 'text-red-400'] : ['theme-card', 'theme-text-main']"
+          >
+            {{ msg.content }}
+          </div>
+        </div>
+      </template>
+
+      <!-- 思考中：等待首个 token，显示累计秒数（"AI 助手正在思考 · 3s"） -->
       <div v-if="hasStreaming && streamingContent.length === 0" class="flex gap-3 py-3 justify-start">
         <div
           class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
@@ -92,7 +159,7 @@ watch(() => props.streamingContent, scrollToBottom)
           AI
         </div>
         <div
-          class="max-w-[80%] px-4 py-3 rounded-2xl flex items-center gap-2"
+          class="px-4 py-3 rounded-2xl flex items-center gap-2"
           :class="['theme-card', 'theme-text-muted']"
         >
           <span class="flex gap-1">
@@ -100,11 +167,13 @@ watch(() => props.streamingContent, scrollToBottom)
             <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 150ms" />
             <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 300ms" />
           </span>
-          <span class="text-sm">AI 助手正在思考...</span>
+          <span class="text-sm"
+            >AI 助手正在思考<span v-if="thinkingSeconds > 0"> · {{ thinkingSeconds }}s</span><span v-else>...</span></span
+          >
         </div>
       </div>
 
-      <!-- 流式生成中（已有 token）：就地渲染内容 -->
+      <!-- 流式生成中（已有 token）：就地渲染内容 + 闪烁光标 -->
       <div v-else-if="hasStreaming" class="flex gap-3 py-3 justify-start">
         <div
           class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
