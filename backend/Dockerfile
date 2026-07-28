@@ -1,17 +1,7 @@
-# ====== 多阶段构建 Dockerfile ======
-# 阶段1: Maven 构建
-FROM maven:3.9-eclipse-temurin-17-alpine AS builder
-
-WORKDIR /build
-# 先复制 pom.xml 利用 Docker 缓存层加速依赖下载
-COPY pom.xml .
-RUN mvn dependency:go-offline -B
-
-# 复制源码并构建
-COPY src ./src
-RUN mvn package -DskipTests -B
-
-# 阶段2: 运行镜像（只包含 JRE，体积更小）
+# ====== 后端运行镜像 ======
+# 说明：原多阶段构建在 Docker 内执行 `mvn dependency:go-offline`，
+# 因沙箱 Docker 构建网络解析 Maven Central 偶发 DNS 失败（Unknown host）而中断。
+# 改为「宿主机已构建好 JAR → 仅 COPY 运行」，复用宿主机稳定网络与本地 Maven 缓存。
 FROM eclipse-temurin:17-jre-alpine
 
 WORKDIR /app
@@ -19,8 +9,8 @@ WORKDIR /app
 # 创建非 root 用户运行应用（安全最佳实践）
 RUN addgroup -S acgspace && adduser -S acgspace -G acgspace
 
-# 复制构建产物
-COPY --from=builder /build/target/acg-space-backend-1.0.0-SNAPSHOT.jar app.jar
+# 复制宿主机构建产物（backend/target/*.jar）
+COPY target/*.jar app.jar
 
 # 暴露端口
 EXPOSE 18083
