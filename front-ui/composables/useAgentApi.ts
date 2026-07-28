@@ -1,0 +1,106 @@
+/**
+ * AI 助手 API 工具（composable）。
+ *
+ * 职责：
+ *   - SSE 流式对话（原生 fetch + ReadableStream，与 Python→Java→Nuxt 链路一致）
+ *   - 会话 CRUD 复用项目现有 apiFetch（Bearer token 认证 + 统一 error handling）
+ */
+import { apiFetch } from './useApi'
+
+// ======================== 类型 ========================
+
+export interface ConversationItem {
+  id: string
+  title: string
+  updateTime: string
+}
+
+// ======================== 会话 CRUD（走 api-proxy 中间件） ========================
+
+/** 当前用户的会话列表 */
+export async function fetchConversations(): Promise<ConversationItem[]> {
+  return apiFetch<ConversationItem[]>('/agent/conversations')
+}
+
+/** 新建会话，返回会话 ID（字符串，避免前端 Number 精度丢失） */
+export async function createConversation(): Promise<string> {
+  return apiFetch<string>('/agent/conversations', { method: 'POST' })
+}
+
+/** 删除会话（逻辑删除） */
+export async function deleteConversation(id: string): Promise<boolean> {
+  return apiFetch<boolean>(`/agent/conversations/${id}`, { method: 'DELETE' })
+}
+
+// ======================== SSE 流式对话 ========================
+
+/**
+ * SSE 流式对话——通过 Nuxt API 路由（server/api/agent/chat.post.ts）代理到 Java 门面。
+ *
+ * @param message        用户本轮消息
+ * @param conversationId 会话 ID（首次可传 null，Java 端自动创建）
+ * @param onToken        收到一个 token 时回调
+ * @param onError        收到 error 帧时回调
+ * @param onDone         流正常结束时回调
+ * @param signal         AbortSignal，用于停止生成
+ */
+export async function streamChat(
+  message: string,
+  conversationId: string | null,
+  onToken: (content: string) => void,
+  onError: (content: string) => void,
+  onDone: () => void,
+  signal?: AbortSignal,
+): Promise<void> {
+  // 调 Nuxt server route，由其代理到 Java（避免跨域 + 透传 Auth header）
+  const response = await fetch('/api/agent/chat', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ message, conversationId }),
+    signal,
+  })
+
+  if (!response.ok) {
+    const text = await response.text().catch(() => '')
+    throw new Error(text || `服务异常 (${response.status})`)
+  }
+
+  const reader = response.body!.getReader()
+  const decoder = new TextDecoder()
+  let buffer = ''
+
+  const pump = async (): Promise<void> => {
+    const { done, value } = await reader.read()
+    if (done) {
+      onDone()
+      return
+    }
+
+    buffer += decoder.decode(value, { stream: true })
+
+    // Python SSE 帧以 \n\n 分隔；保留未完整接收的尾部
+    const parts = buffer.split('\n\n')
+    buffer = parts.pop() || ''
+
+    for (const part of parts) {
+      const line = part.trim()
+      if (line.startsWith('data:')) {
+        try {
+          const json = JSON.parse(line.slice(5).trim())
+          if (json.type === 'token' && json.content) {
+            onToken(json.content)
+          } else if (json.type === 'error') {
+            onError(json.content || '未知错误')
+          }
+          // type === 'done' 由流关闭自然触发，不单独回调
+        } catch {
+          // 非 JSON data 帧（如 Server-Sent Events ping）忽略
+        }
+      }
+    }
+
+    return pump()
+  }
+
+  return pump()
+}
