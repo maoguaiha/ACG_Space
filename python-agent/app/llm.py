@@ -1,6 +1,6 @@
 """LLM 客户端：OpenAI 兼容协议的 chat(stream) 与 embed。
 
-- chat 用 DeepSeek（LLM_BASE_URL_CHAT / LLM_API_KEY_CHAT / LLM_CHAT_MODEL）。
+- chat 用 LongCat（LLM_BASE_URL_CHAT / LLM_API_KEY_CHAT / LLM_CHAT_MODEL）。
 - embed 用通义千问（LLM_BASE_URL_EMBED / LLM_API_KEY_EMBED / LLM_EMBED_MODEL）。
 - 密钥仅来自 settings（.env / 环境变量），不硬编码。
 - 客户端惰性创建：缺少密钥时在使用处抛清晰错误，避免 /health 在导入期崩溃。
@@ -26,19 +26,26 @@ def _embed_client() -> OpenAI:
     return OpenAI(base_url=settings.llm_base_url_embed, api_key=settings.llm_api_key_embed)
 
 
+# 通义 text-embedding-v3 单次请求最多 10 条输入，分批留余量
+_EMBED_BATCH_SIZE = 8
+
+
 def embed(texts: list[str]) -> list[list[float]]:
     """批量向量化，返回与输入等长的向量列表（保持顺序）。
 
     texts 为空时返回空列表，避免对空输入发起 API 调用。
+    部分供应商（如通义）限制单次批大小，这里自动按 _EMBED_BATCH_SIZE 分批。
     """
     if not texts:
         return []
     client = _embed_client()
-    resp = client.embeddings.create(model=settings.llm_embed_model, input=texts)
-    # 部分供应商不保证 data 顺序，按 index 归位
-    ordered = [None] * len(resp.data)
-    for item in resp.data:
-        ordered[item.index] = item.embedding
+    ordered: list[list[float]] = [None] * len(texts)  # type: ignore
+    for i in range(0, len(texts), _EMBED_BATCH_SIZE):
+        batch = texts[i : i + _EMBED_BATCH_SIZE]
+        resp = client.embeddings.create(model=settings.llm_embed_model, input=batch)
+        # 部分供应商不保证 data 顺序，按 index 归位
+        for item in resp.data:
+            ordered[i + item.index] = item.embedding
     return ordered
 
 
