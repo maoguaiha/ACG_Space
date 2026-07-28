@@ -13,8 +13,6 @@
  * 三主题：所有子组件通过 theme-* CSS 类 + CSS 变量自动适配。
  */
 import { ref, onMounted } from 'vue'
-import { useRouter } from 'vue-router'
-import { useUserStore } from '~/stores/user'
 import {
   streamChat,
   fetchConversations,
@@ -30,8 +28,6 @@ import ConversationList from '~/components/agent/ConversationList.vue'
 // ==================== 路由 / 认证 ====================
 definePageMeta({ middleware: ['auth'] })
 useHead({ title: 'AI 助手 - ACG Space' })
-const router = useRouter()
-const userStore = useUserStore()
 
 // ==================== 状态 ====================
 interface LocalMessage {

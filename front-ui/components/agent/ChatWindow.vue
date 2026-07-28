@@ -21,6 +21,10 @@ const props = defineProps<{
   streamingContent: string
 }>()
 
+const emit = defineEmits<{
+  'quick-send': [q: string]
+}>()
+
 const anchorRef = ref<HTMLElement>()
 
 /** 滚动到消息列表底部 */
@@ -61,7 +65,7 @@ watch(() => props.streamingContent, scrollToBottom)
           :key="q"
           class="px-3 py-1.5 rounded-full text-xs transition-colors"
           :class="['theme-card', 'theme-card-hover', 'theme-text-muted']"
-          @click="$emit('quick-send', q)"
+          @click="emit('quick-send', q)"
         >
           {{ q }}
         </button>

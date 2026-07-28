@@ -6,6 +6,7 @@
  *   - 会话 CRUD 复用项目现有 apiFetch（Bearer token 认证 + 统一 error handling）
  */
 import { apiFetch } from './useApi'
+import { useUserStore } from '~/stores/user'
 
 // ======================== 类型 ========================
 
@@ -52,15 +53,26 @@ export async function streamChat(
   onDone: () => void,
   signal?: AbortSignal,
 ): Promise<void> {
-  // 调 Nuxt server route，由其代理到 Java（避免跨域 + 透传 Auth header）
+  // 透传 Bearer token——与 apiFetch 一致，Java 侧通过 SecurityUtils.getUserId() 鉴权
+  const userStore = useUserStore()
+
+  const headers: Record<string, string> = { 'Content-Type': 'application/json' }
+  if (userStore.token) {
+    headers['Authorization'] = `Bearer ${userStore.token}`
+  }
+
   const response = await fetch('/api/agent/chat', {
     method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
+    headers,
     body: JSON.stringify({ message, conversationId }),
     signal,
   })
 
   if (!response.ok) {
+    if (response.status === 401) {
+      userStore.logout()
+      throw new Error('登录已过期，请重新登录')
+    }
     const text = await response.text().catch(() => '')
     throw new Error(text || `服务异常 (${response.status})`)
   }

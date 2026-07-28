@@ -8,7 +8,7 @@
  *   - 流式生成中显示"停止"按钮替代"发送"
  *   - textarea 自动撑高（最大 120px → 滚动）
  */
-import { ref, watch } from 'vue'
+import { nextTick, ref, watch } from 'vue'
 
 const props = defineProps<{
   disabled?: boolean
@@ -50,7 +50,6 @@ watch(inputText, () => {
   })
 })
 
-import { nextTick } from 'vue'
 </script>
 
 <template>
