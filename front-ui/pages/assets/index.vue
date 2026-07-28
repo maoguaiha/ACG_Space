@@ -143,10 +143,11 @@
         <!-- Grid View -->
         <div v-else-if="viewMode === 'grid'" class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           <div
-            v-for="asset in filteredAssets"
+            v-for="(asset, index) in filteredAssets"
             :key="asset.id"
-            class="group relative bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-opacity-100 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer"
+            class="group relative bg-slate-800/50 backdrop-blur-sm rounded-2xl overflow-hidden border border-slate-700/50 hover:border-opacity-100 transition-all duration-300 hover:scale-[1.02] hover:shadow-xl cursor-pointer stagger-item"
             :class="getRarityBorderClass(asset.rarity)"
+            :style="{ animationDelay: `${index * 0.06}s` }"
             @click="openAssetDetail(asset)"
           >
             <!-- Asset Image -->
@@ -187,10 +188,11 @@
         <!-- List View -->
         <div v-else class="space-y-3">
           <div
-            v-for="asset in filteredAssets"
+            v-for="(asset, index) in filteredAssets"
             :key="asset.id"
-            class="flex items-center gap-4 bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/50 hover:border-slate-600 transition-all cursor-pointer"
+            class="flex items-center gap-4 bg-slate-800/50 backdrop-blur-sm rounded-2xl p-4 border border-slate-700/50 hover:border-slate-600 transition-all cursor-pointer stagger-item"
             :class="getRarityBorderClass(asset.rarity)"
+            :style="{ animationDelay: `${index * 0.06}s` }"
             @click="openAssetDetail(asset)"
           >
             <div class="w-16 h-16 rounded-xl overflow-hidden flex-shrink-0">

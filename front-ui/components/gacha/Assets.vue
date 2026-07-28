@@ -164,10 +164,11 @@
       <div v-else-if="filteredAssets.length === 0" class="text-center text-slate-500 py-8">暂无资产</div>
       <div v-else class="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-3">
         <div
-          v-for="asset in filteredAssets"
+          v-for="(asset, index) in filteredAssets"
           :key="asset.id"
-          class="relative bg-slate-800/50 rounded-xl overflow-hidden group hover:scale-[1.05] transition-all duration-300 cursor-pointer"
+          class="relative bg-slate-800/50 rounded-xl overflow-hidden group hover:scale-[1.05] transition-all duration-300 cursor-pointer stagger-item"
           :class="getRarityBorderClass(asset.rarity)"
+          :style="{ animationDelay: `${index * 0.06}s` }"
           @click="openAssetDetail(asset)"
         >
           <div class="aspect-square relative">

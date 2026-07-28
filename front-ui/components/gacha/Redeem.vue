@@ -33,9 +33,10 @@
         </div>
         <div v-else class="grid grid-cols-2 md:grid-cols-3 gap-4">
           <div
-            v-for="product in products"
+            v-for="(product, index) in products"
             :key="product.id"
-            class="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl"
+            class="bg-slate-800/50 rounded-2xl overflow-hidden border border-slate-700/50 cursor-pointer transition-all hover:scale-[1.02] hover:shadow-xl stagger-item"
+            :style="{ animationDelay: `${index * 0.08}s` }"
             @click="openRedeemModal(product)"
           >
             <div class="aspect-square relative">
@@ -82,9 +83,10 @@
         </div>
         <div v-else class="space-y-4">
           <div
-            v-for="order in orders"
+            v-for="(order, index) in orders"
             :key="order.id"
-            class="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-4"
+            class="bg-slate-800/50 rounded-2xl border border-slate-700/50 p-4 stagger-item"
+            :style="{ animationDelay: `${index * 0.06}s` }"
           >
             <div class="flex items-start gap-4">
               <div class="w-20 h-20 rounded-xl overflow-hidden flex-shrink-0">
