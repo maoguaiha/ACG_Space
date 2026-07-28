@@ -43,12 +43,12 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 - ✅ 形态：**纯 Python agent 服务嵌入项目**，Java 守门面（鉴权+持久化+SSE代理），技术栈"加 Python"不"改 Java"
 - ✅ 能力：RAG 问答 + 一个**只读 Bangumi 查询工具（function calling）**，不执行写操作
 - ✅ 语料：平台规则文档 + 手写 FAQ + 本地番剧快照（70 条，随平台增长重导出）
-- ✅ 番剧推荐：从 **Bangumi 实时拉取**（api.bgm.tv，仅 GET+User-Agent 无密钥），与平台数据解耦，支撑未来扩充
+- ✅ 番剧推荐：从 **Bangumi 实时拉取**（镜像 `bgmapi.anibt.net`，仅 GET+User-Agent 无密钥，与后端 `bangumi.api.*` 一致），与平台数据解耦，支撑未来扩充
 - ✅ 已锁定：用户选语料方案②（规则+FAQ+番剧快照）+ 番剧推荐走 Bangumi
-- ✅ 最终决策：①供应商=DeepSeek(chat)+通义(embedding) ②前端入口=A(Nuxt→Java门面→Python) ③管理端延后 ④番剧快照=脚本一次性+可重跑
+- ✅ 最终决策：①供应商=LongCat(chat)+通义(embedding)（双供应商；LongCat 无对外 embedding，故 embed 另配通义）②前端入口=A(Nuxt→Java门面→Python) ③管理端延后 ④番剧快照=脚本一次性+可重跑
 - ✅ Phase 0 已落地：python-agent 服务骨架（FastAPI + config/schemas/main 桩 + Dockerfile + .env.example）+ docker-compose 接入 + .gitignore 排除 .env
 - ✅ Phase 1 已落地：corpus/rules/PRD_V2.md（复制 PRD）+ corpus/faq.md（10 组高频问答）+ scripts/export_anime.py（只读导出，含 `--selftest` 字段映射自测通过）；anime.json 待 MySQL 可达时生成（沙箱 docker 守护进程未起，13306 不可达）
-- ✅ Phase 2 已落地：app/rag.py（按 `## ` 切片 + 余弦检索，anime.json 缺失容错）+ app/llm.py（DeepSeek 流式 chat / 通义 embed）+ app/prompts.py（角色+安全边界+来源署名）；main.py /chat 接入「检索→拼提示→流式」。离线自测全过（rag 检索命中 + TestClient SSE 全链路）；live LLM 需 API Key。
+- ✅ Phase 2 已落地：app/rag.py（按 `## ` 切片 + 余弦检索，anime.json 缺失容错）+ app/llm.py（LongCat 流式 chat / 通义 embed）+ app/prompts.py（角色+安全边界+来源署名）；main.py /chat 接入「检索→拼提示→流式」。离线自测全过（rag 检索命中 + TestClient SSE 全链路）；live LLM 需 API Key。
 - ✅ Phase 3 已落地：app/tools/bangumi.py（search/detail/calendar 只读工具，仅 GET+UA、TTL 缓存，按真实镜像结构解析）+ app/tools/registry.py（3 个 function-calling schema）；main.py /chat 接入工具循环（首轮带 tools→执行→回填→流式）。离线自测全过 + 真实 Bangumi 冒烟通过。
 
 ## 待完成

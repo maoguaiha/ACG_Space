@@ -7,10 +7,12 @@ load_dotenv()
 
 
 class Settings:
-    # DeepSeek chat（OpenAI 兼容）
-    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.deepseek.com/v1")
+    # Chat 模型：LongCat（美团"龙猫"，OpenAI 兼容）。
+    # 注：LongCat 无对外 embedding 接口，embedding 见下方"通义"配置（双供应商）。
+    # base_url / 模型名以你在 LongCat API 开放平台申请的接入文档为准。
+    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.longcat.ai/v1")
     llm_api_key_chat: str = os.getenv("LLM_API_KEY_CHAT", "")
-    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "deepseek-chat")
+    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "LongCat-Flash-Chat")
 
     # 通义千问 embedding（OpenAI 兼容 /compatible-mode）
     llm_base_url_embed: str = os.getenv(
