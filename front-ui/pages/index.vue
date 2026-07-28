@@ -57,7 +57,11 @@
               :key="'indicator-'+index"
               @click="goToSlide(index)"
               class="h-1.5 rounded-full transition-all duration-300"
-              :class="currentIndex === index ? 'w-8 bg-indigo-500' : 'w-4 bg-white/30 hover:bg-white/50'"
+              :style="{
+                width: currentIndex === index ? '32px' : '16px',
+                background: currentIndex === index ? 'var(--theme-primary, #6366F1)' : 'rgba(255,255,255,0.35)',
+                boxShadow: '0 1px 4px rgba(0,0,0,0.3)',
+              }"
             ></button>
           </div>
         </div>
