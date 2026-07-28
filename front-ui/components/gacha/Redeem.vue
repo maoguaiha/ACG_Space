@@ -204,7 +204,7 @@
 <script setup lang="ts">
 import { ref, computed, onMounted } from 'vue'
 import { useUserStore } from '~/stores/user'
-import { getAllProvinces, getCitiesByProvince, getDistrictsByCity } from '~/composables/useRegions'
+import type { RegionItem } from '~/composables/useRegions'
 
 const props = defineProps<{
   userPoints: number
@@ -271,20 +271,29 @@ const redeemForm = ref({
   address: ''
 })
 
-const provinces = ref(getAllProvinces())
-const cities = ref<(typeof provinces.value)[number]['cities']>([])
-const districts = ref<(typeof provinces.value)[number]['cities']>([])
+const provinces = ref<RegionItem[]>([])
+const cities = ref<RegionItem[]>([])
+const districts = ref<RegionItem[]>([])
 
-function onProvinceChange() {
+onMounted(async () => {
+  const { getAllProvinces } = await import('~/composables/useRegions')
+  provinces.value = await getAllProvinces()
+  fetchProducts()
+  fetchOrders()
+})
+
+async function onProvinceChange() {
   redeemForm.value.city = ''
   redeemForm.value.district = ''
-  cities.value = getCitiesByProvince(redeemForm.value.province)
+  const { getCitiesByProvince } = await import('~/composables/useRegions')
+  cities.value = await getCitiesByProvince(redeemForm.value.province)
   districts.value = []
 }
 
-function onCityChange() {
+async function onCityChange() {
   redeemForm.value.district = ''
-  districts.value = getDistrictsByCity(redeemForm.value.province, redeemForm.value.city)
+  const { getDistrictsByCity } = await import('~/composables/useRegions')
+  districts.value = await getDistrictsByCity(redeemForm.value.province, redeemForm.value.city)
 }
 
 const canSubmitRedeem = computed(() => {
@@ -433,9 +442,4 @@ function getStatusText(status: number): string {
   }
   return texts[status] || '未知'
 }
-
-onMounted(() => {
-  fetchProducts()
-  fetchOrders()
-})
 </script>
