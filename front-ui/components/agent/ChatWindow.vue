@@ -44,11 +44,11 @@ watch(() => props.streamingContent, scrollToBottom)
 </script>
 
 <template>
-  <div class="flex-1 overflow-y-auto px-4 py-2">
+  <div class="agent-chat-scroll flex-1 overflow-y-auto px-4 pt-14 pb-2">
     <!-- 空态：无消息且无流式  -->
     <div
       v-if="messages.length === 0 && !hasStreaming"
-      class="h-full flex flex-col items-center justify-center text-center px-4"
+      class="agent-empty-state h-full flex flex-col items-center justify-center text-center px-4"
     >
       <div
         class="w-16 h-16 rounded-full flex items-center justify-center mb-4"

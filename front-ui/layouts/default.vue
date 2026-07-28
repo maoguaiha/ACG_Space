@@ -179,6 +179,9 @@ const handleLogout = () => {
 /* 默认深色变量 (Dark) - 蓝紫科技风 */
 .theme-dark {
   --bg-main: #0f172a;
+  --bg-main-rgb: 15, 23, 42;
+  --scrollbar-thumb: rgba(148, 163, 184, 0.3);
+  --scrollbar-thumb-hover: rgba(148, 163, 184, 0.6);
   --bg-secondary: #1e293b;
   --bg-card: rgba(30, 41, 59, 0.6);
   --bg-header: rgba(15, 23, 42, 0.85);
@@ -204,6 +207,9 @@ const handleLogout = () => {
 /* 浅色变量 (Light) - 清透白昼风 */
 .theme-light {
   --bg-main: #F8FAFC;
+  --bg-main-rgb: 248, 250, 252;
+  --scrollbar-thumb: rgba(100, 116, 139, 0.3);
+  --scrollbar-thumb-hover: rgba(100, 116, 139, 0.6);
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.9);
   --bg-header: rgba(255, 255, 255, 0.95);
@@ -264,6 +270,9 @@ const handleLogout = () => {
 /* 粉色变量 (Pink) - 温馨甜美风 */
 .theme-pink {
   --bg-main: #fdf2f8;
+  --bg-main-rgb: 253, 242, 248;
+  --scrollbar-thumb: rgba(190, 24, 93, 0.28);
+  --scrollbar-thumb-hover: rgba(190, 24, 93, 0.55);
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.8);
   --bg-header: rgba(255, 241, 242, 0.95);
@@ -3201,5 +3210,86 @@ const handleLogout = () => {
 .theme-pink .theme-carousel-desc {
   color: #581c3a;
   text-shadow: 0 1px 8px rgba(236, 72, 153, 0.15);
+}
+
+/* ═══════════════════════════════════════════
+   AI 助手聊天页 — 细节质感优化（4 项）
+   ═══════════════════════════════════════════ */
+
+/* —— 任务 1：自定义细滚动条（6px / 透明轨道 / 圆角滑块）——
+   浏览器原生 opacity 对 ::-webkit-scrollbar-thumb 无效，故用主题 rgba 变量实现半透明。 */
+.agent-scroll {
+  scrollbar-width: thin;               /* Firefox */
+  scrollbar-color: var(--scrollbar-thumb) transparent;
+}
+.agent-scroll::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+.agent-scroll::-webkit-scrollbar-track {
+  background: transparent;
+}
+.agent-scroll::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb);
+  border-radius: 9999px;
+  transition: background-color 0.2s ease;
+}
+.agent-scroll::-webkit-scrollbar-thumb:hover {
+  background-color: var(--scrollbar-thumb-hover);
+}
+/* 键盘聚焦时给轨道一点可见性（无障碍） */
+.agent-scroll:focus-visible::-webkit-scrollbar-thumb {
+  background-color: var(--scrollbar-thumb-hover);
+}
+
+/* —— 任务 2：顶部 Header 毛玻璃 + 边界感 —— */
+.agent-header {
+  background-color: rgba(var(--bg-main-rgb), 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.1);
+}
+
+/* —— 任务 3：清空按钮 Hover 圆形背景强化 —— */
+.agent-clear-btn {
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.theme-dark .agent-clear-btn:hover {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+.theme-light .agent-clear-btn:hover {
+  background-color: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+}
+.theme-pink .agent-clear-btn:hover {
+  background-color: rgba(236, 72, 153, 0.12);
+  color: #ec4899;
+}
+
+/* —— 任务 3：清空按钮 + 输入框 聚合为统一胶囊外底板 —— */
+.agent-input-capsule {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.agent-input-capsule:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+/* 覆盖默认主题对 textarea 的强制背景（保持胶囊内透明） */
+.agent-input-capsule textarea.agent-textarea {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: var(--text-main);
+}
+.agent-input-capsule textarea.agent-textarea::placeholder {
+  opacity: 0.4;
+}
+
+/* —— 任务 4：空状态视觉重心上移（物理中心略偏上） —— */
+.agent-empty-state {
+  transform: translateY(-8%);
 }
 </style>

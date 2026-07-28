@@ -258,11 +258,10 @@ onMounted(() => { loadConversations() })
       />
 
       <!-- ===== 对话主区域 ===== -->
-      <div class="flex-1 flex flex-col min-w-0">
-        <!-- 顶栏（~50px，主题适配） -->
-        <div
-          class="flex items-center gap-2 px-4 h-12 border-b flex-shrink-0"
-          :class="['theme-border', 'theme-bg-secondary']"
+      <div class="flex-1 flex flex-col min-w-0 relative">
+        <!-- 顶栏（~50px）：毛玻璃叠加层，聊天上滚时透视模糊（任务 2） -->
+        <header
+          class="agent-header absolute top-0 left-0 right-0 z-30 flex items-center gap-2 px-4 h-12"
         >
           <!-- 移动端侧边栏切换 -->
           <button
@@ -319,10 +318,10 @@ onMounted(() => { loadConversations() })
             </svg>
             新对话
           </button>
-        </div>
+        </header>
 
         <!-- 加载骨架 -->
-        <div v-if="loading" class="flex-1 flex items-center justify-center">
+        <div v-if="loading" class="flex-1 flex items-center justify-center pt-12">
           <div class="animate-spin w-6 h-6 rounded-full border-2 border-transparent border-t-current" :class="['theme-text-muted']" />
         </div>
 
@@ -330,6 +329,7 @@ onMounted(() => { loadConversations() })
         <template v-else>
           <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col">
             <ChatWindow
+              class="agent-chat-scroll"
               :messages="messages"
               :has-streaming="isStreaming"
               :streaming-content="streamingContent"

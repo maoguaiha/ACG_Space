@@ -96,7 +96,7 @@ function formatDate(iso: string): string {
     </div>
 
     <!-- 会话列表（可滚动） -->
-    <div class="flex-1 overflow-y-auto px-2 pb-2 space-y-1">
+    <div class="agent-scroll flex-1 overflow-y-auto px-2 pb-2 space-y-1">
       <div
         v-for="conv in conversations"
         :key="conv.id"
