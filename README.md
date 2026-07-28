@@ -1,4 +1,4 @@
-# ACG Space - 动漫内容与数字谷子集换社区 V2.0
+# ACG Space - 动漫内容与数字谷子集换社区 V3.0
 
 一款集「高质量番剧检索、动漫资讯阅读」与「数字谷子集换及实体周边核销」于一体的二次元社区。系统采用混合渲染（SSG + CSR）保障高收录，并基于 Redis Lua 与 RocketMQ 构建了高并发、强一致性的数字资产交易流转闭环。
 
@@ -66,7 +66,7 @@ ACG_Space/
 │   └── assets/css/          # 全局样式（tailwind.css）
 ├── document/                # 项目文档
 │   ├── develop/V1/          # V1.0 需求/架构/计划
-│   ├── develop/V2/          # V2.0 PRD/架构/Agent设计/计划
+│   ├── develop/V2/          # V2.0→V3.0 演进文档
 │   ├── study/               # 学习笔记与 Bug 记录
 │   ├── skill/               # 前端架构师技能定义
 │   └── point/               # 上下文重点（Source of Truth）
@@ -241,7 +241,7 @@ npm run build      # 生产构建
 ## 📄 文档索引
 
 - `document/develop/V1/` — V1.0 需求/架构/迭代计划
-- `document/develop/V2/` — V2.0 PRD/架构/Agent设计方案/开发计划
+- `document/develop/V2/` — V2.0→V3.0 PRD/架构/Agent设计方案/开发计划/动效/主题/通知
 - `document/study/study.md` — Bug 记录与修复方案
 - `document/point/point.md` — 当前上下文重点（Source of Truth）
 - `document/skill/front-ui.md` — 前端架构师技能定义

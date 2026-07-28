@@ -77,7 +77,7 @@ Broker config mounts `./broker.conf` into the container — it includes `brokerI
 MySQL auto-runs files in `/docker-entrypoint-initdb.d/` alphabetically:
 
 1. `./backend/sql/schema.sql` → creates `sys_user` base table (required by the migration script)
-2. `./backend/sql/ACG_Space_V2.1_Complete.sql` → creates all `biz_*` business tables
+2. `./backend/sql/ACG_Space_V3.0_Complete.sql` → creates all `biz_*` business tables (use `ACG_Space_init.sql` for fresh install)
 
 **Known issue**: The migration SQL is outdated vs. the entity classes. `biz_anime` column names differ (e.g., `name` vs `title`, `type` vs `genre`). The existing fix script `./backend/sql/fix_missing_columns.sql` must be run after first `docker-compose up -d`:
 ```bash
