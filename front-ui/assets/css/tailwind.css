@@ -77,25 +77,22 @@ button:active:not(:disabled),
 /* ══════════════════════════════════════
    T5: 时间表 Tab 切换水平滑动 + 卡片阶梯显隐
    ══════════════════════════════════════ */
-/* Tab 切换 — 整个面板水平滑动，新面板从右进入，旧面板向左离开 */
-.slide-day-enter-active {
-  transition: all 0.35s cubic-bezier(0.4, 0, 0.2, 1);
-}
+/* Tab 切换 — 整个面板水平滑动，旧左出 → 新右进 */
+.slide-day-enter-active,
 .slide-day-leave-active {
-  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-  position: absolute;
-  inset: 0;
+  transition: all 0.5s cubic-bezier(0.32, 0.72, 0, 1);
 }
 .slide-day-enter-from {
   opacity: 0;
-  transform: translateX(40px);
+  transform: translateX(60px) scale(0.96);
 }
 .slide-day-leave-to {
   opacity: 0;
-  transform: translateX(-40px);
+  transform: translateX(-60px) scale(0.96);
 }
-.slide-day-move {
-  transition: transform 0.35s cubic-bezier(0.4, 0, 0.2, 1);
+.slide-day-leave-active {
+  position: absolute;
+  width: 100%;
 }
 
 /* 卡片阶梯式 fade-up */

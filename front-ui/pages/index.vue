@@ -130,8 +130,8 @@
       </div>
 
       <!-- Schedule Content List -->
-      <TransitionGroup tag="div" name="slide-day" class="relative" style="min-height:200px">
-        <div :key="activeDay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 absolute inset-0">
+      <Transition name="slide-day" mode="out-in">
+        <div :key="activeDay" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
           <NuxtLink
             v-for="(item, index) in currentSchedule"
             :key="item.id"
@@ -148,7 +148,7 @@
             </div>
           </NuxtLink>
         </div>
-      </TransitionGroup>
+      </Transition>
     </section>
 
     <!-- 社区番剧库模块已移除（迁移至 /anime） -->
