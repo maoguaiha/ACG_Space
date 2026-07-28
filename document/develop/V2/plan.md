@@ -209,9 +209,59 @@ ACG Space V2.0 版本，新增数字资产系统和 O2O 核销系统
 ---
 
 ## 当前进度
-- **阶段**: 全部完成，进入测试验证阶段
+- **阶段**: 全部完成，V2.1 优化迭代中
 - **状态**: 后端、前端构建已通过；数据库迁移脚本已生成
-- **最后更新**: 2026-05-07
+- **最后更新**: 2026-07-28
+
+## V2.1 新增功能
+
+### 前端动效系统 (2026-07-28)
+- ✅ 页面过渡动画（pageTransition + CSS fade+slideUp+blur）
+- ✅ 滚动显现指令 `v-reveal`（IntersectionObserver，支持延迟）
+- ✅ 卡片阶梯 FadeUp（`.stagger-item` + `index * 0.0Xs` delay）
+- ✅ 列表 FLIP 动画（TransitionGroup 包裹社区/番剧库/背包/用户主页）
+- ✅ Tab 切换滑动（新番时间表 Transition mode="out-in"）
+- ✅ 全局按钮微交互（`button:active { scale(0.95) }`）
+- ✅ 动效覆盖页面：首页/番剧库/社区/背包/兑换/用户主页/我的追番
+
+### 多主题系统完善 (2026-07-27)
+- ✅ 浅色主题「星空蓝」系全面统一
+- ✅ 筛选标签/按钮选中态 CSS 变量化
+- ✅ 文章详情页 hero 遮罩绑定变量
+- ✅ 番剧详情页 meta 标签/返回按钮主题化
+- ✅ 点踩理由弹窗主题化
+- ✅ 发表评论/提交审核/分享按钮星空蓝
+- ✅ Markdown 编辑器/预设标签/输入框全部 CSS 变量
+
+### 图片裁剪组件 (2026-07-28)
+- ✅ ImageCropperUploader 通用组件（vue-cropper）
+- ✅ 支持点击/粘贴/拖拽三种触发方式
+- ✅ 动态裁剪比例（aspectRatio prop）
+- ✅ 圆形裁剪框（isRound prop，头像模式）
+- ✅ v-model 双向绑定 + @crop-success emit
+
+### 系统通知 (2026-07-28)
+- ✅ IBizMessageService.sendSystemNotification()
+- ✅ 审核通过文章 → 通知作者
+- ✅ 审核拒绝文章 → 通知作者（含原因）
+- ✅ 管理员删除文章 → 通知作者
+- ✅ 管理员删除评论 → 通知评论作者
+- ✅ 兑换订单创建成功 → 通知用户
+
+### 商品/订单详情页 (2026-07-28)
+- ✅ /redeem-product/[id] 商品详情页
+- ✅ /redeem-order/[id] 订单详情页
+- ✅ 省市县三级联动下拉（GitHub 官方行政区划数据）
+- ✅ 0 库存自动下架
+
+### Bug 修复 (2026-07-27~28)
+- ✅ 点赞持久化（Fastjson2 BrowserCompatible + JWT filter + delFlag 三层根因修复）
+- ✅ avatar 列 varchar(500) → MEDIUMTEXT
+- ✅ updateProfile 防止覆盖密码等字段
+- ✅ biz_comment 表缺失列迁移
+- ✅ 文章审核驳回管理端按钮缺 @click 事件
+- ✅ 消息详情页返回键 z-index 被导航遮挡
+- ✅ 首页 footer 被时间表面板 absolute 遮挡
 
 ## 完整功能总结
 

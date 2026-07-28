@@ -2,7 +2,7 @@
 
 ## 项目概述
 
-ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 17 + Spring Boot 3 + MyBatis-Plus 后端技术栈，Vue 3 + Element Plus + Pinia 管理端技术栈，Nuxt 3 + Tailwind CSS 用户端技术栈。核心功能包括抽赏中心、数字背包、合成工坊、实物兑换、订单管理等模块。
+ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 17 + Spring Boot 3 + MyBatis-Plus 后端技术栈，Vue 3 + Element Plus + Pinia 管理端技术栈，Nuxt 3 + Tailwind CSS 用户端技术栈。核心功能包括抽赏中心、数字背包、合成工坊、实物兑换、订单管理、多主题系统、动效系统等模块。
 
 ## 规则要点与避坑
 
@@ -18,57 +18,35 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 10. **雪花ID精度丢失**：后端使用雪花算法生成的19位Long类型ID，必须通过Fastjson2的WriteLongAsString配置序列化为字符串返回前端，前端提交时保持字符串类型，禁止使用Number()转换，否则会导致精度丢失（JavaScript Number安全整数范围仅16位）
 11. **数据库字段约束**：新增订单相关字段时，注意将历史遗留的NOT NULL字段改为允许NULL，避免插入时报"Field doesn't have a default value"错误
 12. **Nuxt中间件**：使用auth中间件保护的页面，必须确保middleware/auth.ts文件存在且正确导出，否则会报"Middleware not found"错误
+13. **JWT过滤器**：JwtAuthenticationTokenFilter.shouldNotFilter() 中若公开路径带 Authorization header，不能跳过过滤链，否则SecurityUtils.getUserId()返回null
+14. **MyBatis-Plus updateById**：updateById 设置所有非null字段，涉及密码/统计字段时，须先设为null防止覆盖
+15. **列表延迟动画**：v-for 使用 stagger-item 动画时更新列表需确保 key 唯一且不变，否则 TransitionGroup 可能无法正确识别进入/离开元素
 
 ## 当前进度
 
-### V2.1 功能完成情况
-- ✅ 碎片系统（抽奖获得碎片，100碎片兑换10积分）
-- ✅ 合成系统（10N→1SR，10SR→1SSR实物）
-- ✅ 充值系统（模拟充值流程）
-- ✅ 实物兑换（地址填写，订单管理）
-- ✅ 后台管理（订单列表，物流更新）
-- ✅ 前端页面（抽赏、背包、兑换、充值）
-- ✅ SQL整理（完整迁移脚本）
-- ✅ Bug修复（403错误、字段缺失、数据同步）
-- ✅ 兑换商品管理（后台新增/编辑/删除商品，用户端浏览兑换）
-- ✅ 订单系统（用户订单列表、物流查看、后台订单管理）
-- ✅ 交易监控（查看用户兑换记录）
-- ✅ 物流调度（订单与物流信息管理）
+### V2.1 功能完成情况（2026-07-28）
+- ✅ 前端动效系统（页面过渡 / 滚动显现 / 卡片阶梯FadeUp / 列表FLIP / Tab滑动 / 按钮微交互）
+- ✅ 多主题系统完善（星空蓝统一 / 弹窗 / 按钮 / 标签/输入框全CSS变量化）
+- ✅ 图片裁剪组件 ImageCropperUploader（vue-cropper，支持多比例/圆形/v-model）
+- ✅ 系统自动通知（审核通过/拒绝/删除文章/删除评论/订单创建）
+- ✅ 商品详情页 / 订单详情页 / 省市县三级联动
+- ✅ 0库存自动下架 / 头像列长度修复 / 评论表补列
+- ✅ 点赞持久化终极修复（Fastjson2 + JWT filter + delFlag）
+- ✅ 文章审核驳回原因输入（管理端两个页面）
 
-### 代码质量保障
-- ✅ Checkstyle配置完成
-- ✅ SpotBugs配置完成  
-- ✅ PMD配置完成
-- ✅ Pre-commit Hooks配置完成
-- ✅ 前端ESLint配置完成
+### 测试设施修复
+- ✅ test profile 5个测试类全部通过（45用例，0失败）
+- ✅ InMemoryValueOperations 替代 Mockito raw-type mock
 
-### 数据库
-- ✅ 完整迁移脚本：`ACG_Space_Complete_Migration.sql`
-- ✅ SQL文件整理完成，删除33个临时文件
-- ✅ README文档创建完成
-- ✅ 兑换订单表字段扩展：添加product_id、product_name、product_image、ur_fragment_cost、points_cost字段
-- ✅ 兑换订单表遗留字段修改：asset_id、item_id、item_name改为允许NULL
-
-### 测试设施修复（2026-07-27）
-
-- ✅ test profile 5 个测试类全部通过（45 用例，0 失败 0 错误）：CoreBusinessFlowTest / BizMarketServiceIntegrationTest / BizGachaPoolServiceTest / BizSynthesizeServiceTest / BizTransactionServiceTest
-- ✅ 修复 `ClassCastException: String cannot be cast to [C`：raw-type `ValueOperations` Mockito mock 触发泛型桥方法强转；改为在 `TestInfraConfig` 中用有状态内存实现 `InMemoryValueOperations` 支撑 `opsForValue()`，积分可正确累加
-- ✅ 修复 `BizTransactionServiceTest` 的 `selectOne` stub：`getOne` 调用 `selectOne(wrapper, true)`（第二参为 primitive boolean），统一改用 `selectOne(any(), anyBoolean())`
-- ✅ 仅改动 `src/test`（`TestInfraConfig` / `InMemoryValueOperations` / `BizTransactionServiceTest`），未触碰任何生产代码，不影响后端正常功能
-
-### Agent 应用（用户端 AI 助手，2026-07-27 设计稿）
+### Agent 应用（用户端 AI 助手）
 - ✅ 完成详细设计方案：`document/develop/V2/4.Agent应用设计方案.md`
-- 范围确认：用户端对话式助手 + 云端大模型 API + 纯 RAG 问答（不执行写操作）
-- 技术选型：langchain4j(OpenAI 兼容 Chat+Embedding) + InMemoryEmbeddingStore(MySQL 持久化向量) + SSE 流式
-- 复用：BizMessage/Conversation 消息范式、Bangumi/番剧库语料、Resilience4j 限流、三主题 UI
-- 新增包：`com.ruoyi.project.agent`（controller/service/client/config/domain/mapper）
-- 新增表：`agent_conversation` / `agent_message` / `agent_knowledge`(含 embedding)
-- 待确认：①供应商(chat+embedding 一家 or DeepSeek+其他) ②初始语料来源 ③是否 V1.1 管理端 ④番剧库全量向量化评估
+- ✅ 范围：用户端对话式助手 + 云端大模型 API + 纯 RAG 问答（不执行写操作）
+- ✅ 待确认：①供应商 ②初始语料来源 ③是否V1.1管理端 ④番剧库全量向量化评估
 
 ## 待完成
 
 1. **P0优先级**：测试完整兑换流程（商品查询→UR碎片扣除→订单创建→前端反馈）
-2. **P1优先级**：完善订单详情页物流信息展示
+2. **P1优先级**：完善订单详情页物流信息展示  
 3. **P1优先级**：优化兑换商品列表分页和筛选功能
 4. **P2优先级**：完善DTO参数校验注解
 5. **P2优先级**：补充单元测试用例

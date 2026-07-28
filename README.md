@@ -1,6 +1,6 @@
 # ACG Space - 动漫内容与数字谷子集换社区 V2.0
 
-一款集"高质量番剧检索、动漫资讯阅读"与"数字谷子集换及实体周边核销"于一体的二次元社区。系统采用混合渲染（SSG + CSR）保障高收录，并基于 Redis Lua 与 RocketMQ 构建了高并发、强一致性的数字资产交易流转闭环。
+一款集「高质量番剧检索、动漫资讯阅读」与「数字谷子集换及实体周边核销」于一体的二次元社区。系统采用混合渲染（SSG + CSR）保障高收录，并基于 Redis Lua 与 RocketMQ 构建了高并发、强一致性的数字资产交易流转闭环。
 
 ## 🚀 技术栈
 
@@ -9,60 +9,130 @@
 - **语言**: Java 17
 - **ORM**: MyBatis-Plus
 - **缓存与并发控制**: Redis + Redisson (MultiLock 联锁支持)
-- **消息队列**: RocketMQ (支持分布式事务消息)
+- **消息队列**: RocketMQ（支持分布式事务消息）
 - **限流熔断**: Resilience4j
-- **JSON**: Fastjson2
+- **JSON**: Fastjson2（配置 WriteLongAsString 解决雪花 ID 精度丢失）
 
 ### 前端（用户端）
-- **框架**: Nuxt 3 (SSG + CSR 混合渲染) + Vue 3
-- **样式**: Tailwind CSS
+- **框架**: Nuxt 3 (SSG + CSR 混合渲染 + SSR) + Vue 3
+- **样式**: Tailwind CSS（三主题：浅色/深色/粉色）
 - **状态管理**: Pinia
-- **动画引擎**: GSAP / @vueuse/motion (用于抽赏与合成特效)
+- **动效**: 页面过渡淡入上滑、IntersectionObserver 滚动显现、FLIP 列表动画
+- **图片裁剪**: vue-cropper
 
 ### 管理端
-- **框架**: Vue 3 + Element Plus
-- **构建工具**: Vite
+- **框架**: Vue 3 + Element Plus + Pinia
+- **构建工具**: Vite + TypeScript
+- **代码规范**: ESLint + Prettier
 
 ### 数据库
 - **主数据库**: MySQL 8.0+
+- **迁移工具**: SQL 脚本（手动执行，无 Flyway）
 
 ## 📁 项目结构
 
 ```text
 ACG_Space/
-├── admin-ui/           # 管理端（Vue 3 + Element Plus）
-├── backend/            # 后端服务（Spring Boot）
-│   ├── sql/            # 数据库迁移脚本
-│   └── src/main/java/  # Java 源码
-├── front-ui/           # 用户端（Nuxt 3）
-├── document/           # 项目文档
-│   ├── develop/        # 开发文档 (含 V1.0 及 V2.0 架构与 PRD)
-│   └── study/          # 学习笔记
-└── tools/              # 工具脚本
+├── admin-ui/                # 管理端（Vue 3 + Element Plus）
+│   └── src/views/
+│       ├── article/         # 文章管理、审核
+│       ├── anime/           # 番剧 CRUD
+│       ├── comment/         # 评论审核
+│       ├── gacha/           # 抽赏配置
+│       ├── item/            # 商品图鉴
+│       ├── delivery/        # 物流调度
+│       ├── redeem-product/  # 兑换商品管理
+│       ├── redeem-order/    # 兑换订单管理
+│       ├── transaction/     # 交易监控
+│       └── risk-control/    # 风控中心
+├── backend/                 # 后端服务（Spring Boot）
+│   ├── sql/                 # 数据库脚本（初始化 + 迁移 + 种子数据）
+│   └── src/main/java/com/ruoyi/project/
+│       ├── controller/      # REST 控制器
+│       ├── service/         # 业务逻辑层
+│       ├── mapper/          # MyBatis-Plus 映射
+│       ├── domain/          # entity / dto / vo
+│       ├── config/          # Spring 配置（Fastjson2、Security、Redisson 等）
+│       ├── mq/              # RocketMQ 生产/消费
+│       ├── integration/     # 外部 API 客户端（Bangumi）
+│       └── common/          # 工具类、注解、拦截器
+├── front-ui/                # 用户端（Nuxt 3）
+│   ├── pages/               # 页面（文件路由）
+│   ├── components/          # 公共组件
+│   ├── composables/         # 组合式函数（useApi.ts 等）
+│   ├── stores/              # Pinia 状态（user / app / anime）
+│   ├── layouts/             # 布局（含三主题 CSS 变量）
+│   ├── plugins/             # 插件（v-reveal、vue-cropper）
+│   └── assets/css/          # 全局样式（tailwind.css）
+├── document/                # 项目文档
+│   ├── develop/V1/          # V1.0 需求/架构/计划
+│   ├── develop/V2/          # V2.0 PRD/架构/Agent设计/计划
+│   ├── study/               # 学习笔记与 Bug 记录
+│   ├── skill/               # 前端架构师技能定义
+│   └── point/               # 上下文重点（Source of Truth）
+├── docker-compose.yml       # 本地开发环境（MySQL / Redis / RocketMQ）
+├── railway.json             # Railway 部署配置
+└── CLAUDE.md / AGENTS.md    # AI 协作规则
 ```
 
-✨ 核心功能 (V2.0 升级版)
-用户端 (前台门户)
-🎲 抽赏中心 (Gacha Hub): 提供单抽/十连抽盲盒系统，底层采用 Redis Lua 脚本保障强一致性绝对不超卖。
+## ✨ 核心功能
 
-🎒 数字背包与记忆工坊: 可视化管理持有资产；提供多碎片同步合成功能，由 Redisson MultiLock 保障并发防刷。
+### 用户端（前台门户）
 
-🎁 兑换中心: 使用 UR 碎片或积分兑换实物商品，支持收货地址填写与订单追踪。
+| 功能模块 | 说明 |
+|---------|------|
+| 🏠 **首页** | 轮播 Banner、新番时间表（滑动切换）、今日热播推荐、滚动显现动效 |
+| 📚 **番剧库** | 番剧检索与探索（筛选/分类/搜索），TransitionGroup FLIP 列表动画 |
+| 📖 **文章社区** | 资讯阅读、发表文章、楼中楼评论互动、点赞/点踩、审核/删除通知 |
+| 🎲 **抽赏中心** | 单抽/十连抽盲盒系统，Redis Lua 脚本保障强一致性不超卖 |
+| 🎒 **数字背包** | 可视化管理持有资产（网格/列表视图），阶梯浮现动画 |
+| 🔧 **记忆工坊** | 多碎片同步合成功能，Redisson MultiLock 保障并发防刷 |
+| 🎁 **兑换中心** | UR 碎片/积分兑换实物商品，省市县三级联动下拉选择地址 |
+| 📦 **订单管理** | 订单详情、物流追踪、系统通知（下单/发货） |
+| 👤 **用户主页** | 个人信息编辑、头像裁剪上传（1:1 圆形）、文章/追番/评论/点赞历史 |
+| 💬 **私信系统** | 实时消息、会话管理、系统通知（来源 "ACG Space 官方"） |
 
-📦 订单管理: 用户可查看兑换订单列表、物流信息与订单状态。
+### 管理端（中后台）
 
-🔍 动漫库与文章社区: 番剧检索、社区资讯阅读及基于积分奖励机制的楼中楼评论互动。
+| 功能模块 | 说明 |
+|---------|------|
+| 🎬 **番剧管理** | 番剧 CRUD、Bangumi 同步 |
+| 📄 **文章管理** | 文章列表/审核（通过/驳回含原因）、状态筛选 |
+| 💬 **评论审核** | 评论列表、删除及通知 |
+| 🛍️ **商品图鉴** | 物品录入、兑换商品管理 |
+| 🎲 **抽赏配置** | 奖池管理、概率配置 |
+| 📋 **兑换订单** | 订单列表、物流更新（发货/完成） |
+| 🚚 **物流调度** | 实体发货申请单管理 |
+| 🛡️ **风控中心** | 熔断器/限流器状态监控 |
+| 📊 **交易监控** | 兑换记录查询 |
 
-管理端 (中后台)
-🛍️ 电商与资产中台: 配置抽赏奖池与发售库存、录入盲盒与碎片图鉴、合成配方管理、兑换商品管理。
+### 后台自动通知
 
-🛡️ 风控与交易监控: 监控 RocketMQ 事务回查日志、限流与熔断器大盘面板、交易记录查询。
+| 触发操作 | 通知内容 | 接收者 |
+|---------|---------|--------|
+| ✅ 文章审核通过 | 🎉 您的文章《xxx》已审核通过并发布！ | 文章作者 |
+| ❌ 文章审核拒绝 | 您的文章《xxx》未通过审核，原因：xxx | 文章作者 |
+| 🗑️ 管理员删文章 | 您的文章《xxx》已被管理员删除 | 文章作者 |
+| 🗑️ 管理员删评论 | 您的评论「xxx…」已被管理员删除 | 评论作者 |
+| 🛍️ 订单创建成功 | 您的兑换订单已创建成功！订单号：xxx，物品：xxx | 下单用户 |
 
-🚚 O2O 物流调度: 处理用户提交的实体发货申请单，录入快递公司与物流追踪单号。
+### 多主题系统
 
-📋 兑换订单管理: 查看用户兑换订单、更新物流状态、管理订单流转。
+支持**浅色主题（星空蓝）**、**深色主题（星空紫）**、**粉色主题**三种主题：
+- 所有页面通过 CSS 变量（`.theme-light` / `.theme-dark` / `.theme-pink`）适配
+- 核心品牌色：浅色使用 `#6366F1→#3B82F6` 星空蓝渐变，粉色使用 `#EC4899→#F472B6`
+- 公共按钮/卡片/输入框全部绑定 CSS 变量，新页面必须适配三主题
 
-🎬 基础内容管控: 番剧 CRUD、文章及评论审核管理。
+### 动效系统
+
+| 动效 | 实现方式 | 作用范围 |
+|------|---------|---------|
+| 页面过渡 | Nuxt `pageTransition` + CSS keyframe | 所有页面跳转 |
+| 滚动显现 | `v-reveal` 指令（IntersectionObserver） | 首页/社区/番剧库/背包/兑换/用户主页 |
+| 卡片阶梯 FadeUp | `stagger-item` CSS class + `index * 0.0Xs` delay | 列表/网格首次加载 |
+| 列表 FLIP | `TransitionGroup` + CSS `list-move` | 社区文章/番剧库筛选切换 |
+| Tab 滑动 | `Transition` `mode="out-in"` + `translateX` | 首页新番时间表 |
+| 按钮微交互 | `button:active { scale(0.95) }` | 全局按钮点击 |
 
 ## 🚀 快速开始
 
@@ -73,109 +143,110 @@ ACG_Space/
 - Redis 6.0+
 - RocketMQ 5.x（可选，用于异步积分计算）
 
+### 本地开发环境（Docker）
+
+```bash
+# 启动 MySQL / Redis / RocketMQ
+docker-compose up -d
+
+# 初始化数据库（首次需执行所有 SQL）
+mysql -h127.0.0.1 -uroot -p123456 acg_space < backend/sql/ACG_Space_init.sql
+
+# 迁移额外修复（如果是从旧库升级）
+mysql -h127.0.0.1 -uroot -p123456 acg_space < backend/sql/fix_biz_comment_columns.sql
+mysql -h127.0.0.1 -uroot -p123456 acg_space < backend/sql/fix_avatar_column.sql
+
+# 导入抽赏种子数据
+mysql -h127.0.0.1 -uroot -p123456 acg_space < backend/sql/seed_gacha_items.sql
+mysql -h127.0.0.1 -uroot -p123456 acg_space < backend/sql/fix_image_urls.sql
+```
+
 ### 后端启动
 
 ```bash
-# 进入后端目录
 cd backend
-
-# 安装依赖（Maven）
 mvn clean install -DskipTests
-
-# 配置数据库连接（修改 application.yml）
-# spring.datasource.url=jdbc:mysql://localhost:3306/acg_space
-
-# 启动服务
 mvn spring-boot:run
+# 或
+java -jar target/acg-space-backend-1.0.0-SNAPSHOT.jar --spring.profiles.active=dev
 ```
 
 ### 前端启动
 
 ```bash
-# 进入用户端目录
 cd front-ui
-
-# 安装依赖
 npm install
-
-# 开发模式
-npm run dev
-
-# 生产构建
-npm run build
+npm run dev        # 开发模式 http://localhost:3000
+npm run build      # 生产构建
 ```
 
 ### 管理端启动
 
 ```bash
-# 进入管理端目录
 cd admin-ui
-
-# 安装依赖
 npm install
-
-# 开发模式
-npm run dev
-
-# 生产构建
-npm run build
+npm run dev        # 开发模式 http://localhost:5173
+npm run build      # 生产构建
 ```
 
-## 🔧 配置说明
+### Railway 部署
 
-### 后端配置
-后端配置文件位于 `backend/src/main/resources/application.yml`，主要配置项：
+三个独立服务部署在 Railway：
 
-- **数据库**: `spring.datasource.*`
-- **Redis**: `spring.data.redis.*`
-- **RocketMQ**: `rocketmq.*`（可选）
+| 服务 | 构建方式 | 说明 |
+|------|---------|------|
+| **后端** | Dockerfile | Spring Boot JAR |
+| **front-ui** | Dockerfile / Nixpacks | Nuxt SSR |
+| **admin-ui** | Nixpacks | SPA 静态文件 |
 
-### 前端配置
-前端环境变量配置在 `.env` 文件中：
+关键环境变量：
+- `NUXT_API_INTERNAL_BASE` — front-ui SSR 阶段访问后端的内部地址
+- `BACKEND_URL` — admin-ui 的后端代理地址
 
-```env
-NUXT_PUBLIC_API_BASE_URL=http://localhost:8080/api
-```
+## 📊 数据库脚本
 
-## 📊 数据库迁移
-
-数据库迁移脚本位于 `backend/sql/` 目录：
-
-```bash
-# 执行迁移（按顺序）
-mysql -u root -p < backend/sql/schema.sql
-mysql -u root -p < backend/sql/v1.1_reaction_migration.sql
-mysql -u root -p < backend/sql/v1.2_comment_dislikes_migration.sql
-mysql -u root -p < backend/sql/v1.3_article_content_longtext_migration.sql
-mysql -u root -p < backend/sql/v1.4_message_migration.sql
-```
+| 脚本 | 用途 |
+|------|------|
+| `ACG_Space_init.sql` | **全新库一键初始化**（建表 + 种子数据） |
+| `ACG_Space_upgrade.sql` | 存量库升级（补充缺失列 + 新增表） |
+| `fix_biz_comment_columns.sql` | 评论表补列（`anime_id` / `parent_id` / `reply_to_user_id` 等） |
+| `fix_avatar_column.sql` | avatar 列 `varchar(500)` → `MEDIUMTEXT` |
+| `seed_gacha_items.sql` | 抽赏种子数据（10 个物品 + 奖池关联 + 兑换商品） |
+| `fix_image_urls.sql` | 旧图片 URL 从 `placehold.co` 迁移至 `picsum.photos` |
 
 ## 🔐 API 安全
 
-- 使用 JWT Token 进行身份认证
+- JWT Token 认证（`Authorization: Bearer xxx`）
+- 公开 GET 路径豁免 Token 校验（`shouldNotFilter`），但**带 Authorization header 的请求仍会解析 Token**
 - 接口参数使用 `@Validated` 校验
-- 敏感接口需要登录权限
+- 统一响应格式 `Result<T>`（code=200 表示成功）
 
 ## 📝 开发规范
 
 ### 后端
-- 响应格式统一使用 `Result<T>`
-- 接口参数必须使用 `@Validated` 校验
-- 使用 `SecurityUtils.getUserId()` 获取当前用户
-- 数据库操作使用 MyBatis-Plus
+- **Bean 显式命名**：所有 `@Bean` 必须设置 `name`，防止 `BeanDefinitionOverrideException`
+- **幂等性**：所有 RocketMQ 消费者必须包含幂等校验
+- **锁安全**：Redisson 锁必须配合 `finally` 释放
+- **审计字段**：所有 `BaseEntity` 子类需确保 `createTime`/`updateTime` 显式设置
+- **雪花 ID**：Fastjson2 `WriteLongAsString` → 前端保持字符串类型，禁止 `Number()` 转换
+- **图片字段**：base64 数据用 `MEDIUMTEXT`/`LONGTEXT`，不用 `varchar(500)`
 
 ### 前端
-- TypeScript 禁止使用 `any` 类型
-- 响应式变量使用 `ref()` 或 `reactive()` 定义
-- API 调用统一在 `useApi.ts` 中封装
-- 使用 Pinia 进行状态管理
+- **TypeScript**：禁止 `any`
+- **三主题**：每个页面适配浅色/深色/粉色
+- **API 封装**：统一在 `useApi.ts` 或 `useV2Api.ts`
+- **状态管理**：使用 Pinia
+- **动效**：列表加 `stagger-item` + `animationDelay`，筛选切换用 `TransitionGroup`
 
-## 📄 文档
+## 📄 文档索引
 
-项目文档位于 `document/` 目录：
-
-- `document/develop/` - 需求文档、技术架构设计、功能迭代计划
-- `document/study/` - 学习笔记和常见问题
+- `document/develop/V1/` — V1.0 需求/架构/迭代计划
+- `document/develop/V2/` — V2.0 PRD/架构/Agent设计方案/开发计划
+- `document/study/study.md` — Bug 记录与修复方案
+- `document/point/point.md` — 当前上下文重点（Source of Truth）
+- `document/skill/front-ui.md` — 前端架构师技能定义
+- `CLAUDE.md` — Claude Code 项目指南
+- `AGENTS.md` — AI 协作规则
 
 ## 🤝 贡献
 
