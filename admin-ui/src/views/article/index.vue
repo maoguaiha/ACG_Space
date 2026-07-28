@@ -393,7 +393,7 @@ const handleReject = async (row: any) => {
     const { value: rejectReason } = await ElMessageBox.prompt('请输入驳回原因', '驳回文章', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
-      inputPlaceholder: '请输入原因...'
+      inputPlaceholder: '例如：内容不符合规范、涉及敏感话题、图片无法加载...'
     })
     if (rejectReason === undefined) return
     const res = await request.put('/article/admin/review', { id: row.id, approve: false, rejectReason })
