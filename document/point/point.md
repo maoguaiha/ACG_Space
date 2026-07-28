@@ -52,7 +52,9 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 - ✅ Phase 1 已落地：corpus/rules/PRD_V2.md（复制 PRD）+ corpus/faq.md（10 组高频问答）+ scripts/export_anime.py（只读导出，含 `--selftest` 字段映射自测通过）；anime.json 待 MySQL 可达时生成（沙箱 docker 守护进程未起，13306 不可达）
 - ✅ Phase 2 已落地：app/rag.py（按 `## ` 切片 + 余弦检索，anime.json 缺失容错）+ app/llm.py（LongCat 流式 chat / 通义 embed）+ app/prompts.py（角色+安全边界+来源署名）；main.py /chat 接入「检索→拼提示→流式」。离线自测全过（rag 检索命中 + TestClient SSE 全链路）；live LLM 需 API Key。
 - ✅ Phase 3 已落地：app/tools/bangumi.py（search/detail/calendar 只读工具，仅 GET+UA、TTL 缓存，按真实镜像结构解析）+ app/tools/registry.py（3 个 function-calling schema）；main.py /chat 接入工具循环（首轮带 tools→执行→回填→流式）。离线自测全过 + 真实 Bangumi 冒烟通过。
-- ✅ Phase A（live 实测）就绪：scripts/selftest_live.py 编写完成（含缺 key 防护）；python-agent/.env 已创建（gitignore）。LongCat key 已填且 chat 验证通过；**待补通义 embedding key** 后即可跑完整端到端（RAG 问答 + Bangumi 工具）。
+- ✅ **Phase A（live 端到端）实测通过** ✅：通义 embedding key 已填；`selftest_live.py` 跑通——语料 19 块（真实 text-embedding-v3 分批向量化）+ 用例1 RAG 抽赏问答 PASS + 用例2 Bangumi 番剧推荐(function calling) PASS（真实返回机战番）。修复：`embed()` 按 ≤8 分批规避通义单次批上限 10。两 key 均在 `.env`（gitignored）。
+- ✅ 当前已具备完整能力：RAG 检索 + 流式 LLM(LongCat-2.0) + 只读 Bangumi 工具（function calling）+ 真实 API 全链路。
+- ✅ **Phase 4（Java 门面）已落地**：`AgentController`（SSE 代理 + 登录鉴权）+ `AgentConversationService`（会话/消息持久化，2 张新表 `agent_conversation`/`agent_message`）+ **手动** Resilience4j 限流(`agentStream`)/熔断(`agentProxy`)（SSE 返回类型与 @RateLimiterAndCircuitBreaker 切面不兼容，故手动调 Registry）+ 会话 CRUD。端到端 `mvn compile` 通过。下一步 **Phase 5（Nuxt 用户端 UI）** 把聊天页挂上。
 
 ## 待完成
 
@@ -61,4 +63,4 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 3. **P1优先级**：优化兑换商品列表分页和筛选功能
 4. **P2优先级**：完善DTO参数校验注解
 5. **P2优先级**：补充单元测试用例
-6. **Agent 应用（新增）**：设计已锁定（Python agent 嵌入 + Bangumi 只读工具）。Phase 0~3 已落地（骨架 + 语料/导出脚本 + RAG 流式 + Bangumi 工具）；下一步 **Phase 4**（Java 门面：AgentController SSE 代理 + 会话/消息持久化 + Resilience4j 限流）
+6. **Agent 应用（新增）**：设计已锁定（Python agent 嵌入 + Bangumi 只读工具）。Phase 0~4 已落地（骨架 + 语料/导出 + RAG 流式 + Bangumi 工具 + Java 门面 SSE 代理/持久化/限流熔断）；下一步 **Phase 5**（Nuxt 用户端 UI：聊天页 + 流式渲染 + 三主题适配 + 历史会话列表）

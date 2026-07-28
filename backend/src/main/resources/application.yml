@@ -40,6 +40,11 @@ bangumi:
     base-url: https://bgmapi.anibt.net
     user-agent: "AcgSpace/1.0 (https://github.com/your-repo)" # 根据 bgm.tv 要求必须包含 User-Agent
 
+# Agent 应用（Java 门面代理目标：python-agent 内网地址）
+agent:
+  api:
+    base-url: ${AGENT_API_BASE_URL:http://localhost:8000}
+
 # Resilience4j 熔断、限流配置
 resilience4j:
   circuitbreaker:
@@ -61,6 +66,8 @@ resilience4j:
         base-config: default
       synthesizeService:
         base-config: default
+      agentProxy:
+        base-config: default
   ratelimiter:
     configs:
       default:
@@ -77,4 +84,7 @@ resilience4j:
         limit-refresh-period: 1s
       synthesizeDo:
         limit-for-period: 2
+        limit-refresh-period: 1s
+      agentStream:
+        limit-for-period: 10
         limit-refresh-period: 1s

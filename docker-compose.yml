@@ -19,6 +19,7 @@ services:
       TOKEN_SECRET: acgspace_production_secret_change_me_2026
       TOKEN_EXPIRE: "1440"
       SPRING_PROFILES_ACTIVE: dev
+      AGENT_API_BASE_URL: http://python-agent:8000
       TZ: Asia/Shanghai
     depends_on:
       mysql:
