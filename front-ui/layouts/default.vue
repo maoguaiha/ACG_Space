@@ -1036,19 +1036,27 @@ const handleLogout = () => {
 
 /* 搜索框 */
 .theme-dark .theme-search-input {
-  background-color: rgba(30, 41, 59, 0.6);
-  border-color: #334155;
-  color: #f8fafc;
-  placeholder-color: #64748b;
+  background-color: rgba(15, 23, 42, 0.85);
+  border-color: #475569;
+  color: #ffffff;
+  caret-color: #6366f1;
+}
+.theme-dark .theme-search-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
 }
 .theme-dark .theme-search-input:focus {
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: rgba(99, 102, 241, 0.7);
+  box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.15);
 }
 .theme-light .theme-search-input {
   background-color: rgba(255, 255, 255, 0.9);
   border-color: #e2e8f0;
   color: #1e293b;
-  placeholder-color: #94a3b8;
+}
+.theme-light .theme-search-input::placeholder {
+  color: #94a3b8;
+  opacity: 1;
 }
 .theme-light .theme-search-input:focus {
   border-color: rgba(79, 70, 229, 0.4);
@@ -1057,10 +1065,13 @@ const handleLogout = () => {
   background-color: rgba(255, 255, 255, 0.8);
   border-color: #fbcfe8;
   color: #831843;
-  placeholder-color: #db2777;
+}
+.theme-pink .theme-search-input::placeholder {
+  color: #db2777;
+  opacity: 1;
 }
 .theme-pink .theme-search-input:focus {
-  border-color: rgba(236, 72, 153, 0.4);
+  border-color: rgba(236, 72, 153, 0.5);
 }
 
 /* Tab 激活条 */
@@ -1660,11 +1671,13 @@ const handleLogout = () => {
 
 /* === 番剧库搜索结果卡片样式 === */
 .theme-dark .theme-anime-card {
-  background-color: rgba(30, 41, 59, 0.6);
+  background-color: #1e293b;
   border-color: #334155;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.3);
 }
 .theme-dark .theme-anime-card:hover {
-  border-color: rgba(99, 102, 241, 0.5);
+  border-color: rgba(99, 102, 241, 0.6);
+  box-shadow: 0 8px 25px rgba(99, 102, 241, 0.15);
 }
 .theme-light .theme-anime-card {
   background-color: rgba(255, 255, 255, 0.9);
