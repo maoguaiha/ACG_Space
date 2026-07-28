@@ -649,3 +649,15 @@ export function fetchUnreadCount() {
 export function claimRegistrationBonus() {
   return apiFetch<any>('/message/claim-bonus', { method: 'POST' })
 }
+
+// ====== 兑换商品/订单 ======
+
+/** 兑换商品详情 */
+export function fetchRedeemProduct(id: string | number) {
+  return apiFetch<any>(`/redeem-product/${id}`)
+}
+
+/** 我的兑换订单详情 */
+export function fetchRedeemOrder(id: string | number) {
+  return apiFetch<any>(`/redeem/${id}`)
+}

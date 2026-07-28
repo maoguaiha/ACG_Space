@@ -61,6 +61,7 @@ public class BizRedeemProductServiceImpl extends ServiceImpl<BizRedeemProductMap
     public List<BizRedeemProduct> getActiveProducts() {
         return list(new LambdaQueryWrapper<BizRedeemProduct>()
                 .eq(BizRedeemProduct::getStatus, 1)
+                .gt(BizRedeemProduct::getStock, 0)
                 .orderByAsc(BizRedeemProduct::getSortOrder)
                 .orderByDesc(BizRedeemProduct::getCreateTime));
     }

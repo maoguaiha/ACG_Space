@@ -29,6 +29,15 @@ public class BizRedeemProductController {
         return Result.success(products);
     }
 
+    @GetMapping("/{id}")
+    public Result<BizRedeemProduct> getById(@PathVariable Long id) {
+        BizRedeemProduct product = redeemProductService.getById(id);
+        if (product == null || product.getDelFlag() == 2) {
+            return Result.error("商品不存在");
+        }
+        return Result.success(product);
+    }
+
     @PostMapping("/redeem")
     public Result<RedeemResult> redeem(@RequestBody @Valid RedeemRequest request) {
         Long userId = getCurrentUserId();
