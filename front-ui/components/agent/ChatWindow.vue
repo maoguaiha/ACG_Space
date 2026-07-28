@@ -12,6 +12,8 @@
 import { ref, watch, nextTick, onUnmounted } from 'vue'
 
 const props = defineProps<{
+  /** 当前会话 ID，变化时重置滚动位置（回到顶部，不强制跟随底部） */
+  conversationId: string | null
   messages: Array<{
     id: string
     role: 'user' | 'assistant'
@@ -67,9 +69,29 @@ function checkStickToBottom() {
 function scrollToBottom() {
   if (!stickToBottom.value) return
   nextTick(() => {
-    anchorRef.value?.scrollIntoView({ behavior: 'smooth' })
+    const el = scrollContainerRef.value
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
   })
 }
+
+/** 切换会话：回到顶部且暂停底部跟随，避免历史长会话被强制下滚 */
+watch(() => props.conversationId, () => {
+  stickToBottom.value = false
+  nextTick(() => {
+    scrollContainerRef.value?.scrollTo({ top: 0, behavior: 'auto' })
+  })
+}, { immediate: true })
+
+/** 用户主动发送消息时由父组件触发：恢复底部跟随并立即滚到底部 */
+function forceScrollToBottom() {
+  stickToBottom.value = true
+  nextTick(() => {
+    const el = scrollContainerRef.value
+    if (el) el.scrollTo({ top: el.scrollHeight, behavior: 'smooth' })
+  })
+}
+
+defineExpose({ forceScrollToBottom })
 
 watch(() => props.messages.length, () => { checkStickToBottom(); scrollToBottom() })
 watch(() => props.streamingContent, () => { scrollToBottom() })

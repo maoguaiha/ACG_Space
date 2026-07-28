@@ -59,6 +59,9 @@ const sidebarCollapsed = ref(false)
 const loading = ref(true)
 const historyLoading = ref(false)  // 切换会话时加载历史的 loading（不阻塞空态）
 
+/** ChatWindow 实例，用于用户主动发送时强制滚到底部 */
+const chatWindowRef = ref<InstanceType<typeof ChatWindow>>()
+
 /** 当前会话标题（顶栏居中显示） */
 const activeTitle = computed(() => {
   const conv = conversations.value.find(c => c.id === activeConversationId.value)
@@ -199,6 +202,8 @@ async function handleSend(content: string) {
   // 乐观更新：立即把用户消息渲染到列表（不等待接口返回）
   const userMsg: LocalMessage = { id: nextMsgId(), role: 'user', content }
   messages.value.push(userMsg)
+  // 用户主动发送：恢复底部跟随并滚到底部（切换会话时不会触发）
+  chatWindowRef.value?.forceScrollToBottom()
 
   // 启动 SSE 流
   isStreaming.value = true
@@ -368,7 +373,9 @@ onMounted(() => { loadConversations() })
         <template v-else>
           <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col">
             <ChatWindow
+              ref="chatWindowRef"
               class="h-full"
+              :conversation-id="activeConversationId"
               :messages="messages"
               :has-streaming="isStreaming"
               :streaming-content="streamingContent"
