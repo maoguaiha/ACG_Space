@@ -107,21 +107,26 @@
             <!-- 文章点踩理由弹窗 -->
             <Teleport to="body">
               <div v-if="showDislikeDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]" style="top: 0; left: 0;" @click.self="showDislikeDialog = false">
-                <div class="bg-slate-800 rounded-2xl p-6 w-96 border border-slate-700 shadow-2xl" style="position: relative;">
-                  <h3 class="text-lg font-bold text-white mb-4">选择点踩理由</h3>
+                <div class="rounded-2xl p-6 w-96 border shadow-2xl gacha-card-body" style="position: relative;">
+                  <h3 class="text-lg font-bold mb-4" :style="{ color: 'var(--text-main, #1E293B)' }">选择点踩理由</h3>
                   <div class="space-y-2">
                     <button
                       v-for="reason in dislikeReasons"
                       :key="reason"
                       @click="confirmDislike(reason)"
-                      class="w-full text-left px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
-                      :class="selectedReason === reason ? 'theme-btn-filter-active' : ''"
+                      class="w-full text-left px-4 py-3 rounded-xl transition-colors dislike-option"
+                      :style="{
+                        color: selectedReason === reason ? '#FFFFFF' : 'var(--text-main, #1E293B)',
+                        background: selectedReason === reason ? 'var(--theme-primary, #6366F1)' : 'transparent',
+                      }"
+                      @mouseenter="$event.target.style.background = selectedReason === reason ? 'var(--theme-primary, #6366F1)' : 'var(--theme-primary-o10, rgba(99,102,241,0.1))'"
+                      @mouseleave="$event.target.style.background = selectedReason === reason ? 'var(--theme-primary, #6366F1)' : 'transparent'"
                     >
                       {{ reason }}
                     </button>
                   </div>
                   <div class="mt-4 flex justify-end">
-                    <button @click="cancelDislike" class="px-4 py-2 text-slate-400 hover:text-white transition-colors">取消</button>
+                    <button @click="cancelDislike" class="px-4 py-2 transition-colors" :style="{ color: 'var(--text-muted, #94A3B8)' }">取消</button>
                   </div>
                 </div>
               </div>
@@ -130,20 +135,26 @@
             <!-- 评论点踩理由弹窗 -->
             <Teleport to="body">
               <div v-if="showCommentDislikeDialog" class="fixed inset-0 bg-black/60 backdrop-blur-sm flex items-center justify-center z-[100]" style="top: 0; left: 0;" @click.self="showCommentDislikeDialog = false">
-                <div class="bg-slate-800 rounded-2xl p-6 w-96 border border-slate-700 shadow-2xl" style="position: relative;">
-                  <h3 class="text-lg font-bold text-white mb-4">选择点踩理由</h3>
+                <div class="rounded-2xl p-6 w-96 border shadow-2xl gacha-card-body" style="position: relative;">
+                  <h3 class="text-lg font-bold mb-4" :style="{ color: 'var(--text-main, #1E293B)' }">选择点踩理由</h3>
                   <div class="space-y-2">
                     <button
                       v-for="reason in dislikeReasons"
                       :key="reason"
                       @click="confirmCommentDislike(reason)"
-                      class="w-full text-left px-4 py-3 rounded-xl text-slate-300 hover:bg-slate-700 hover:text-white transition-colors"
+                      class="w-full text-left px-4 py-3 rounded-xl transition-colors dislike-option"
+                      :style="{
+                        color: selectedCommentReason === reason ? '#FFFFFF' : 'var(--text-main, #1E293B)',
+                        background: selectedCommentReason === reason ? 'var(--theme-primary, #6366F1)' : 'transparent',
+                      }"
+                      @mouseenter="$event.target.style.background = selectedCommentReason === reason ? 'var(--theme-primary, #6366F1)' : 'var(--theme-primary-o10, rgba(99,102,241,0.1))'"
+                      @mouseleave="$event.target.style.background = selectedCommentReason === reason ? 'var(--theme-primary, #6366F1)' : 'transparent'"
                     >
                       {{ reason }}
                     </button>
                   </div>
                   <div class="mt-4 flex justify-end">
-                    <button @click="cancelCommentDislike" class="px-4 py-2 text-slate-400 hover:text-white transition-colors">取消</button>
+                    <button @click="cancelCommentDislike" class="px-4 py-2 transition-colors" :style="{ color: 'var(--text-muted, #94A3B8)' }">取消</button>
                   </div>
                 </div>
               </div>
@@ -403,6 +414,7 @@ const commentReactionStatus = ref<Record<string, number>>({})
 const reactionLoading = ref(false)
 const articleReaction = ref<number | null>(null)
 const selectedReason = ref('')
+const selectedCommentReason = ref('')
 const dislikeReasons = ['违规内容', '垃圾信息', '引战内容', '抄袭内容', '其他']
 
 // 评论区点赞/回复
@@ -586,6 +598,7 @@ function cancelCommentDislike() {
 }
 
 function confirmCommentDislike(reason: string) {
+  selectedCommentReason.value = reason
   if (selectedCommentId.value) {
     performCommentReaction(selectedCommentId.value, 2, reason)
     showCommentDislikeDialog.value = false

@@ -1634,8 +1634,9 @@ const handleLogout = () => {
   background-color: #64748b;
 }
 .theme-light .theme-btn-secondary {
-  background-color: #e2e8f0;
-  color: #475569;
+  background-color: var(--bg-secondary, #f1f5f9) !important;
+  color: var(--text-main, #334155) !important;
+  border: 1px solid var(--border-color, #E2E8F0) !important;
 }
 .theme-light .theme-btn-secondary:hover {
   background-color: #cbd5e1;
@@ -1980,12 +1981,12 @@ const handleLogout = () => {
 }
 
 .theme-light .theme-btn-back {
-  background-color: #e2e8f0;
-  color: #64748b;
+  background-color: var(--bg-secondary, #F1F5F9) !important;
+  color: var(--text-muted, #64748B) !important;
 }
 .theme-light .theme-btn-back:hover {
-  background-color: #cbd5e1;
-  color: #475569;
+  background-color: var(--border-color, #CBD5E1) !important;
+  color: var(--text-main, #1E293B) !important;
 }
 
 .theme-pink .theme-btn-back {
@@ -2039,27 +2040,44 @@ const handleLogout = () => {
 
 /* 提交按钮 */
 .theme-dark .theme-btn-submit {
-  background-color: #059669;
-  color: white;
+  background: linear-gradient(135deg, #6366f1, #a78bfa) !important;
+  color: white !important;
+  border: none !important;
 }
 .theme-dark .theme-btn-submit:hover {
-  background-color: #047857;
+  background: linear-gradient(135deg, #4f46e5, #8b5cf6) !important;
 }
-
 .theme-light .theme-btn-submit {
-  background-color: #10b981;
-  color: white;
+  background: linear-gradient(135deg, #6366F1, #3B82F6) !important;
+  color: white !important;
+  border: none !important;
 }
 .theme-light .theme-btn-submit:hover {
-  background-color: #059669;
+  background: linear-gradient(135deg, #4F46E5, #2563EB) !important;
 }
-
 .theme-pink .theme-btn-submit {
-  background-color: #10b981;
-  color: white;
+  background: linear-gradient(135deg, #ec4899, #f472b6) !important;
+  color: white !important;
+  border: none !important;
 }
 .theme-pink .theme-btn-submit:hover {
-  background-color: #059669;
+  background: linear-gradient(135deg, #db2777, #f43f5e) !important;
+}
+
+.theme-dark .theme-btn-draft {
+  background-color: rgba(71, 85, 105, 0.5) !important;
+  color: #cbd5e1 !important;
+  border: 1px solid rgba(100, 116, 139, 0.3) !important;
+}
+.theme-light .theme-btn-draft {
+  background-color: rgba(241, 245, 249, 0.8) !important;
+  color: var(--text-main, #334155) !important;
+  border: 1px solid var(--border-color, #E2E8F0) !important;
+}
+.theme-pink .theme-btn-draft {
+  background-color: rgba(253, 242, 248, 0.8) !important;
+  color: var(--text-main, #334155) !important;
+  border: 1px solid rgba(236, 72, 153, 0.2) !important;
 }
 
 /* === 聊天页面样式 === */
@@ -2335,9 +2353,10 @@ const handleLogout = () => {
 
 .theme-light .theme-mode-switch {
   padding: 4px 10px;
-  background: #4f46e5;
-  color: white;
-  border: none;
+  background: linear-gradient(135deg, #6366F1, #3B82F6) !important;
+  color: white !important;
+  border: none !important;
+}
   border-radius: 4px;
   font-size: 12px;
   cursor: pointer;
@@ -2886,16 +2905,15 @@ const handleLogout = () => {
   flex: 1;
   padding: 8px 12px;
   background: #ffffff;
-  border: 1px solid #e2e8f0;
+  border: 1px solid var(--border-color, #E2E8F0) !important;
   border-radius: 6px;
-  color: #1e293b;
+  color: var(--text-main, #1E293B) !important;
   font-size: 14px;
   outline: none;
 }
-
 .theme-light .theme-custom-tag-input:focus {
-  border-color: #4f46e5;
-  box-shadow: 0 0 0 2px rgba(79, 70, 229, 0.15);
+  border-color: var(--theme-primary, #6366F1) !important;
+  box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15) !important;
 }
 
 .theme-pink .theme-custom-tag-input {
@@ -3040,18 +3058,18 @@ const handleLogout = () => {
 
 .theme-light .theme-preset-tag {
   padding: 4px 10px;
-  background: #e2e8f0;
-  color: #64748b;
-  border: none;
+  background: var(--bg-secondary, #F1F5F9) !important;
+  color: var(--text-muted, #64748B) !important;
+  border: 1px solid var(--border-color, #E2E8F0) !important;
   border-radius: 9999px;
   font-size: 13px;
   cursor: pointer;
   transition: all 0.2s;
 }
-
 .theme-light .theme-preset-tag:hover {
-  background: #cbd5e1;
-  color: #1e293b;
+  background: rgba(99, 102, 241, 0.1) !important;
+  color: var(--theme-primary, #6366F1) !important;
+  border-color: rgba(99, 102, 241, 0.2) !important;
 }
 
 .theme-pink .theme-preset-tag {

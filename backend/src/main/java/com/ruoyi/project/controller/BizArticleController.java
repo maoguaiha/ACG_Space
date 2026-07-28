@@ -98,8 +98,10 @@ public class BizArticleController {
     @GetMapping("/{id}/reaction-status")
     public Result<Integer> getReactionStatus(@PathVariable Long id) {
         Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.success(0);
+        }
         Integer status = reactionService.getReactionStatus(id, userId);
-        System.out.println("[DEBUG reaction-status] articleId=" + id + " userId=" + userId + " status=" + status);
         return Result.success(status == null ? 0 : status);
     }
 
