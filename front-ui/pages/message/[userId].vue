@@ -1,12 +1,13 @@
 <template>
-  <div class="fixed inset-0 flex flex-col overflow-hidden" :class="['theme-chat-bg']">
-    <div class="flex-shrink-0 border-b" :class="['theme-chat-header']">
+  <div class="fixed inset-0 flex flex-col overflow-hidden" :class="['theme-chat-bg']" style="z-index: 50;">
+    <div class="flex-shrink-0 border-b relative z-10" :class="['theme-chat-header']">
       <div class="px-4 py-4">
         <div class="flex items-center gap-4 max-w-4xl mx-auto">
-          <NuxtLink to="/messages" class="p-2 rounded-xl transition-colors" :class="['theme-btn-back']">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <NuxtLink to="/messages" class="inline-flex items-center gap-2 px-3 py-2 rounded-xl transition-colors" :class="['theme-btn-back']">
+            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
               <path d="m15 18-6-6 6-6"/>
             </svg>
+            <span class="text-sm font-medium">返回</span>
           </NuxtLink>
           <NuxtLink :to="`/user/${route.params.userId}`" class="flex items-center gap-3 hover:opacity-80 transition-opacity">
             <div class="w-11 h-11 rounded-full overflow-hidden flex-shrink-0 ring-2" :class="['theme-avatar-ring']">
