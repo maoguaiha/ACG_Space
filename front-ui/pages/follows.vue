@@ -65,10 +65,11 @@ onMounted(async () => {
       <!-- 列表内容 -->
       <div v-else class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-6">
         <NuxtLink
-          v-for="anime in followList"
+          v-for="(anime, index) in followList"
           :key="anime.id"
           :to="`/anime/${anime.id}`"
-          class="group bg-slate-900/50 rounded-2xl overflow-hidden border border-white/5 hover:border-indigo-500/50 transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/10"
+          class="group bg-slate-900/50 rounded-2xl overflow-hidden border border-white/5 hover:border-indigo-500/50 transition-all hover:-translate-y-2 hover:shadow-2xl hover:shadow-indigo-500/10 stagger-item"
+          :style="{ animationDelay: `${index * 0.06}s` }"
         >
           <!-- 封面图 -->
           <div class="relative aspect-[2/3] overflow-hidden">
