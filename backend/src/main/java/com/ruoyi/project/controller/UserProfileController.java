@@ -108,6 +108,14 @@ public class UserProfileController {
             if (update.getAvatar() != null) user.setAvatar(update.getAvatar());
             if (update.getBio() != null) user.setBio(update.getBio());
             if (update.getEmail() != null) user.setEmail(update.getEmail());
+            // updateById 会设置所有非 null 字段，将不需要更新的敏感/计数字段置 null 避免覆盖
+            user.setPassword(null);
+            user.setPoints(null);
+            user.setFollowerCount(null);
+            user.setFollowingCount(null);
+            user.setVipStatus(null);
+            user.setUserLevel(null);
+            user.setLevelExperience(null);
             sysUserService.updateById(user);
             return Result.success();
         } catch (Exception e) {
