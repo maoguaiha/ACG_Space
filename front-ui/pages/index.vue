@@ -82,10 +82,11 @@
 
       <div v-else class="grid grid-cols-2 lg:grid-cols-5 gap-6">
         <NuxtLink
-          v-for="item in todaySchedule"
+          v-for="(item, index) in todaySchedule"
           :key="item.id"
           :to="`/anime/bgm-${item.id}`"
-          class="group relative aspect-[3/4] rounded-3xl overflow-hidden bg-slate-800 border border-slate-700/50 hover:border-indigo-500 transition-all duration-300"
+          class="group relative aspect-[3/4] rounded-3xl overflow-hidden bg-slate-800 border border-slate-700/50 hover:border-indigo-500 transition-all duration-300 stagger-item"
+          :style="{ animationDelay: `${index * 0.08}s` }"
         >
           <button
             @click.stop.prevent="() => {}"
@@ -129,12 +130,13 @@
       </div>
 
       <!-- Schedule Content List -->
-      <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+      <TransitionGroup tag="div" name="slide-day" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 relative" style="min-height:200px">
         <NuxtLink
-          v-for="item in currentSchedule"
+          v-for="(item, index) in currentSchedule"
           :key="item.id"
           :to="`/anime/bgm-${item.id}`"
-          class="flex items-center gap-4 bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/30 p-3 rounded-2xl transition-all group"
+          class="flex items-center gap-4 bg-slate-800/30 hover:bg-slate-800/60 border border-slate-700/30 p-3 rounded-2xl transition-all group stagger-item"
+          :style="{ animationDelay: `${index * 0.06}s` }"
         >
           <div class="w-14 h-14 rounded-xl overflow-hidden bg-slate-700 flex-shrink-0">
             <img v-if="item.coverUrl" :src="item.coverUrl" referrerpolicy="no-referrer" class="w-full h-full object-cover" />
@@ -144,7 +146,7 @@
             <p class="text-[11px] text-slate-500 mt-1">{{ item.publishYear }}年 · 正在播出</p>
           </div>
         </NuxtLink>
-      </div>
+      </TransitionGroup>
     </section>
 
     <!-- 社区番剧库模块已移除（迁移至 /anime） -->
