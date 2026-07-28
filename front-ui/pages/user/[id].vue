@@ -170,8 +170,9 @@
               {{ profile.isSelf ? '你还没有发表过文章' : '该用户还没有发表过文章' }}
             </div>
             <div v-else class="space-y-4">
-              <div v-for="article in articles" :key="article.id"
-                class="rounded-2xl border p-6 transition-colors" :class="['theme-card', 'theme-card-hover']">
+              <div v-for="(article, index) in articles" :key="article.id"
+                class="rounded-2xl border p-6 transition-colors stagger-item" :class="['theme-card', 'theme-card-hover']"
+                :style="{ animationDelay: `${index * 0.08}s` }">
                 <NuxtLink :to="`/article/${article.id}`" class="block">
                   <div class="flex gap-4">
                     <div v-if="article.coverUrl" class="flex-shrink-0">
@@ -211,8 +212,9 @@
               {{ profile.isSelf ? '还没有追番' : '该用户还没有追番' }}
             </div>
             <div v-else class="grid grid-cols-2 md:grid-cols-4 gap-4">
-              <NuxtLink v-for="anime in follows" :key="anime.id" :to="`/anime/${anime.id}`"
-                class="bg-slate-800/40 rounded-2xl border border-slate-700/50 overflow-hidden hover:border-indigo-500/30 transition-colors group">
+              <NuxtLink v-for="(anime, index) in follows" :key="anime.id" :to="`/anime/${anime.id}`"
+                class="bg-slate-800/40 rounded-2xl border border-slate-700/50 overflow-hidden hover:border-indigo-500/30 transition-colors group stagger-item"
+                :style="{ animationDelay: `${index * 0.08}s` }">
                 <div class="aspect-[3/4] overflow-hidden">
                   <img v-if="anime.coverUrl" :src="anime.coverUrl" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
                   <div v-else class="w-full h-full bg-slate-700 flex items-center justify-center text-slate-500">无封面</div>
@@ -236,9 +238,10 @@
               {{ profile.isSelf ? '你还没有发表过评论' : '该用户还没有发表过评论' }}
             </div>
             <div v-else class="space-y-3">
-              <NuxtLink v-for="comment in comments" :key="comment.id"
+              <NuxtLink v-for="(comment, index) in comments" :key="comment.id"
                 :to="comment.type === 1 ? '/anime/' + comment.targetId : '/article/' + comment.targetId"
-                class="block">
+                class="block stagger-item"
+                :style="{ animationDelay: `${index * 0.06}s` }">
                 <div class="rounded-2xl border p-4 transition-colors" :class="['theme-card', 'theme-card-hover']">
                   <div class="flex items-center gap-3 mb-3">
                     <img v-if="comment.targetCover" :src="comment.targetCover" class="w-16 h-20 object-cover rounded-lg" />
@@ -274,9 +277,10 @@
               {{ profile.isSelf ? '你还没有点赞过任何评论' : '该用户还没有点赞过任何评论' }}
             </div>
             <div v-else class="space-y-3">
-              <NuxtLink v-for="like in likes" :key="like.id"
+              <NuxtLink v-for="(like, index) in likes" :key="like.id"
                 :to="like.type === 1 ? '/anime/' + like.targetId : '/article/' + like.targetId"
-                class="block">
+                class="block stagger-item"
+                :style="{ animationDelay: `${index * 0.06}s` }">
                 <div class="rounded-2xl border p-4 transition-colors" :class="['theme-card', 'theme-card-hover']">
                   <div class="flex items-center gap-3">
                     <img v-if="like.targetCover" :src="like.targetCover" class="w-16 h-20 object-cover rounded-lg" />
