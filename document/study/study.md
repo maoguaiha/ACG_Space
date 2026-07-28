@@ -98,3 +98,61 @@
 1. **输入验证**：加强用户输入验证防止注入攻击
 2. **权限校验**：确保接口权限校验完整
 3. **敏感数据脱敏**：日志中敏感信息需脱敏处理
+
+---
+
+## 复盘回顾（2026-07-28）
+
+### 一、点赞持久化 — 五层嵌套根因
+
+| 层级 | 问题 | 修复 | 为何绕了 10+ 轮 |
+|------|------|------|----------------|
+| L1 | Fastjson2 `BrowserCompatible` 序列化时省略 null 字段，`Result.success(null)` 输出 `{"code":200}` 无 data | controller 返回 `Result.success(0)` | 每修完一层，`data:0` 的现象仍然成立，无法通过现象判断修到了哪一层 |
+| L2 | `JwtAuthenticationTokenFilter.shouldNotFilter()` 对 GET 公开路径返回 true → 即使带了 Authorization header 也不解析 Token → `SecurityUtils.getUserId()=null` | shouldNotFilter 中增加 Authorization header 检测，有 Token 时不跳过 | 前 6 轮只看前端 Network，没查后端 SQL 日志。如果第 1 轮就查 `selectOneWithDeleted` 参数，会发现 `userId=null` |
+| L3 | `new BizArticleReaction()` 时 `delFlag` 默认 `null`，MyBatis-Plus `@TableLogic` 自动加 `del_flag=0` 条件 → `null != 0` → 查询返回空 | `reaction.setDelFlag(0)` + `selectOneWithDeleted` 绕过过滤 | 数据库记录存在但被逻辑删除过滤，"存在又找不到"是最难排查的状态 |
+| L4 | Vue 3 `ref<Map>` 对 `Map.set()` 不触发响应式更新 | 改用 `ref<Record<string,number>>` + `value[key]=val` | `reactive(Map)` → `Map.set()` 在某些场景仍不触发重渲染，只有 `ref<Record>` 语义最明确 |
+| L5 | `onMounted` 中 `if (!article.value?.id) return` 在 SSR 水合阶段 `article.value` 尚未就绪，跳过 API 调用 | 移除守卫 + `watch(isLoggedIn)` 自动重载 | SSR 水合时序问题是 Nuxt 3 的经典陷阱 |
+
+**核心教训：** 数据不撒谎，但我不看。第 1 轮就去查后端 SQL 日志的 `selectOneWithDeleted` 参数，会发现 `userId=null`，直接定位到 JWT 过滤器。绕了 6 轮才看日志。
+
+### 二、502 健康检查 — SSR 时序陷阱
+
+| 环节 | 细节 |
+|------|------|
+| **现象** | Railway 部署 front-ui 后，健康检查 `/health` 反复 502，部署失败 |
+| **根因** | 首页 SSR 渲染时 `useAsyncData` 调用后端 API，但 `useApi.ts` 没有设 `timeout`。后端部署中重启的瞬间不可达 → SSR 请求无限 hanging → health check 120s 超时 → Railway 判定不健康 |
+| **修复** | `useApi.ts` 加 `timeout: 8000` + `retry: 0`；`index.vue` 的 `useAsyncData` 加 `.catch()` 兜底 |
+| **教训** | SSR 阶段的所有 API 调用必须设超时。Health check endpoint 本身也要避免依赖外部服务 |
+
+### 三、Railway 部署踩坑
+
+| 坑 | 表现 | 原因 | 对策 |
+|----|------|------|------|
+| 双服务独立部署 | 改了后端，部署前端，Bug 还在 | Railway 上后端和 front-ui 是两个独立项目 | 改代码后确认改了哪个模块，两个都要 Redeploy |
+| git push 认证失败 | commit 成功但 push 失败 | 沙箱环境无法交互输密码 | 本地终端 `git push`，建议配 SSH Key 免密推送 |
+| 健康检查路径踩坑 | `/health` 返回 502 | front-ui 的 health 检查踩到 SSR API 无限 hanging | 首页 SSR 必须超时兜底，不能依赖外部服务可用性 |
+
+### 四、试错模式总结
+
+**为什么点赞持久化绕了 10+ 轮？**
+
+```
+层1: Fastjson2 省略 data 字段     → 修了，data:0 还在
+层2: JWT 跳过 Token             → 修了，data:0 还在
+层3: delFlag = null             → 修了，data:0 还在
+层4: Map.set() 不响应           → 修了，data:0 还在
+层5: onMounted 守卫提前 return   → 修了，终于 work
+```
+
+**每修一层，data: 0 这个现象都仍然成立**——无法通过现象判断修到了哪一层。只有直接查 SQL 日志才能穿透表象。
+
+**如果能重来：**
+
+1. 第 1 轮看到 `data: 0` → 查后端 SQL 日志 → 发现 `selectOneWithDeleted userId=null`
+2. 定位 JWT 过滤器 → 修复
+3. 同时检查数据库 `delFlag` 值 → 发现 `null`
+4. 补 `setDelFlag(0)` → 修复
+5. 确认前端 ref 响应式 → 改成 `ref<Record>`
+6. 确认 onMounted 时序 → 移除守卫
+
+**一个 commit 修完所有层，而不是 10 轮试错。**
