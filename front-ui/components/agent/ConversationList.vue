@@ -54,6 +54,13 @@ const groupedConvs = computed<Record<string, ConversationItem[]>>(() => {
 })
 const recentConvs = computed<ConversationItem[]>(() => groupedConvs.value['__recent__'] || [])
 
+// ====================== 目录折叠状态 ======================
+/** 「对话分组」目录是否展开（默认展开） */
+const groupsExpanded = ref(true)
+function toggleGroupsDir() {
+  groupsExpanded.value = !groupsExpanded.value
+}
+
 // ====================== 批量管理 ======================
 const batchMode = ref(false)
 const selectedIds = ref<Set<string>>(new Set())
@@ -154,19 +161,30 @@ function openSettings() {
         </button>
       </div>
 
-      <!-- 对话分组 目录 -->
+      <!-- 对话分组 目录（可折叠） -->
       <div>
         <div class="flex items-center justify-between px-3 py-1.5">
-          <span class="text-xs font-medium flex items-center gap-1.5 theme-text-muted">
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <button
+            type="button"
+            class="flex-1 min-w-0 flex items-center gap-1.5 text-left text-xs font-medium theme-text-muted hover:text-current transition-colors"
+            @click="toggleGroupsDir"
+          >
+            <svg
+              :class="['w-3 h-3 shrink-0 transition-transform', groupsExpanded ? '' : '-rotate-90']"
+              viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round"
+            >
+              <polyline points="6 9 12 15 18 9" />
+            </svg>
+            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             </svg>
-            对话分组<span v-if="groups.length > 0" class="opacity-60 ml-1">({{ groups.length }})</span>
-          </span>
+            <span class="truncate">对话分组<span v-if="groups.length > 0" class="opacity-60 ml-1">({{ groups.length }})</span></span>
+          </button>
           <button
-            class="text-xs px-2 py-0.5 rounded-md flex items-center gap-1 transition-colors"
+            class="text-xs px-2 py-0.5 rounded-md flex items-center gap-1 shrink-0 transition-colors"
             :class="['theme-text-muted hover:bg-black/5']"
-            @click="emit('openCreateGroup')"
+            @click.stop="emit('openCreateGroup')"
             title="新建分组"
           >
             <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -177,38 +195,34 @@ function openSettings() {
           </button>
         </div>
 
-        <div v-if="groups.length > 0" class="space-y-1">
-          <ConversationGroup
-            v-for="g in groups"
-            :key="g.id"
-            :group="g"
-            :conversations="groupedConvs[g.id] || []"
-            :active-id="activeId"
-            :batch-mode="batchMode"
-            :selected-ids="selectedIds"
-            @select="(id) => emit('select', id)"
-            @rename="(id, t) => emit('rename', id, t)"
-            @delete="(id) => emit('delete', id)"
-            @pin="(id, p) => emit('pin', id, p)"
-            @move-to-group="(id) => emit('moveToGroup', id)"
-            @toggle-select="toggleSelect"
-            @rename-group="(gid, name) => emit('renameGroup', gid, name)"
-            @delete-group="(gid) => emit('deleteGroup', gid)"
-          />
-        </div>
-        <div v-else class="px-3 py-2 text-center">
-          <p class="text-xs theme-text-muted">暂无分组，点击右上角「新建」</p>
+        <div v-show="groupsExpanded">
+          <div v-if="groups.length > 0" class="space-y-1">
+            <ConversationGroup
+              v-for="g in groups"
+              :key="g.id"
+              :group="g"
+              :conversations="groupedConvs[g.id] || []"
+              :active-id="activeId"
+              :batch-mode="batchMode"
+              :selected-ids="selectedIds"
+              @select="(id) => emit('select', id)"
+              @rename="(id, t) => emit('rename', id, t)"
+              @delete="(id) => emit('delete', id)"
+              @pin="(id, p) => emit('pin', id, p)"
+              @move-to-group="(id) => emit('moveToGroup', id)"
+              @toggle-select="toggleSelect"
+              @rename-group="(gid, name) => emit('renameGroup', gid, name)"
+              @delete-group="(gid) => emit('deleteGroup', gid)"
+            />
+          </div>
+          <div v-else class="px-3 py-2 text-center">
+            <p class="text-xs theme-text-muted">暂无分组，点击右上角「新建」</p>
+          </div>
         </div>
       </div>
 
-      <!-- 最近对话 section -->
+      <!-- 最近对话 section（标题由 ConversationGroup 渲染，避免重复） -->
       <div>
-        <div class="flex items-center px-3 py-1.5">
-          <span class="text-xs font-medium" :class="['theme-text-muted']">
-            最近对话<span v-if="recentConvs.length > 0" class="opacity-60 ml-1">({{ recentConvs.length }})</span>
-          </span>
-        </div>
-        <!-- 复用 ConversationGroup 渲染最近对话（虚拟分组，禁用 header 菜单） -->
         <ConversationGroup
           v-if="recentConvs.length > 0"
           :group="{ id: '__recent__', name: '最近对话' }"
