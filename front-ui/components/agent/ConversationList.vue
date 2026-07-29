@@ -44,10 +44,17 @@ const router = useRouter()
 
 // ====================== 分组逻辑 ======================
 /** 按 groupId 把会话分桶；null 桶为「最近对话未分组」 */
+const convSearch = ref('')
+const filteredConversations = computed<ConversationItem[]>(() => {
+  const q = convSearch.value.trim().toLowerCase()
+  if (!q) return props.conversations
+  return props.conversations.filter(c => (c.title || '').toLowerCase().includes(q))
+})
+
 const groupedConvs = computed<Record<string, ConversationItem[]>>(() => {
   const map: Record<string, ConversationItem[]> = { __recent__: [] }
   for (const g of props.groups) map[g.id] = []
-  for (const c of props.conversations) {
+  for (const c of filteredConversations.value) {
     const gid = c.groupId ? String(c.groupId) : '__recent__'
     if (!map[gid]) map[gid] = []
     map[gid].push(c)
@@ -133,6 +140,23 @@ function openSettings() {
 
 <template>
   <div class="flex flex-col h-full agent-sidebar" :class="['theme-bg-secondary']">
+    <!-- 搜索对话（过滤历史会话） -->
+    <div class="px-3 pt-3">
+      <div class="relative">
+        <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" :class="['theme-text-muted']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <circle cx="11" cy="11" r="8" />
+          <line x1="21" y1="21" x2="16.65" y2="16.65" />
+        </svg>
+        <input
+          v-model="convSearch"
+          type="text"
+          placeholder="搜索对话"
+          class="w-full pl-8 pr-2 py-1.5 text-xs rounded-lg"
+          :class="['theme-text-main', 'theme-card']"
+        />
+      </div>
+    </div>
+
     <!-- 新建会话 -->
     <div class="p-3">
       <button
