@@ -163,9 +163,6 @@ function openSettings() {
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>
-            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
-            </svg>
             <span class="truncate">对话分组<span v-if="groups.length > 0" class="opacity-60 ml-1">({{ groups.length }})</span></span>
           </button>
           <button

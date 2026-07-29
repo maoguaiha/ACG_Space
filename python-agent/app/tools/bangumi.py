@@ -44,8 +44,18 @@ def _rating(d) -> float | None:
     return r
 
 
+def _image_url(d) -> str:
+    """从 bangumi 响应中抽取封面图 URL（响应字段 images.common / large / medium）。"""
+    if not isinstance(d, dict):
+        return ""
+    images = d.get("images") or {}
+    if not isinstance(images, dict):
+        return ""
+    return images.get("common") or images.get("large") or images.get("medium") or ""
+
+
 def search_bangumi(keyword: str, limit: int = 5) -> dict:
-    """搜索番剧，返回前 limit 条（name/name_cn/summary/rating/url）。"""
+    """搜索番剧，返回前 limit 条（name/name_cn/summary/rating/url/image）。"""
     data = _get_json(f"/search/subject/{keyword}", {"type": 2, "responseGroup": "large"})
     items = data.get("list") or []
     out = []
@@ -58,13 +68,14 @@ def search_bangumi(keyword: str, limit: int = 5) -> dict:
                 "summary": (it.get("summary") or "")[:200],
                 "rating": _rating(it),
                 "url": it.get("url") or "",
+                "image": _image_url(it),
             }
         )
     return {"count": len(out), "query": keyword, "items": out}
 
 
 def get_bangumi_detail(bgm_id: int) -> dict:
-    """番剧详情：名称 / 简介 / 评分 / 标签 / 集数。"""
+    """番剧详情：名称 / 简介 / 评分 / 标签 / 集数 / 封面 / 链接。"""
     d = _get_json(f"/v0/subjects/{bgm_id}")
     return {
         "id": d.get("id"),
@@ -75,6 +86,7 @@ def get_bangumi_detail(bgm_id: int) -> dict:
         "tags": [t.get("name") for t in (d.get("tags") or [])][:10],
         "total_episodes": d.get("total_episodes"),
         "url": d.get("url") or f"https://bgm.tv/subject/{bgm_id}",
+        "image": _image_url(d),
     }
 
 
@@ -92,6 +104,7 @@ def get_airing_now() -> dict:
                     "name": it.get("name"),
                     "name_cn": it.get("name_cn") or "",
                     "rating": _rating(it),
+                    "image": _image_url(it),
                 }
             )
     return {"count": len(out), "items": out}

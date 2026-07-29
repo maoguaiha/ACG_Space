@@ -4,12 +4,13 @@
  *
  * 特性：
  *   - 空态：首次进入显示欢迎引导 + 快捷提示词
- *   - 已有消息：内联渲染用户/助手气泡（不依赖 ChatMessage 子组件，避免自动导入命名问题）
+ *   - 已有消息：内联渲染用户/助手气泡（AI 消息用 markdown-it 渲染）
  *   - 思考中：流式尚未返回首个 token 时，显示三点跳动指示器 + 累计秒数
- *   - 流式进行中：就地渲染内容 + 闪烁光标
+ *   - 流式进行中：就地渲染 Markdown + 闪烁光标
  *   - 自动滚动：仅在用户已处于底部时自动跟随，否则保持原位不打扰阅读
  */
-import { ref, watch, nextTick, onUnmounted } from 'vue'
+import { ref, watch, computed, nextTick, onUnmounted } from 'vue'
+import MarkdownIt from 'markdown-it'
 
 const props = defineProps<{
   /** 当前会话 ID，变化时重置滚动位置（回到顶部，不强制跟随底部） */
@@ -28,6 +29,40 @@ const emit = defineEmits<{
   'quick-send': [q: string]
 }>()
 
+// ---------- Markdown 渲染器 ----------
+// html:false  阻止源 Markdown 中的原始 HTML 透传（防 XSS）
+// linkify:true 自动识别 URL 并转链接
+// breaks:true  把 \n 转 <br>（流式部分内容更友好）
+const md = new MarkdownIt({
+  html: false,
+  linkify: true,
+  breaks: true,
+  typographer: false,
+})
+
+// 所有链接强制新窗口打开 + 防 referrer/tab-nabbing
+const _defaultLinkOpen = md.renderer.rules.link_open
+  || function (tokens, idx, options, env, self) { return self.renderToken(tokens, idx, options) }
+md.renderer.rules.link_open = function (tokens, idx, options, env, self) {
+  const token = tokens[idx]
+  const hrefIdx = token.attrIndex('href')
+  if (hrefIdx >= 0) {
+    const href = token.attrs?.[hrefIdx]?.[1] ?? ''
+    if (/^https?:\/\//i.test(href)) {
+      token.attrSet('target', '_blank')
+      token.attrSet('rel', 'noopener noreferrer')
+    }
+  }
+  return _defaultLinkOpen(tokens, idx, options, env, self)
+}
+
+// 流式内容响应式渲染
+const renderedStreaming = computed(() => md.render(props.streamingContent || ''))
+function renderMarkdown(content: string): string {
+  return md.render(content || '')
+}
+
+// ---------- 锚点 / 滚动 ----------
 const anchorRef = ref<HTMLElement>()
 const scrollContainerRef = ref<HTMLElement>()
 
@@ -136,7 +171,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
     <!-- 消息列表（内联渲染，不依赖 ChatMessage 子组件，规避 pathPrefix 命名问题） -->
     <div class="max-w-3xl mx-auto">
       <template v-for="msg in messages" :key="msg.id">
-        <!-- 用户消息：右对齐，品牌主色气泡 -->
+        <!-- 用户消息：右对齐，品牌主色气泡（Markdown 不解析，避免误渲染） -->
         <div v-if="msg.role === 'user'" class="flex gap-3 py-3 justify-end">
           <div
             class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
@@ -155,7 +190,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
           </div>
         </div>
 
-        <!-- 助手消息：左对齐；错误态用红色半透明背景 -->
+        <!-- 助手消息：左对齐；Markdown 渲染（v-html 因为 markdown-it 已 sanitize） -->
         <div v-else class="flex gap-3 py-3 justify-start">
           <div
             class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
@@ -164,10 +199,11 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
             AI
           </div>
           <div
-            class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
+            class="max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed agent-markdown"
             :class="msg.isError ? ['bg-red-500/10', 'border', 'border-red-500/30', 'text-red-400'] : ['theme-card', 'theme-text-main']"
           >
-            {{ msg.content }}
+            <div v-if="msg.isError" class="whitespace-pre-wrap">{{ msg.content }}</div>
+            <div v-else v-html="renderMarkdown(msg.content)" />
           </div>
         </div>
       </template>
@@ -195,7 +231,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
         </div>
       </div>
 
-      <!-- 流式生成中（已有 token）：就地渲染内容 + 闪烁光标 -->
+      <!-- 流式生成中（已有 token）：就地渲染 Markdown + 闪烁光标 -->
       <div v-else-if="hasStreaming" class="flex gap-3 py-3 justify-start">
         <div
           class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
@@ -204,10 +240,11 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
           AI
         </div>
         <div
-          class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
+          class="max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed agent-markdown"
           :class="['theme-card', 'theme-text-main']"
         >
-          {{ streamingContent }}<span class="animate-pulse select-none">|</span>
+          <div v-html="renderedStreaming" />
+          <span class="inline-block w-0.5 h-3.5 ml-0.5 align-middle bg-current animate-pulse select-none" />
         </div>
       </div>
     </div>
@@ -218,6 +255,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
 </template>
 
 <style scoped>
+/* 思考中小点跳动 */
 .typing-dot {
   display: inline-block;
   animation: typing-bounce 1.2s infinite ease-in-out;
@@ -231,5 +269,109 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
     transform: translateY(-4px);
     opacity: 1;
   }
+}
+
+/* Markdown 渲染样式（:deep 因为 v-html 子元素没有 scoped 属性） */
+.agent-markdown :deep(h1),
+.agent-markdown :deep(h2),
+.agent-markdown :deep(h3),
+.agent-markdown :deep(h4) {
+  font-weight: 600;
+  line-height: 1.3;
+}
+.agent-markdown :deep(h1) { font-size: 1.2em; margin-top: 0.6em; margin-bottom: 0.4em; }
+.agent-markdown :deep(h2) { font-size: 1.1em; margin-top: 0.6em; margin-bottom: 0.4em; }
+.agent-markdown :deep(h3) { font-size: 1em;    margin-top: 0.5em; margin-bottom: 0.3em; }
+.agent-markdown :deep(h4) { font-size: 0.95em; margin-top: 0.5em; margin-bottom: 0.3em; }
+
+.agent-markdown :deep(p) {
+  margin: 0.4em 0;
+  line-height: 1.65;
+}
+.agent-markdown :deep(p:first-child) { margin-top: 0; }
+.agent-markdown :deep(p:last-child) { margin-bottom: 0; }
+
+.agent-markdown :deep(ul),
+.agent-markdown :deep(ol) {
+  margin: 0.4em 0;
+  padding-left: 1.4em;
+}
+.agent-markdown :deep(li) {
+  margin: 0.2em 0;
+  line-height: 1.6;
+}
+.agent-markdown :deep(li > p) { margin: 0; }
+
+.agent-markdown :deep(blockquote) {
+  border-left: 3px solid currentColor;
+  opacity: 0.7;
+  padding-left: 0.8em;
+  margin: 0.6em 0;
+}
+
+.agent-markdown :deep(table) {
+  border-collapse: collapse;
+  width: 100%;
+  margin: 0.6em 0;
+  font-size: 0.9em;
+}
+.agent-markdown :deep(th),
+.agent-markdown :deep(td) {
+  border: 1px solid rgba(127, 127, 127, 0.3);
+  padding: 0.4em 0.6em;
+  text-align: left;
+  vertical-align: top;
+}
+.agent-markdown :deep(thead th) {
+  background: rgba(127, 127, 127, 0.12);
+  font-weight: 600;
+}
+
+.agent-markdown :deep(a) {
+  color: #ec4899; /* 品牌粉，和 AI 头像主色一致 */
+  text-decoration: underline;
+  text-underline-offset: 2px;
+  word-break: break-all;
+}
+.agent-markdown :deep(a:hover) { opacity: 0.8; }
+
+.agent-markdown :deep(strong) { font-weight: 700; }
+.agent-markdown :deep(em) { font-style: italic; }
+
+.agent-markdown :deep(code) {
+  background: rgba(127, 127, 127, 0.18);
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  font-size: 0.9em;
+  font-family: 'Consolas', 'Monaco', 'SF Mono', monospace;
+}
+.agent-markdown :deep(pre) {
+  background: rgba(0, 0, 0, 0.25);
+  padding: 0.7em 0.9em;
+  border-radius: 8px;
+  overflow-x: auto;
+  margin: 0.6em 0;
+  line-height: 1.5;
+}
+.agent-markdown :deep(pre code) {
+  background: transparent;
+  padding: 0;
+  font-size: 0.85em;
+}
+
+.agent-markdown :deep(hr) {
+  border: none;
+  border-top: 1px solid rgba(127, 127, 127, 0.3);
+  margin: 0.8em 0;
+}
+
+/* 番剧封面图：限宽 + 圆角，与气泡融洽 */
+.agent-markdown :deep(img) {
+  max-width: 140px;
+  height: auto;
+  border-radius: 8px;
+  margin: 0.4em 0;
+  display: block;
+  background: rgba(127, 127, 127, 0.1); /* 占位灰底，避免图裂时空 */
 }
 </style>
