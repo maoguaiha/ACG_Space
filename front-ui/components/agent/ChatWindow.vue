@@ -135,7 +135,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
 <template>
   <div
     ref="scrollContainerRef"
-    class="hide-scrollbar-container flex-1 overflow-y-auto px-4 pt-14 pb-2"
+    class="hide-scrollbar-container flex-1 overflow-y-auto px-4 pt-14 pb-8"
     @scroll="checkStickToBottom"
   >
     <!-- 空态：无消息且无流式 -->
@@ -180,7 +180,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
             {{ msg.content }}
           </div>
           <div
-            class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center select-none"
+            class="flex-shrink-0 w-8 h-8 mt-3 rounded-full flex items-center justify-center select-none"
             :class="['theme-card', 'theme-text-muted']"
           >
             <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -193,7 +193,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
         <!-- 助手消息：左对齐；头像与气泡顶部对齐；Markdown 渲染 -->
         <div v-else class="flex gap-3 pt-2 pb-3 justify-start items-start">
           <div
-            class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
+            class="flex-shrink-0 w-8 h-8 mt-3 rounded-full flex items-center justify-center text-xs font-bold select-none"
             :class="['theme-primary-bg', 'text-white']"
           >
             AI
@@ -209,9 +209,9 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
       </template>
 
       <!-- 思考中：等待首个 token，显示累计秒数（"AI 助手正在思考 · 3s"） -->
-      <div v-if="hasStreaming && streamingContent.length === 0" class="flex gap-3 py-3 justify-start">
+      <div v-if="hasStreaming && streamingContent.length === 0" class="flex gap-3 py-3 justify-start items-start">
         <div
-          class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
+          class="flex-shrink-0 w-8 h-8 mt-3 rounded-full flex items-center justify-center text-xs font-bold select-none"
           :class="['theme-primary-bg', 'text-white']"
         >
           AI
@@ -234,7 +234,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
       <!-- 流式生成中（已有 token）：就地渲染 Markdown + 闪烁光标 -->
       <div v-else-if="hasStreaming" class="flex gap-3 pt-2 pb-3 justify-start items-start">
         <div
-          class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
+          class="flex-shrink-0 w-8 h-8 mt-3 rounded-full flex items-center justify-center text-xs font-bold select-none"
           :class="['theme-primary-bg', 'text-white']"
         >
           AI
@@ -317,14 +317,14 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
 }
 .agent-markdown :deep(th),
 .agent-markdown :deep(td) {
-  border: 1px solid rgba(127, 127, 127, 0.3);
-  padding: 0.4em 0.6em;
+  border: 1px solid var(--theme-border-color, rgba(128, 128, 128, 0.2));
+  padding: 8px 12px;
   text-align: left;
   vertical-align: top;
 }
 .agent-markdown :deep(thead th) {
-  background: rgba(127, 127, 127, 0.12);
-  font-weight: 600;
+  background-color: rgba(127, 127, 127, 0.08);
+  font-weight: 700;
 }
 
 .agent-markdown :deep(a) {

@@ -66,7 +66,7 @@ watch(inputText, () => {
     <div class="max-w-3xl mx-auto">
       <div class="flex items-end gap-2">
         <!-- 输入框胶囊：清空按钮 + 输入框聚合为统一外底板（任务 3） -->
-        <div class="agent-input-capsule flex-1 flex items-end rounded-2xl px-1 py-1">
+        <div class="agent-input-capsule flex-1 flex items-start rounded-2xl px-1 py-1">
           <!-- 清除上下文（胶囊内左侧，不再是孤岛） -->
           <button
             type="button"
@@ -90,7 +90,7 @@ watch(inputText, () => {
             <button
               type="button"
               @click="handleAttach"
-              class="absolute left-3 top-3 p-1 rounded-lg transition-colors"
+              class="absolute left-3 top-[13px] p-1 rounded-lg transition-colors"
               :class="['theme-text-muted', 'hover:theme-text-main']"
               title="上传图片 / 文件（即将支持）"
             >
@@ -108,7 +108,7 @@ watch(inputText, () => {
               @keydown="handleKeydown"
               class="agent-textarea w-full resize-none rounded-xl pl-10 pr-4 pt-3 text-sm leading-relaxed focus:outline-none transition-colors placeholder:opacity-40"
               :class="['theme-text-main']"
-              style="min-height: 48px; max-height: 200px; padding-bottom: 30px"
+              style="min-height: 54px; max-height: 200px; padding-bottom: 36px"
             />
 
             <!-- 底部状态挂件：网络状态 + 模型（不遮挡文字，textarea 已留 padding-bottom） -->
