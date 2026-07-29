@@ -19,8 +19,9 @@ const emit = defineEmits<{
   /**
    * 用户点击确定
    * @param target - 选中的目标分组（null=移回最近对话；'__new__:<name>' = 新建并移动）
+   * 注意：groupId 保持字符串（雪花 ID 超出 JS 安全整数范围，Number() 会丢精度）
    */
-  confirm: [target: { groupId: number | null; newGroupName?: string }]
+  confirm: [target: { groupId: string | null; newGroupName?: string }]
 }>()
 
 const selectedId = ref<string | null>(null) // null=最近对话；数字=已有分组 ID；'__new__'=新建
@@ -65,7 +66,8 @@ function onConfirm() {
   } else if (selectedId.value === '__new__') {
     emit('confirm', { groupId: null, newGroupName: newGroupName.value.trim() })
   } else {
-    emit('confirm', { groupId: Number(selectedId.value) })
+    // 保持字符串：19 位雪花 ID 超出 JS 安全整数，Number() 会丢精度导致后端查不到分组
+    emit('confirm', { groupId: selectedId.value })
   }
   close()
 }

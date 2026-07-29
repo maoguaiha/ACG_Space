@@ -15,8 +15,11 @@ export const useUserStore = defineStore('user', () => {
   const token = ref<string | null>(tokenCookie.value)
   const userInfo = ref<UserInfo | null>(null)
 
-  // 初始化从 cookie/localStorage 加载 token（cookie 兼容 SSR，localStorage 兼容旧数据）
-  if (import.meta.client) {
+  // SSR 安全：初始 token 只来自 cookie（SSR 与客户端 hydration 阶段一致），
+  // localStorage 的兼容迁移放到 onMounted（hydration 之后）执行，
+  // 否则客户端 setup 阶段读 localStorage 会与 SSR 的 cookie-only 结果不同，
+  // 导致 navbar 渲染的 DOM 不一致，触发 "Hydration completed but contains mismatches"
+  onMounted(() => {
     if (!token.value) {
       const savedToken = localStorage.getItem('acg_token')
       if (savedToken) {
@@ -29,12 +32,10 @@ export const useUserStore = defineStore('user', () => {
     }
 
     if (token.value) {
-      // 延迟获取用户信息，确保在客户端环境下
-      nextTick(() => {
-        loadUserInfo()
-      })
+      // 客户端环境下延迟获取用户信息
+      loadUserInfo()
     }
-  }
+  })
 
   const isLoggedIn = computed(() => !!token.value)
 

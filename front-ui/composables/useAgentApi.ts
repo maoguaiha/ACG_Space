@@ -84,7 +84,9 @@ export async function pinConversation(id: string, pinned: boolean): Promise<bool
 }
 
 /** 移动会话到指定分组（groupId 为 null 表示移回最近对话） */
-export async function moveConversationToGroup(id: string, groupId: number | null): Promise<boolean> {
+/** 移动会话到指定分组（groupId 为 null = 移回「最近对话」未分组）。
+ *  注意：groupId 用字符串传递——雪花 ID 超出 JS 安全整数范围，number 会丢精度。 */
+export async function moveConversationToGroup(id: string, groupId: string | null): Promise<boolean> {
   return apiFetch<boolean>(`/agent/conversations/${id}/group`, {
     method: 'PUT',
     body: JSON.stringify({ groupId }),

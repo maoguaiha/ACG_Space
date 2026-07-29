@@ -179,7 +179,8 @@ async function handleDeleteConv(id: string) {
 /** 置顶 / 取消置顶 */
 async function handlePinConv(id: string, pinned: boolean) {
   try {
-    await pinConversation(id, pinned)
+    const ok = await pinConversation(id, pinned)
+    if (!ok) throw new Error('置顶操作未生效')
     // 重新拉取列表以反映「置顶优先」排序
     conversations.value = await fetchConversations()
   } catch (e) {
@@ -237,15 +238,17 @@ function openMoveGroupDialog(convIdOrIds: string | string[]) {
 }
 
 /** 「移动分组」对话框确认回调 */
-async function handleMoveToGroupConfirm(target: { groupId: number | null; newGroupName?: string }) {
+async function handleMoveToGroupConfirm(target: { groupId: string | null; newGroupName?: string }) {
   try {
     let groupId = target.groupId
+    // 注意：新建分组的 id 也是 19 位雪花 ID，必须保持字符串，绝不能 Number()（会丢精度）
     if (target.newGroupName && groupId === null) {
       const newId = await createGroup(target.newGroupName, groups.value.length + 1)
-      groupId = Number(newId)
+      groupId = newId
     }
     for (const id of pendingMoveConvIds.value) {
-      await moveConversationToGroup(id, groupId)
+      const ok = await moveConversationToGroup(id, groupId)
+      if (!ok) throw new Error('部分会话移动失败（可能分组已删除）')
     }
     await Promise.all([
       loadGroups(),
@@ -301,15 +304,18 @@ async function onRenameConfirm(value: string) {
   const d = renameDialog.value
   try {
     if (d.target === 'conv') {
-      await renameConversation(d.id, value)
+      const ok = await renameConversation(d.id, value)
+      if (!ok) throw new Error('重命名失败')
       const conv = conversations.value.find(c => c.id === d.id)
       if (conv) conv.title = value
     } else if (d.target === 'group') {
-      await renameGroup(d.id, value)
+      const ok = await renameGroup(d.id, value)
+      if (!ok) throw new Error('重命名分组失败')
       const g = groups.value.find(g => g.id === d.id)
       if (g) g.name = value
     } else if (d.target === 'createGroup') {
-      await createGroup(value, groups.value.length + 1)
+      const newId = await createGroup(value, groups.value.length + 1)
+      if (!newId) throw new Error('新建分组失败')
       await loadGroups()
     }
     appStore.showMessage('操作成功', 'success')
@@ -323,7 +329,8 @@ async function onRenameConfirm(value: string) {
 async function handleDeleteGroup(groupId: string) {
   if (!window.confirm('删除分组后，组内会话将移回「最近对话」。确定删除？')) return
   try {
-    await deleteGroup(groupId)
+    const ok = await deleteGroup(groupId)
+    if (!ok) throw new Error('删除分组失败')
     await Promise.all([
       loadGroups(),
       (async () => { conversations.value = await fetchConversations() })(),

@@ -157,7 +157,11 @@ public class AgentController {
         if (userId == null) {
             return Result.error(BizErrorCode.UNAUTHORIZED);
         }
-        return Result.success(agentService.moveToGroup(userId, id, req.getGroupId()));
+        // groupId 由前端以字符串传递（雪花 ID 超出 JS 安全整数，number 会丢精度），
+        // 此处显式 Long.parseLong 保证精确还原。
+        Long groupId = (req.getGroupId() != null && !req.getGroupId().isBlank())
+                ? Long.parseLong(req.getGroupId().trim()) : null;
+        return Result.success(agentService.moveToGroup(userId, id, groupId));
     }
 
     /**

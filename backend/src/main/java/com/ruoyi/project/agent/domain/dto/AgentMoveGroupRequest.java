@@ -15,7 +15,9 @@ public class AgentMoveGroupRequest implements Serializable {
     private static final long serialVersionUID = 1L;
 
     /**
-     * 目标分组 ID（NULL = 移回最近对话未分组）
+     * 目标分组 ID（NULL = 移回最近对话未分组）。
+     * 用 String 接收：前端雪花 ID 超出 JS 安全整数范围，以字符串传递可避免精度丢失，
+     * controller 再显式 Long.parseLong 还原。
      */
-    private Long groupId;
+    private String groupId;
 }
