@@ -9,7 +9,7 @@
  *   - 流式进行中：就地渲染 Markdown + 闪烁光标
  *   - 自动滚动：仅在用户已处于底部时自动跟随，否则保持原位不打扰阅读
  */
-import { ref, watch, computed, nextTick, onUnmounted, onMounted } from 'vue'
+import { ref, reactive, watch, computed, nextTick, onUnmounted, onMounted } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 const props = defineProps<{
@@ -118,17 +118,83 @@ function checkStickToBottom() {
   // 同步：正在滚动（用于细滚动条淡入）
   isScrolling.value = true
   scheduleScrollIdle()
+  updateScrollMetrics()
 }
 
-/** 滚动条可见性：滚动时浮现，停 1s 后淡出（千问式） */
+/** 滚动条可见性：滚动时浮现，停 1.5s 后淡出（macOS overlay 风格） */
 const isScrolling = ref(false)
 let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null
 function scheduleScrollIdle() {
   if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
-  // 停止滚动 3 秒后滑块隐身（千问式：细透明滑块仅在滚动时出现）
-  scrollIdleTimer = setTimeout(() => { isScrolling.value = false }, 3000)
+  // 停止滚动 1.5 秒后滑块淡出（macOS overlay 约 1~2s）
+  scrollIdleTimer = setTimeout(() => { isScrolling.value = false }, 1500)
 }
 onUnmounted(() => { if (scrollIdleTimer) clearTimeout(scrollIdleTimer) })
+
+// ==================== 自绘 mac 风格细滑块 ====================
+/** 滚动容器度量（驱动自绘滑块的尺寸与位置） */
+const scrollMetrics = reactive({ scrollTop: 0, clientHeight: 0, scrollHeight: 0 })
+/** 内容是否溢出（决定要不要渲染滑块） */
+const canScroll = computed(() => scrollMetrics.scrollHeight - scrollMetrics.clientHeight > 4)
+/** 滑块（thumb）高度：按比例缩放，最小 24px、最大不超过容器 */
+const thumbHeight = computed(() => {
+  const { clientHeight, scrollHeight } = scrollMetrics
+  if (!scrollHeight || clientHeight >= scrollHeight) return 0
+  const h = Math.floor((clientHeight / scrollHeight) * clientHeight)
+  return Math.max(24, Math.min(h, clientHeight))
+})
+/** 滑块纵向位置（translateY 像素） */
+const thumbTop = computed(() => {
+  const { scrollTop, clientHeight, scrollHeight } = scrollMetrics
+  const maxScroll = scrollHeight - clientHeight
+  if (maxScroll <= 0) return 0
+  const track = Math.max(1, clientHeight - thumbHeight.value - 16) // 上下各留 8px
+  return Math.round((scrollTop / maxScroll) * track)
+})
+function updateScrollMetrics() {
+  const el = scrollContainerRef.value
+  if (!el) return
+  scrollMetrics.scrollTop = el.scrollTop
+  scrollMetrics.clientHeight = el.clientHeight
+  scrollMetrics.scrollHeight = el.scrollHeight
+}
+/** 拖拽滑块滚动 */
+let thumbDragging = false
+let dragStartY = 0
+let dragStartScrollTop = 0
+function onThumbPointerDown(e: PointerEvent) {
+  const el = scrollContainerRef.value
+  if (!el) return
+  thumbDragging = true
+  dragStartY = e.clientY
+  dragStartScrollTop = el.scrollTop
+  window.addEventListener('pointermove', onThumbPointerMove)
+  window.addEventListener('pointerup', onThumbPointerUp)
+  e.preventDefault()
+}
+function onThumbPointerMove(e: PointerEvent) {
+  if (!thumbDragging) return
+  const el = scrollContainerRef.value
+  if (!el) return
+  const denom = (el.clientHeight - thumbHeight.value) || 1
+  const scrollPerPx = (el.scrollHeight - el.clientHeight) / denom
+  el.scrollTop = dragStartScrollTop + (e.clientY - dragStartY) * scrollPerPx
+}
+function onThumbPointerUp() {
+  thumbDragging = false
+  window.removeEventListener('pointermove', onThumbPointerMove)
+  window.removeEventListener('pointerup', onThumbPointerUp)
+}
+onUnmounted(() => {
+  window.removeEventListener('pointermove', onThumbPointerMove)
+  window.removeEventListener('pointerup', onThumbPointerUp)
+})
+/** 初次挂载 / 内容变化 / 视口变化时刷新度量 */
+function refreshMetrics() { nextTick(updateScrollMetrics) }
+onMounted(() => { refreshMetrics(); window.addEventListener('resize', refreshMetrics) })
+onUnmounted(() => { window.removeEventListener('resize', refreshMetrics) })
+watch(() => props.messages.length, refreshMetrics)
+watch(() => props.conversationId, refreshMetrics)
 
 function scrollToBottom() {
   if (!stickToBottom.value) return
@@ -240,12 +306,13 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
 </script>
 
 <template>
-  <div
-    ref="scrollContainerRef"
-    class="hide-scrollbar-container flex-1 min-h-0 overflow-y-auto px-4 pt-14 pb-8 relative"
-    :class="{ 'is-scrolling': isScrolling }"
-    @scroll="checkStickToBottom"
-  >
+  <div class="relative flex-1 min-h-0">
+    <!-- 滚动容器（原生滚动条已隐藏，改用自绘 mac 风格滑块） -->
+    <div
+      ref="scrollContainerRef"
+      class="hide-scrollbar-container h-full w-full overflow-y-auto px-4 pt-14 pb-8"
+      @scroll="checkStickToBottom"
+    >
     <!-- 空态：无消息且无流式 -->
     <div
       v-if="messages.length === 0 && !hasStreaming"
@@ -441,6 +508,20 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
         @click="scrollToUserQuestion(idx)"
       />
     </div>
+    </div>
+
+    <!-- 自绘 mac 风格细滑块：静止隐藏，滚动时浮现，可拖拽 -->
+    <div
+      v-if="canScroll"
+      class="agent-custom-scrollbar"
+      :class="{ 'is-visible': isScrolling }"
+    >
+      <div
+        class="agent-custom-thumb"
+        :style="{ height: thumbHeight + 'px', transform: 'translateY(' + thumbTop + 'px)' }"
+        @pointerdown="onThumbPointerDown"
+      />
+    </div>
   </div>
 </template>
 
@@ -632,5 +713,45 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
 .agent-scroll-spy-bar.is-active {
   opacity: 1;
   width: 20px;
+}
+
+/* ===== 自绘 mac 风格细滑块（overlay：静止隐藏，滚动浮现，可拖拽） ===== */
+.agent-custom-scrollbar {
+  position: absolute;
+  top: 8px;
+  bottom: 8px;
+  right: 2px;
+  width: 6px;
+  z-index: 20;
+  opacity: 0;
+  transition: opacity 0.25s ease;
+  /* 轨道本身不拦截事件，只有 thumb 可点 */
+  pointer-events: none;
+}
+.agent-custom-scrollbar.is-visible {
+  opacity: 1;
+}
+.agent-custom-thumb {
+  position: absolute;
+  top: 0;
+  left: 1px;
+  width: 4px;
+  border-radius: 9999px;
+  /* macOS overlay 灰：随主题自适应（浅色用深灰，深色用浅灰） */
+  background-color: rgba(120, 120, 120, 0.5);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: background-color 0.2s ease;
+}
+.agent-custom-thumb:hover {
+  background-color: rgba(120, 120, 120, 0.72);
+}
+:global(.dark) .agent-custom-thumb,
+:global(html.dark) .agent-custom-thumb {
+  background-color: rgba(200, 200, 200, 0.5);
+}
+:global(.dark) .agent-custom-thumb:hover,
+:global(html.dark) .agent-custom-thumb:hover {
+  background-color: rgba(200, 200, 200, 0.72);
 }
 </style>

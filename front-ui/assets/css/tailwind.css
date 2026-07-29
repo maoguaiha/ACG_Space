@@ -114,30 +114,14 @@ button:active:not(:disabled),
    - .is-scrolling 时变明显（0.45），强化「正在滚」的反馈
    - 同时适配 WebKit (::-webkit-scrollbar) 和 Firefox (scrollbar-width)
    ══════════════════════════════════════ */
+/* 隐藏原生滚动条：改用 Vue 自绘的 mac 风格细滑块（.agent-custom-scrollbar）
+   原因：macOS 上自定义 ::-webkit-scrollbar 会被切到「经典常驻」模式，
+   无法做出"静止隐藏、滚动浮现"的 overlay 效果；自绘 div 可跨系统统一行为。 */
 .hide-scrollbar-container {
-  /* Firefox：细滚动条；静止时极淡细线（常驻可见），滚动时加深 */
-  scrollbar-width: thin;
-  scrollbar-color: rgba(127, 127, 127, 0.22) transparent;
-  transition: scrollbar-color 0.3s ease;
+  scrollbar-width: none; /* Firefox：完全隐藏原生滚动条 */
 }
-.hide-scrollbar-container.is-scrolling {
-  /* 滚动时滑块更明显（千问式反馈） */
-  scrollbar-color: rgba(127, 127, 127, 0.6) transparent;
-}
-/* WebKit / Blink (Chrome / Edge / Safari)：自定义 thumb 颜色 */
 .hide-scrollbar-container::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
-}
-.hide-scrollbar-container::-webkit-scrollbar-track {
-  background: transparent;
-}
-.hide-scrollbar-container::-webkit-scrollbar-thumb {
-  /* 静止时极淡细线，常驻可见（比较透明、比较细） */
-  background-color: rgba(127, 127, 127, 0.22);
-  border-radius: 9999px;
-  transition: background-color 0.3s ease;
-}
-.hide-scrollbar-container.is-scrolling::-webkit-scrollbar-thumb {
-  background-color: rgba(127, 127, 127, 0.6);
+  width: 0;
+  height: 0;
+  display: none; /* WebKit：完全隐藏原生滚动条 */
 }
