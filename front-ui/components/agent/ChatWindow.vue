@@ -755,4 +755,11 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
 :global(html.dark) .agent-custom-thumb:hover {
   background-color: rgba(200, 200, 200, 0.72);
 }
+/* 粉色模式：滑块用品牌粉 accent (#EC4899 = 236,72,153) */
+:global(html.theme-pink) .agent-custom-thumb {
+  background-color: rgba(236, 72, 153, 0.5);
+}
+:global(html.theme-pink) .agent-custom-thumb:hover {
+  background-color: rgba(236, 72, 153, 0.72);
+}
 </style>
