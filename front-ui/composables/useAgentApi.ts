@@ -50,9 +50,15 @@ export async function fetchMessages(conversationId: string): Promise<AgentMessag
   return apiFetch<AgentMessageItem[]>(`/agent/conversations/${conversationId}/messages`)
 }
 
-/** 新建会话，返回会话 ID（字符串，避免前端 Number 精度丢失） */
-export async function createConversation(): Promise<string> {
-  return apiFetch<string>('/agent/conversations', { method: 'POST' })
+/** 新建会话，返回会话 ID（字符串，避免前端 Number 精度丢失）。
+ * 可选 groupId：创建后直接移动到该分组（复用已验证的 move 逻辑，避免改后端签名）。
+ * 注意 groupId 为字符串（雪花 ID 超 JS 安全整数）。 */
+export async function createConversation(groupId?: string | null): Promise<string> {
+  const id = await apiFetch<string>('/agent/conversations', { method: 'POST' })
+  if (groupId) {
+    await moveConversationToGroup(id, groupId)
+  }
+  return id
 }
 
 /** 删除会话（逻辑删除） */

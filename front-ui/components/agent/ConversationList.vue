@@ -36,6 +36,8 @@ const emit = defineEmits<{
   // 对话框控制（向上抛给父组件统一管理弹窗状态）
   openMoveGroup: [ids: string[]]
   openCreateGroup: []
+  // 在具体分组内新建对话（直接归属该分组）
+  createInGroup: [groupId: string]
 }>()
 
 const router = useRouter()
@@ -197,6 +199,7 @@ function openSettings() {
               @toggle-select="toggleSelect"
               @rename-group="(gid, name) => emit('renameGroup', gid, name)"
               @delete-group="(gid) => emit('deleteGroup', gid)"
+              @new-conversation-in-group="(gid) => emit('createInGroup', gid)"
               @enter-batch="enterBatch"
             />
           </div>

@@ -175,7 +175,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
         <div v-if="msg.role === 'user'" class="flex gap-3 py-3 justify-end">
           <div
             class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
-            :class="['theme-primary-bg', 'text-white']"
+            :class="['theme-user-bubble']"
           >
             {{ msg.content }}
           </div>

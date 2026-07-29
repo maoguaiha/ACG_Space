@@ -30,6 +30,8 @@ const emit = defineEmits<{
   deleteGroup: [groupId: string]
   /** 进入批量管理模式（全局） */
   enterBatch: []
+  /** 在具体分组内新建对话（直接归属该分组） */
+  newConversationInGroup: [groupId: string]
 }>()
 
 const collapsed = ref(false)
@@ -97,6 +99,19 @@ function isSelected(id: string): boolean {
           <polyline points="6 9 12 15 18 9" />
         </svg>
         <span class="truncate">{{ group.name }}<span v-if="group.id !== '__recent__' && conversations.length > 0" class="opacity-60 ml-1">({{ conversations.length }})</span></span>
+      </button>
+      <!-- 分组内新建对话（最近对话不需要，顶部已有「新对话」） -->
+      <button
+        v-if="group.id !== '__recent__'"
+        class="p-1 rounded-md opacity-0 group-hover/header:opacity-100 transition-opacity shrink-0"
+        :class="['theme-text-muted hover:bg-black/5']"
+        aria-label="在该分组新建对话"
+        @click.stop="emit('newConversationInGroup', group.id)"
+      >
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
       </button>
       <!-- 分组级三点菜单 -->
       <div class="relative">

@@ -19,7 +19,7 @@ const props = defineProps<{
 }>()
 
 const bubbleClass = computed(() => {
-  if (props.message.role === 'user') return ['theme-primary-bg', 'text-white']
+  if (props.message.role === 'user') return ['theme-user-bubble']
   if (props.message.isError) return ['bg-red-500/10', 'border', 'border-red-500/30', 'text-red-400']
   return ['theme-card', 'theme-text-main']
 })

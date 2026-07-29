@@ -116,15 +116,20 @@ async function loadGroups() {
   }
 }
 
-async function handleCreateConv() {
+async function handleCreateConv(groupId?: string | null) {
   try {
-    const id = await createConversation()
+    const id = await createConversation(groupId ?? null)
     activeConversationId.value = id
     messages.value = []
     await loadConversations()  // 同步刷新列表（含 pinned/groupId）
   } catch (e) {
     console.error('新建会话失败', e)
   }
+}
+
+/** 在具体分组内点击「新建对话」：创建后直接归属该分组 */
+function handleCreateInGroup(groupId: string) {
+  handleCreateConv(groupId)
 }
 
 /** 拉取指定会话的历史消息并塞入 messages 列表（用于切换 / 挂载场景） */
@@ -472,6 +477,7 @@ onMounted(() => { loadConversations() })
           @rename-group="handleRenameGroup"
           @delete-group="handleDeleteGroup"
           @open-create-group="handleOpenCreateGroup"
+          @create-in-group="handleCreateInGroup"
         />
       </div>
 

@@ -1587,6 +1587,24 @@ const handleLogout = () => {
   box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);
 }
 
+/* 用户自己的对话气泡：浅色/粉色模式用浅色底（像番剧库选中标签），避免主色实底太重；
+   dark 模式仍用实心主色渐变保持对比。 */
+.theme-dark .theme-user-bubble {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
+}
+.theme-light .theme-user-bubble {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3B82F6;
+  box-shadow: none;
+}
+.theme-pink .theme-user-bubble {
+  background: rgba(236, 72, 153, 0.12);
+  color: #db2777;
+  box-shadow: none;
+}
+
 .theme-dark .theme-search-input {
   background-color: rgba(30, 41, 59, 0.9);
   border-color: #475569;
