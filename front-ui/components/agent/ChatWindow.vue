@@ -166,6 +166,13 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
 const userQuestions = computed(() => props.messages.filter((m) => m.role === 'user'))
 const questionIdxs = computed(() => userQuestions.value.map((_, i) => i))
 
+/** 预计算 userQuestion.id → 在 userQuestions 里的 idx（避免 v-for 里再 findIndex） */
+const userIdxById = computed<Record<string, number>>(() => {
+  const map: Record<string, number> = {}
+  userQuestions.value.forEach((m, i) => { map[m.id] = i })
+  return map
+})
+
 /** 当前可见的用户问题在 userQuestions 里的索引 */
 const activeUserIdx = ref(0)
 
@@ -175,7 +182,14 @@ function scrollToUserQuestion(idx: number) {
   if (!el) return
   // 找对应消息的真实 DOM：用 [data-user-idx] 选择器
   const target = el.querySelector<HTMLElement>(`[data-user-idx="${idx}"]`)
-  if (!target) return
+  if (!target) {
+    // 兜底：若因 TransitionGroup 渲染延迟找不到，按 idx 推算列表里的第 idx 条用户消息
+    const allUserNodes = el.querySelectorAll<HTMLElement>('[data-user-idx]')
+    const byOrder = allUserNodes[idx]
+    if (!byOrder) return
+    el.scrollTo({ top: byOrder.offsetTop - 14, behavior: 'smooth' })
+    return
+  }
   const top = target.offsetTop - 14
   el.scrollTo({ top, behavior: 'smooth' })
 }
@@ -279,7 +293,7 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
         <!-- 用户消息：右对齐，浅色/粉色主题气泡背景，Markdown 不解析避免误渲染 -->
         <div
           v-if="msg.role === 'user'"
-          :data-user-idx="userQuestions.findIndex(q => q.id === msg.id)"
+          :data-user-idx="userIdxById[msg.id] ?? -1"
           class="flex gap-3 pt-2 pb-3 justify-end items-start"
         >
           <div

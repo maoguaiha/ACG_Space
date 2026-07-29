@@ -563,14 +563,20 @@ onMounted(() => { loadConversations() })
 
 <template>
   <div
-    class="h-full flex flex-col overflow-hidden"
+    class="h-[calc(100dvh-4rem)] flex flex-col overflow-hidden"
     :class="['theme-bg']"
   >
     <div class="flex flex-1 overflow-hidden">
       <!-- ===== 侧边栏（桌面固定可折叠 / 移动抽屉） ===== -->
+      <!--
+        桌面端（md:relative）必须显式撑满父级高度，否则 ConversationList 的 h-full 父级 = 0
+        → 侧边栏底部"AI 设置/清除所有对话/返回首页"按钮被 0 高度裁掉。
+        同时主区域作为 flex-row 兄弟，align-items: stretch 仍能拿到父级高度，所以
+        给侧边栏加 md:h-full 不会影响主区域，反而修复侧边栏塌缩。
+      -->
       <div
         class="fixed inset-y-[4rem] left-0 z-40 transform overflow-hidden transition-[width,transform] duration-200 ease-in-out
-               md:relative md:inset-auto md:translate-x-0"
+               md:relative md:inset-auto md:translate-x-0 md:h-full"
         :class="[
           'w-[270px]',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full',

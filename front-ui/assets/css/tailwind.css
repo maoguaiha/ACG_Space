@@ -110,14 +110,14 @@ button:active:not(:disabled),
 
 /* ══════════════════════════════════════
    T6: 千问式细透明滚动条
-   - 默认透明（看不出有滚动条）
-   - .is-scrolling 时浮现 4px 灰色 thumb
+   - 默认显示细灰线（半透明 0.2），用户能感知到「这里有滚动条」
+   - .is-scrolling 时变明显（0.45），强化「正在滚」的反馈
    - 同时适配 WebKit (::-webkit-scrollbar) 和 Firefox (scrollbar-width)
    ══════════════════════════════════════ */
 .hide-scrollbar-container {
   /* Firefox：细滚动条，颜色由 thumb / track 控制 */
   scrollbar-width: thin;
-  scrollbar-color: transparent transparent;
+  scrollbar-color: rgba(127, 127, 127, 0.2) transparent;
   transition: scrollbar-color 0.25s ease;
 }
 .hide-scrollbar-container.is-scrolling {
@@ -132,7 +132,7 @@ button:active:not(:disabled),
   background: transparent;
 }
 .hide-scrollbar-container::-webkit-scrollbar-thumb {
-  background-color: transparent;
+  background-color: rgba(127, 127, 127, 0.2);
   border-radius: 9999px;
   transition: background-color 0.25s ease;
 }
