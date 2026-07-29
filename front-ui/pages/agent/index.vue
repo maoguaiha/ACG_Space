@@ -725,6 +725,7 @@ onMounted(() => { loadConversations() })
               @regenerate="regenerateLast"
             />
             <ChatInput
+              class="mb-4"
               :disabled="false"
               :is-streaming="isStreaming"
               placeholder="输入你的问题，Enter 发送 / Shift+Enter 换行"
