@@ -747,19 +747,25 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
 .agent-custom-thumb:hover {
   background-color: rgba(120, 120, 120, 0.72);
 }
-:global(.dark) .agent-custom-thumb,
-:global(html.dark) .agent-custom-thumb {
+/* 深色/粉色主题：自绘滑块配色（在非 scoped <style> 块里，避免 Vue scoped 编译器吃掉后代选择器） */
+</style>
+
+<style>
+.theme-dark .agent-custom-thumb,
+html.dark .agent-custom-thumb {
   background-color: rgba(200, 200, 200, 0.5);
 }
-:global(.dark) .agent-custom-thumb:hover,
-:global(html.dark) .agent-custom-thumb:hover {
+.theme-dark .agent-custom-thumb:hover,
+html.dark .agent-custom-thumb:hover {
   background-color: rgba(200, 200, 200, 0.72);
 }
 /* 粉色模式：滑块用品牌粉 accent (#EC4899 = 236,72,153) */
-:global(html.theme-pink) .agent-custom-thumb {
+.theme-pink .agent-custom-thumb,
+html.theme-pink .agent-custom-thumb {
   background-color: rgba(236, 72, 153, 0.5);
 }
-:global(html.theme-pink) .agent-custom-thumb:hover {
+.theme-pink .agent-custom-thumb:hover,
+html.theme-pink .agent-custom-thumb:hover {
   background-color: rgba(236, 72, 153, 0.72);
 }
 </style>
