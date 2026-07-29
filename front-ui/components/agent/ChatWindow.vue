@@ -601,15 +601,17 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
 }
 
 /* ===== 千问式右侧小横杠 scroll-spy ===== */
+/* 用 fixed 相对视口定位：贴网页右缘 + 垂直居中（二分之一位置），
+   不随对话区滚动而上下漂，保证始终在网页右侧固定位置 */
 .agent-scroll-spy {
-  position: absolute;
+  position: fixed;
   top: 50%;
-  right: 6px;
+  right: 8px;
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 6px;
-  z-index: 10;
+  gap: 12px; /* 横杠间距拉开 */
+  z-index: 50;
   pointer-events: auto;
 }
 .agent-scroll-spy-bar {
