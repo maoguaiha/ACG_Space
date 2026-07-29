@@ -43,7 +43,7 @@ import MoveToGroupDialog from '~/components/agent/MoveToGroupDialog.vue'
 import AgentSettingsDialog from '~/components/agent/AgentSettingsDialog.vue'
 
 // ==================== 路由 / 认证 ====================
-definePageMeta({ middleware: ['auth'] })
+definePageMeta({ middleware: ['auth'], hideFooter: true, fullHeight: true })
 useHead({ title: 'AI 助手 - ACG Space' })
 
 const appStore = useAppStore()
@@ -563,7 +563,7 @@ onMounted(() => { loadConversations() })
 
 <template>
   <div
-    class="h-[calc(100dvh-4rem)] flex flex-col overflow-hidden"
+    class="h-full flex flex-col overflow-hidden"
     :class="['theme-bg']"
   >
     <div class="flex flex-1 overflow-hidden">

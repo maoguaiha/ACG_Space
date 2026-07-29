@@ -1,5 +1,13 @@
 <template>
-  <div :class="[currentTheme, 'min-h-screen flex flex-col font-sans transition-colors duration-500']">
+  <div
+    :class="[
+      currentTheme,
+      ($route.meta as any).fullHeight
+        ? 'h-screen overflow-hidden flex flex-col'
+        : 'min-h-screen flex flex-col',
+      'font-sans transition-colors duration-500'
+    ]"
+  >
     <!-- Navbar -->
     <header class="sticky top-0 z-50 w-full backdrop-blur-md border-b theme-header">
       <div class="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -91,8 +99,8 @@
       </div>
     </transition>
 
-    <!-- Footer -->
-    <footer class="border-t theme-footer py-12 mt-20">
+    <!-- Footer（agent 等「全屏沉浸式」页可通过 meta.hideFooter 隐藏） -->
+    <footer v-if="!($route.meta as any).hideFooter" class="border-t theme-footer py-12 mt-20">
       <div class="container mx-auto px-4 text-center text-slate-500 text-sm">
         <p>© 2026 ACG Space. All rights reserved.</p>
         <p class="mt-2">专注于高质量动漫分享与讨论的纯粹社区。</p>
