@@ -184,7 +184,7 @@ async function handlePinConv(id: string, pinned: boolean) {
     conversations.value = await fetchConversations()
   } catch (e) {
     console.error('置顶失败', e)
-    appStore.setMessage('置顶失败，请重试', 'error')
+    appStore.showMessage('置顶失败，请重试', 'error')
   }
 }
 
@@ -202,10 +202,10 @@ async function handleBatchDelete(ids: string[]) {
         await handleCreateConv()
       }
     }
-    appStore.setMessage(`已删除 ${deleted} 个会话`, 'success')
+    appStore.showMessage(`已删除 ${deleted} 个会话`, 'success')
   } catch (e) {
     console.error('批量删除失败', e)
-    appStore.setMessage('批量删除失败', 'error')
+    appStore.showMessage('批量删除失败', 'error')
   }
 }
 
@@ -251,10 +251,10 @@ async function handleMoveToGroupConfirm(target: { groupId: number | null; newGro
       loadGroups(),
       (async () => { conversations.value = await fetchConversations() })(),
     ])
-    appStore.setMessage(`已移动 ${pendingMoveConvIds.value.length} 个会话`, 'success')
+    appStore.showMessage(`已移动 ${pendingMoveConvIds.value.length} 个会话`, 'success')
   } catch (e) {
     console.error('移动分组失败', e)
-    appStore.setMessage('移动失败，请重试', 'error')
+    appStore.showMessage('移动失败，请重试', 'error')
   } finally {
     pendingMoveConvIds.value = []
   }
@@ -312,10 +312,10 @@ async function onRenameConfirm(value: string) {
       await createGroup(value, groups.value.length + 1)
       await loadGroups()
     }
-    appStore.setMessage('操作成功', 'success')
+    appStore.showMessage('操作成功', 'success')
   } catch (e) {
     console.error('操作失败', e)
-    appStore.setMessage('操作失败，请重试', 'error')
+    appStore.showMessage('操作失败，请重试', 'error')
   }
 }
 
@@ -328,10 +328,10 @@ async function handleDeleteGroup(groupId: string) {
       loadGroups(),
       (async () => { conversations.value = await fetchConversations() })(),
     ])
-    appStore.setMessage('已删除分组', 'success')
+    appStore.showMessage('已删除分组', 'success')
   } catch (e) {
     console.error('删除分组失败', e)
-    appStore.setMessage('删除分组失败', 'error')
+    appStore.showMessage('删除分组失败', 'error')
   }
 }
 
@@ -341,16 +341,16 @@ async function handleClearAll() {
     await clearAllConversations()
     conversations.value = []
     await handleCreateConv()
-    appStore.setMessage('已清除所有对话', 'success')
+    appStore.showMessage('已清除所有对话', 'success')
   } catch (e) {
     console.error('清空会话失败', e)
-    appStore.setMessage('清除失败，请重试', 'error')
+    appStore.showMessage('清除失败，请重试', 'error')
   }
 }
 
 /** AI 设置（占位，后续可扩展 System Prompt / 模型选择） */
 function handleOpenSettings() {
-  appStore.setMessage('AI 设置功能即将上线', 'info')
+  appStore.showMessage('AI 设置功能即将上线', 'info')
 }
 
 /** 清除上下文 / 开启新话题（重置 AI 记忆） */
