@@ -5,7 +5,9 @@ import com.alibaba.fastjson2.JSONObject;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.ruoyi.project.agent.domain.dto.AgentChatRequest;
 import com.ruoyi.project.agent.domain.entity.AgentConversation;
+import com.ruoyi.project.agent.domain.entity.AgentConversationGroup;
 import com.ruoyi.project.agent.domain.entity.AgentMessage;
+import com.ruoyi.project.agent.mapper.AgentConversationGroupMapper;
 import com.ruoyi.project.agent.mapper.AgentConversationMapper;
 import com.ruoyi.project.agent.mapper.AgentMessageMapper;
 import com.ruoyi.project.agent.service.IAgentService;
@@ -58,6 +60,7 @@ public class AgentServiceImpl implements IAgentService {
     private static final String MSG_TIMEOUT = "AI 响应超时，请稍后重试";
 
     private final AgentConversationMapper conversationMapper;
+    private final AgentConversationGroupMapper groupMapper;
     private final AgentMessageMapper messageMapper;
     private final WebClient agentWebClient;
     private final RateLimiterRegistry rateLimiterRegistry;
@@ -198,8 +201,10 @@ public class AgentServiceImpl implements IAgentService {
 
     @Override
     public List<AgentConversation> listConversations(Long userId) {
+        // 千问式侧边栏排序：置顶会话优先（pinned DESC），其次最近活跃（update_time DESC）
         return conversationMapper.selectList(new LambdaQueryWrapper<AgentConversation>()
                 .eq(AgentConversation::getUserId, userId)
+                .orderByDesc(AgentConversation::getPinned)
                 .orderByDesc(AgentConversation::getUpdateTime));
     }
 
@@ -228,6 +233,8 @@ public class AgentServiceImpl implements IAgentService {
         AgentConversation conv = new AgentConversation();
         conv.setUserId(userId);
         conv.setTitle("新的对话");
+        conv.setPinned(0);
+        conv.setGroupId(null);
         conv.setDelFlag(0);
         setAudit(conv, userId);
         conversationMapper.insert(conv);
@@ -290,6 +297,152 @@ public class AgentServiceImpl implements IAgentService {
         }
     }
 
+    // ====================== V2.4 千问式侧边栏 ======================
+
+    @Override
+    public boolean pinConversation(Long userId, String id, boolean pinned) {
+        try {
+            Long cid = Long.parseLong(id);
+            AgentConversation conv = conversationMapper.selectById(cid);
+            if (conv == null || !userId.equals(conv.getUserId())) {
+                return false;
+            }
+            conv.setPinned(pinned ? 1 : 0);
+            conv.setUpdateTime(LocalDateTime.now());
+            conv.setUpdateBy(String.valueOf(userId));
+            return conversationMapper.updateById(conv) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean moveToGroup(Long userId, String id, Long groupId) {
+        try {
+            Long cid = Long.parseLong(id);
+            AgentConversation conv = conversationMapper.selectById(cid);
+            if (conv == null || !userId.equals(conv.getUserId())) {
+                return false;
+            }
+            // 若 groupId 非空，须校验分组归属（防止越权把会话移到别人的分组）
+            if (groupId != null) {
+                AgentConversationGroup grp = groupMapper.selectById(groupId);
+                if (grp == null || !userId.equals(grp.getUserId())) {
+                    return false;
+                }
+            }
+            // 用 LambdaUpdateWrapper.set 强制把 group_id 写入（含 NULL = 移回最近对话）
+            conversationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<AgentConversation>()
+                    .eq(AgentConversation::getId, cid)
+                    .eq(AgentConversation::getUserId, userId)
+                    .set(AgentConversation::getGroupId, groupId)
+                    .set(AgentConversation::getUpdateTime, LocalDateTime.now())
+                    .set(AgentConversation::getUpdateBy, String.valueOf(userId)));
+            return true;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public int batchDeleteConversations(Long userId, List<String> ids) {
+        if (ids == null || ids.isEmpty()) {
+            return 0;
+        }
+        // 过滤：仅保留本人会话的 id
+        List<Long> longIds = ids.stream()
+                .map(this::safeParseLong)
+                .filter(java.util.Objects::nonNull)
+                .toList();
+        if (longIds.isEmpty()) {
+            return 0;
+        }
+        List<AgentConversation> owned = conversationMapper.selectList(
+                new LambdaQueryWrapper<AgentConversation>()
+                        .eq(AgentConversation::getUserId, userId)
+                        .in(AgentConversation::getId, longIds));
+        if (owned.isEmpty()) {
+            return 0;
+        }
+        List<Long> ownedIds = owned.stream().map(AgentConversation::getId).toList();
+        // 级联删除消息
+        messageMapper.delete(new LambdaQueryWrapper<AgentMessage>()
+                .in(AgentMessage::getConversationId, ownedIds));
+        int deleted = conversationMapper.delete(new LambdaQueryWrapper<AgentConversation>()
+                .in(AgentConversation::getId, ownedIds));
+        return deleted;
+    }
+
+    @Override
+    public List<AgentConversationGroup> listGroups(Long userId) {
+        return groupMapper.selectList(new LambdaQueryWrapper<AgentConversationGroup>()
+                .eq(AgentConversationGroup::getUserId, userId)
+                .orderByAsc(AgentConversationGroup::getSortOrder)
+                .orderByAsc(AgentConversationGroup::getId));
+    }
+
+    @Override
+    public String createGroup(Long userId, String name, Integer sortOrder) {
+        AgentConversationGroup grp = new AgentConversationGroup();
+        grp.setUserId(userId);
+        grp.setName(name.trim());
+        grp.setSortOrder(sortOrder == null ? 0 : sortOrder);
+        grp.setDelFlag(0);
+        setAudit(grp, userId);
+        groupMapper.insert(grp);
+        return String.valueOf(grp.getId());
+    }
+
+    @Override
+    public boolean renameGroup(Long userId, String id, String name) {
+        try {
+            Long gid = Long.parseLong(id);
+            AgentConversationGroup grp = groupMapper.selectById(gid);
+            if (grp == null || !userId.equals(grp.getUserId())) {
+                return false;
+            }
+            grp.setName(name.trim());
+            grp.setUpdateTime(LocalDateTime.now());
+            grp.setUpdateBy(String.valueOf(userId));
+            return groupMapper.updateById(grp) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    @Override
+    public boolean deleteGroup(Long userId, String id) {
+        try {
+            Long gid = Long.parseLong(id);
+            AgentConversationGroup grp = groupMapper.selectById(gid);
+            if (grp == null || !userId.equals(grp.getUserId())) {
+                return false;
+            }
+            // 把该分组下所有会话的 group_id 置 NULL（归回最近对话未分组）。
+            // 用 LambdaUpdateWrapper.set(...) 强制把 group_id 写成 NULL，
+            // 绕开 MyBatis-Plus 默认 FieldStrategy.NOT_NULL 对 null 字段的跳过。
+            conversationMapper.update(null, new com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper<AgentConversation>()
+                    .eq(AgentConversation::getUserId, userId)
+                    .eq(AgentConversation::getGroupId, gid)
+                    .set(AgentConversation::getGroupId, null)
+                    .set(AgentConversation::getUpdateTime, LocalDateTime.now())
+                    .set(AgentConversation::getUpdateBy, String.valueOf(userId)));
+            return groupMapper.deleteById(gid) > 0;
+        } catch (NumberFormatException e) {
+            return false;
+        }
+    }
+
+    /** 容错地把字符串转 Long，失败返回 null（用于批量过滤） */
+    private Long safeParseLong(String s) {
+        if (s == null || s.isBlank()) return null;
+        try {
+            return Long.parseLong(s);
+        } catch (NumberFormatException e) {
+            return null;
+        }
+    }
+
     // ============================ 私有方法 ============================
 
     private String resolveConversation(Long userId, String conversationId, String firstMessage) {
@@ -306,6 +459,8 @@ public class AgentServiceImpl implements IAgentService {
         AgentConversation conv = new AgentConversation();
         conv.setUserId(userId);
         conv.setTitle(truncate(firstMessage, 20));
+        conv.setPinned(0);
+        conv.setGroupId(null);
         conv.setDelFlag(0);
         setAudit(conv, userId);
         conversationMapper.insert(conv);

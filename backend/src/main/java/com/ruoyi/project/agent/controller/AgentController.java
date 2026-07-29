@@ -1,8 +1,13 @@
 package com.ruoyi.project.agent.controller;
 
+import com.ruoyi.project.agent.domain.dto.AgentBatchDeleteRequest;
 import com.ruoyi.project.agent.domain.dto.AgentChatRequest;
+import com.ruoyi.project.agent.domain.dto.AgentGroupRequest;
+import com.ruoyi.project.agent.domain.dto.AgentMoveGroupRequest;
+import com.ruoyi.project.agent.domain.dto.AgentPinRequest;
 import com.ruoyi.project.agent.domain.dto.AgentRenameRequest;
 import com.ruoyi.project.agent.domain.entity.AgentConversation;
+import com.ruoyi.project.agent.domain.entity.AgentConversationGroup;
 import com.ruoyi.project.agent.domain.entity.AgentMessage;
 import com.ruoyi.project.agent.service.IAgentService;
 import com.ruoyi.project.common.api.Result;
@@ -122,5 +127,97 @@ public class AgentController {
             return Result.error(BizErrorCode.UNAUTHORIZED);
         }
         return Result.success(agentService.clearConversations(userId));
+    }
+
+    // ====================== V2.4 千问式侧边栏 ======================
+
+    /**
+     * 置顶 / 取消置顶会话。仅本人可改。
+     */
+    @PutMapping("/conversations/{id}/pin")
+    public Result<Boolean> pinConversation(@PathVariable String id,
+                                           @Valid @RequestBody AgentPinRequest req) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        if (req.getPinned() == null) {
+            return Result.error(BizErrorCode.BAD_REQUEST, "pinned 不能为空");
+        }
+        return Result.success(agentService.pinConversation(userId, id, req.getPinned()));
+    }
+
+    /**
+     * 移动会话到指定分组（groupId 为 null 表示移回最近对话）。
+     */
+    @PutMapping("/conversations/{id}/group")
+    public Result<Boolean> moveToGroup(@PathVariable String id,
+                                       @Valid @RequestBody AgentMoveGroupRequest req) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.moveToGroup(userId, id, req.getGroupId()));
+    }
+
+    /**
+     * 批量删除会话（仅本人会话生效）。
+     */
+    @DeleteMapping("/conversations/batch")
+    public Result<Integer> batchDeleteConversations(@Valid @RequestBody AgentBatchDeleteRequest req) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.batchDeleteConversations(userId, req.getIds()));
+    }
+
+    /**
+     * 当前用户的分组列表（按 sortOrder ASC）。
+     */
+    @GetMapping("/groups")
+    public Result<List<AgentConversationGroup>> listGroups() {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.listGroups(userId));
+    }
+
+    /**
+     * 新建会话分组。
+     */
+    @PostMapping("/groups")
+    public Result<String> createGroup(@Valid @RequestBody AgentGroupRequest req) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.createGroup(userId, req.getName(), req.getSortOrder()));
+    }
+
+    /**
+     * 重命名分组。
+     */
+    @PutMapping("/groups/{id}")
+    public Result<Boolean> renameGroup(@PathVariable String id,
+                                       @Valid @RequestBody AgentGroupRequest req) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.renameGroup(userId, id, req.getName()));
+    }
+
+    /**
+     * 删除分组（其下会话 group_id 自动归 NULL）。
+     */
+    @DeleteMapping("/groups/{id}")
+    public Result<Boolean> deleteGroup(@PathVariable String id) {
+        Long userId = SecurityUtils.getUserId();
+        if (userId == null) {
+            return Result.error(BizErrorCode.UNAUTHORIZED);
+        }
+        return Result.success(agentService.deleteGroup(userId, id));
     }
 }

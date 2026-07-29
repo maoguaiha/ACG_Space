@@ -36,4 +36,14 @@ public class AgentConversation extends BaseEntity {
      * 会话标题（取首条用户消息前 20 字）
      */
     private String title;
+
+    /**
+     * 是否置顶（0 否 / 1 是）。会话列表置顶会话优先返回。
+     */
+    private Integer pinned;
+
+    /**
+     * 所属分组 ID（NULL = 最近对话未分组）。
+     */
+    private Long groupId;
 }

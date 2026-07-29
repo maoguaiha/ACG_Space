@@ -2,6 +2,7 @@ package com.ruoyi.project.agent.service;
 
 import com.ruoyi.project.agent.domain.dto.AgentChatRequest;
 import com.ruoyi.project.agent.domain.entity.AgentConversation;
+import com.ruoyi.project.agent.domain.entity.AgentConversationGroup;
 import com.ruoyi.project.agent.domain.entity.AgentMessage;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 
@@ -22,7 +23,7 @@ public interface IAgentService {
     SseEmitter chat(Long userId, AgentChatRequest req);
 
     /**
-     * 当前用户的会话列表。
+     * 当前用户的会话列表（按「置顶优先 + 最近活跃」排序）。
      */
     List<AgentConversation> listConversations(Long userId);
 
@@ -48,10 +49,45 @@ public interface IAgentService {
 
     /**
      * 查询指定会话的消息历史（按时间正序）。仅本人会话可查；越权或会话不存在返回空列表。
-     *
-     * @param userId        当前登录用户ID
-     * @param conversationId 会话ID
-     * @return 该会话的全部消息（按创建时间正序）
      */
     List<AgentMessage> listMessages(Long userId, String conversationId);
+
+    // ====================== V2.4 千问式侧边栏 ======================
+
+    /**
+     * 置顶 / 取消置顶会话。仅本人可改。
+     */
+    boolean pinConversation(Long userId, String id, boolean pinned);
+
+    /**
+     * 移动会话到指定分组（groupId=null 表示移回最近对话未分组）。仅本人可改。
+     */
+    boolean moveToGroup(Long userId, String id, Long groupId);
+
+    /**
+     * 批量删除会话（仅删除当前用户的会话；非本人会话静默忽略）。
+     *
+     * @return 实际删除条数
+     */
+    int batchDeleteConversations(Long userId, List<String> ids);
+
+    /**
+     * 当前用户的分组列表（按 sortOrder ASC, id ASC）。
+     */
+    List<AgentConversationGroup> listGroups(Long userId);
+
+    /**
+     * 新建分组，返回分组 ID（字符串）。
+     */
+    String createGroup(Long userId, String name, Integer sortOrder);
+
+    /**
+     * 重命名分组。仅本人可改。
+     */
+    boolean renameGroup(Long userId, String id, String name);
+
+    /**
+     * 删除分组（级联把其下所有会话 group_id 置 NULL，归回最近对话未分组）。
+     */
+    boolean deleteGroup(Long userId, String id);
 }

@@ -14,6 +14,10 @@ export interface ConversationItem {
   id: string
   title: string
   updateTime: string
+  /** 是否置顶（0/1）— V2.4 千问式侧边栏 */
+  pinned?: number
+  /** 所属分组 ID（NULL = 最近对话未分组）— V2.4 */
+  groupId?: number | null
 }
 
 /** 后端 AgentMessage 实体（与 Java AgentMessage 字段对应） */
@@ -23,6 +27,15 @@ export interface AgentMessageItem {
   content: string
   tokens?: number | null
   createTime?: string
+}
+
+/** 会话分组实体 — V2.4 */
+export interface GroupItem {
+  id: string
+  name: string
+  sortOrder?: number
+  createTime?: string
+  updateTime?: string
 }
 
 // ======================== 会话 CRUD（走 api-proxy 中间件） ========================
@@ -58,6 +71,58 @@ export async function renameConversation(id: string, title: string): Promise<boo
 /** 清空当前用户的所有会话（级联删除消息） */
 export async function clearAllConversations(): Promise<boolean> {
   return apiFetch<boolean>('/agent/conversations', { method: 'DELETE' })
+}
+
+// ======================== V2.4 千问式侧边栏 ========================
+
+/** 置顶 / 取消置顶会话 */
+export async function pinConversation(id: string, pinned: boolean): Promise<boolean> {
+  return apiFetch<boolean>(`/agent/conversations/${id}/pin`, {
+    method: 'PUT',
+    body: JSON.stringify({ pinned }),
+  })
+}
+
+/** 移动会话到指定分组（groupId 为 null 表示移回最近对话） */
+export async function moveConversationToGroup(id: string, groupId: number | null): Promise<boolean> {
+  return apiFetch<boolean>(`/agent/conversations/${id}/group`, {
+    method: 'PUT',
+    body: JSON.stringify({ groupId }),
+  })
+}
+
+/** 批量删除会话（仅本人会话生效），返回实际删除条数 */
+export async function batchDeleteConversations(ids: string[]): Promise<number> {
+  return apiFetch<number>('/agent/conversations/batch', {
+    method: 'DELETE',
+    body: JSON.stringify({ ids }),
+  })
+}
+
+/** 当前用户的会话分组列表（按 sortOrder ASC） */
+export async function fetchGroups(): Promise<GroupItem[]> {
+  return apiFetch<GroupItem[]>('/agent/groups')
+}
+
+/** 新建分组，返回分组 ID（字符串） */
+export async function createGroup(name: string, sortOrder?: number): Promise<string> {
+  return apiFetch<string>('/agent/groups', {
+    method: 'POST',
+    body: JSON.stringify({ name, sortOrder: sortOrder ?? 0 }),
+  })
+}
+
+/** 重命名分组 */
+export async function renameGroup(id: string, name: string): Promise<boolean> {
+  return apiFetch<boolean>(`/agent/groups/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify({ name }),
+  })
+}
+
+/** 删除分组（其下会话 group_id 自动归 NULL） */
+export async function deleteGroup(id: string): Promise<boolean> {
+  return apiFetch<boolean>(`/agent/groups/${id}`, { method: 'DELETE' })
 }
 
 // ======================== SSE 流式对话 ========================

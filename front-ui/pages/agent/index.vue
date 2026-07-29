@@ -18,11 +18,19 @@ import {
   streamChat,
   fetchConversations,
   fetchMessages,
+  fetchGroups,
   createConversation,
   deleteConversation,
   renameConversation,
   clearAllConversations,
+  pinConversation,
+  moveConversationToGroup,
+  batchDeleteConversations,
+  createGroup,
+  renameGroup,
+  deleteGroup,
   type ConversationItem,
+  type GroupItem,
   type AgentMessageItem,
 } from '~/composables/useAgentApi'
 import { useAppStore } from '~/stores/app'
@@ -30,6 +38,8 @@ import { useAppStore } from '~/stores/app'
 import ChatWindow from '~/components/agent/ChatWindow.vue'
 import ChatInput from '~/components/agent/ChatInput.vue'
 import ConversationList from '~/components/agent/ConversationList.vue'
+import RenameDialog from '~/components/agent/RenameDialog.vue'
+import MoveToGroupDialog from '~/components/agent/MoveToGroupDialog.vue'
 
 // ==================== 路由 / 认证 ====================
 definePageMeta({ middleware: ['auth'] })
@@ -49,6 +59,7 @@ interface LocalMessage {
 }
 
 const conversations = ref<ConversationItem[]>([])
+const groups = ref<GroupItem[]>([])
 const activeConversationId = ref<string | null>(null)
 const messages = ref<LocalMessage[]>([])
 const isStreaming = ref(false)
@@ -75,22 +86,33 @@ function nextMsgId(): string { return `${Date.now()}-${++msgSeq}` }
 
 async function loadConversations() {
   try {
-    conversations.value = await fetchConversations()
-    // 默认选中第一条，若无则新建
-    if (conversations.value.length > 0) {
-      const firstId = conversations.value[0].id
+    // 并发拉取会话列表 + 分组列表（互不依赖）
+    const [convs, grps] = await Promise.all([
+      fetchConversations(),
+      fetchGroups().catch(() => [] as GroupItem[]),
+    ])
+    conversations.value = convs
+    groups.value = grps
+    if (convs.length > 0) {
+      const firstId = convs[0].id
       activeConversationId.value = firstId
-      // 拉取并展示历史消息（修复"之前的聊天记录看不到"）
       await loadHistoryInto(firstId)
     } else {
       await handleCreateConv()
     }
   } catch (e) {
     console.error('加载会话列表失败', e)
-    // 降级：直接新建一个
     await handleCreateConv()
   } finally {
     loading.value = false
+  }
+}
+
+async function loadGroups() {
+  try {
+    groups.value = await fetchGroups()
+  } catch (e) {
+    console.error('加载分组失败', e)
   }
 }
 
@@ -99,8 +121,7 @@ async function handleCreateConv() {
     const id = await createConversation()
     activeConversationId.value = id
     messages.value = []
-    // 刷新列表
-    conversations.value = await fetchConversations()
+    await loadConversations()  // 同步刷新列表（含 pinned/groupId）
   } catch (e) {
     console.error('新建会话失败', e)
   }
@@ -139,13 +160,12 @@ async function handleSelectConv(id: string) {
 async function handleDeleteConv(id: string) {
   try {
     await deleteConversation(id)
+    // 局部移除，避免整页 reload 闪烁
     conversations.value = conversations.value.filter(c => c.id !== id)
     if (activeConversationId.value === id) {
-      // 当前会话被删，选第一条或新建
       if (conversations.value.length > 0) {
         const newActive = conversations.value[0].id
         activeConversationId.value = newActive
-        // 加载新选中的会话历史（保持 UI 与侧边栏选中一致）
         await loadHistoryInto(newActive)
       } else {
         await handleCreateConv()
@@ -156,15 +176,162 @@ async function handleDeleteConv(id: string) {
   }
 }
 
-/** 重命名会话（侧边栏编辑标题） */
-async function handleRenameConv(id: string, title: string) {
+/** 置顶 / 取消置顶 */
+async function handlePinConv(id: string, pinned: boolean) {
   try {
-    await renameConversation(id, title)
-    const conv = conversations.value.find(c => c.id === id)
-    if (conv) conv.title = title
+    await pinConversation(id, pinned)
+    // 重新拉取列表以反映「置顶优先」排序
+    conversations.value = await fetchConversations()
   } catch (e) {
-    console.error('重命名会话失败', e)
-    appStore.setMessage('重命名失败，请重试', 'error')
+    console.error('置顶失败', e)
+    appStore.setMessage('置顶失败，请重试', 'error')
+  }
+}
+
+/** 批量删除会话 */
+async function handleBatchDelete(ids: string[]) {
+  try {
+    const deleted = await batchDeleteConversations(ids)
+    conversations.value = await fetchConversations()
+    if (activeConversationId.value && ids.includes(activeConversationId.value)) {
+      if (conversations.value.length > 0) {
+        const newActive = conversations.value[0].id
+        activeConversationId.value = newActive
+        await loadHistoryInto(newActive)
+      } else {
+        await handleCreateConv()
+      }
+    }
+    appStore.setMessage(`已删除 ${deleted} 个会话`, 'success')
+  } catch (e) {
+    console.error('批量删除失败', e)
+    appStore.setMessage('批量删除失败', 'error')
+  }
+}
+
+// ============ 弹窗状态（千问式：重命名 / 移动分组 用统一对话框） ============
+interface RenameState {
+  open: boolean
+  target: 'conv' | 'group' | 'createGroup'
+  id: string
+  initialValue: string
+  title: string
+  placeholder: string
+}
+const renameDialog = ref<RenameState>({
+  open: false,
+  target: 'conv',
+  id: '',
+  initialValue: '',
+  title: '重命名',
+  placeholder: '输入新标题',
+})
+
+/** 移动分组：待处理的会话 id 列表（支持批量） */
+const pendingMoveConvIds = ref<string[]>([])
+const moveDialogOpen = ref(false)
+
+function openMoveGroupDialog(convIdOrIds: string | string[]) {
+  pendingMoveConvIds.value = Array.isArray(convIdOrIds) ? convIdOrIds : [convIdOrIds]
+  moveDialogOpen.value = true
+}
+
+/** 「移动分组」对话框确认回调 */
+async function handleMoveToGroupConfirm(target: { groupId: number | null; newGroupName?: string }) {
+  try {
+    let groupId = target.groupId
+    if (target.newGroupName && groupId === null) {
+      const newId = await createGroup(target.newGroupName, groups.value.length + 1)
+      groupId = Number(newId)
+    }
+    for (const id of pendingMoveConvIds.value) {
+      await moveConversationToGroup(id, groupId)
+    }
+    await Promise.all([
+      loadGroups(),
+      (async () => { conversations.value = await fetchConversations() })(),
+    ])
+    appStore.setMessage(`已移动 ${pendingMoveConvIds.value.length} 个会话`, 'success')
+  } catch (e) {
+    console.error('移动分组失败', e)
+    appStore.setMessage('移动失败，请重试', 'error')
+  } finally {
+    pendingMoveConvIds.value = []
+  }
+}
+
+/** 点击「重命名」（会话项）→ 打开对话框 */
+function handleRenameConv(id: string, title: string) {
+  renameDialog.value = {
+    open: true,
+    target: 'conv',
+    id,
+    initialValue: title,
+    title: '重命名对话',
+    placeholder: '输入新的对话标题',
+  }
+}
+
+/** 点击「重命名分组」（分组头菜单）→ 打开对话框 */
+function handleRenameGroup(groupId: string, name: string) {
+  renameDialog.value = {
+    open: true,
+    target: 'group',
+    id: groupId,
+    initialValue: name,
+    title: '重命名分组',
+    placeholder: '输入新的分组名称',
+  }
+}
+
+/** 点击「新分组」→ 打开对话框收集分组名 */
+function handleOpenCreateGroup() {
+  renameDialog.value = {
+    open: true,
+    target: 'createGroup',
+    id: '',
+    initialValue: '',
+    title: '新建分组',
+    placeholder: '输入分组名称',
+  }
+}
+
+/** 重命名 / 新建分组对话框「确定」回调 */
+async function onRenameConfirm(value: string) {
+  const d = renameDialog.value
+  try {
+    if (d.target === 'conv') {
+      await renameConversation(d.id, value)
+      const conv = conversations.value.find(c => c.id === d.id)
+      if (conv) conv.title = value
+    } else if (d.target === 'group') {
+      await renameGroup(d.id, value)
+      const g = groups.value.find(g => g.id === d.id)
+      if (g) g.name = value
+    } else if (d.target === 'createGroup') {
+      await createGroup(value, groups.value.length + 1)
+      await loadGroups()
+    }
+    appStore.setMessage('操作成功', 'success')
+  } catch (e) {
+    console.error('操作失败', e)
+    appStore.setMessage('操作失败，请重试', 'error')
+  }
+}
+
+/** 删除分组（组内会话回退到「最近对话」） */
+async function handleDeleteGroup(groupId: string) {
+  if (!window.confirm('删除分组后，组内会话将移回「最近对话」。确定删除？')) return
+  try {
+    await deleteGroup(groupId)
+    await Promise.all([
+      loadGroups(),
+      (async () => { conversations.value = await fetchConversations() })(),
+    ])
+    appStore.setMessage('已删除分组', 'success')
+  } catch (e) {
+    console.error('删除分组失败', e)
+    appStore.setMessage('删除分组失败', 'error')
   }
 }
 
@@ -284,13 +451,20 @@ onMounted(() => { loadConversations() })
       >
         <ConversationList
           :conversations="conversations"
+          :groups="groups"
           :active-id="activeConversationId"
           @select="handleSelectConv"
           @create="handleCreateConv"
           @delete="handleDeleteConv"
           @rename="handleRenameConv"
+          @pin="handlePinConv"
+          @move-to-group="openMoveGroupDialog"
+          @batch-delete="handleBatchDelete"
           @clear-all="handleClearAll"
           @open-settings="handleOpenSettings"
+          @rename-group="handleRenameGroup"
+          @delete-group="handleDeleteGroup"
+          @open-create-group="handleOpenCreateGroup"
         />
       </div>
 
@@ -393,5 +567,21 @@ onMounted(() => { loadConversations() })
         </template>
       </div>
     </div>
+
+    <!-- 重命名 / 新建分组对话框（三主题适配） -->
+    <RenameDialog
+      v-model:open="renameDialog.open"
+      :title="renameDialog.title"
+      :initial-value="renameDialog.initialValue"
+      :placeholder="renameDialog.placeholder"
+      @confirm="onRenameConfirm"
+    />
+
+    <!-- 移动分组对话框（三主题适配） -->
+    <MoveToGroupDialog
+      v-model:open="moveDialogOpen"
+      :groups="groups"
+      @confirm="handleMoveToGroupConfirm"
+    />
   </div>
 </template>

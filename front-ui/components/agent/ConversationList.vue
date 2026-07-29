@@ -1,19 +1,22 @@
 <script setup lang="ts">
 /**
- * AI 助手会话侧边栏——三主题适配。
+ * AI 助手会话侧边栏——千问式 V2.4。
  *
  * 功能：
- *   - 新建会话按钮
- *   - 会话列表（点击选中高亮）
- *   - 悬浮操作：编辑标题（✏️）/ 删除（🗑️）
- *   - 底部固定区（不随列表滚动）：AI 设置 / 清除所有对话 / 返回首页
+ *   - 「对话分组」section（折叠/展开、分组级三点菜单）
+ *   - 「最近对话」section（未分组的会话）
+ *   - 每项右侧「⋯」按钮 → 弹出操作菜单：重命名 / 置顶 / 移动分组 / 删除
+ *   - 「批量管理」开关：进入批量态显示复选框，多选后底部出现批量操作栏（删除 / 移动分组 / 全部取消）
+ *   - 菜单外点击关闭、Esc 关闭
  */
-import { ref, nextTick } from 'vue'
-import type { ConversationItem } from '~/composables/useAgentApi'
+import { ref, computed, onMounted, onBeforeUnmount } from 'vue'
+import type { ConversationItem, GroupItem } from '~/composables/useAgentApi'
 import { useRouter } from 'vue-router'
+import ConversationGroup from './ConversationGroup.vue'
 
 const props = defineProps<{
   conversations: ConversationItem[]
+  groups: GroupItem[]
   activeId: string | null
 }>()
 
@@ -22,36 +25,88 @@ const emit = defineEmits<{
   create: []
   delete: [id: string]
   rename: [id: string, title: string]
+  pin: [id: string, pinned: boolean]
+  moveToGroup: [id: string]
+  batchDelete: [ids: string[]]
   clearAll: []
   openSettings: []
+  // 分组管理
+  renameGroup: [groupId: string, name: string]
+  deleteGroup: [groupId: string]
+  // 对话框控制（向上抛给父组件统一管理弹窗状态）
+  openMoveGroup: [ids: string[]]
+  openCreateGroup: []
 }>()
 
 const router = useRouter()
 
-/** 行内编辑状态 */
-const editingId = ref<string | null>(null)
-const editingTitle = ref('')
-const editInputRef = ref<HTMLInputElement>()
-
-function startEdit(conv: ConversationItem, e: Event) {
-  e.stopPropagation()
-  editingId.value = conv.id
-  editingTitle.value = conv.title || ''
-  nextTick(() => editInputRef.value?.focus())
-}
-
-function saveEdit(id: string) {
-  const title = editingTitle.value.trim()
-  if (title) {
-    emit('rename', id, title)
+// ====================== 分组逻辑 ======================
+/** 按 groupId 把会话分桶；null 桶为「最近对话未分组」 */
+const groupedConvs = computed<Record<string, ConversationItem[]>>(() => {
+  const map: Record<string, ConversationItem[]> = { __recent__: [] }
+  for (const g of props.groups) map[g.id] = []
+  for (const c of props.conversations) {
+    const gid = c.groupId ? String(c.groupId) : '__recent__'
+    if (!map[gid]) map[gid] = []
+    map[gid].push(c)
   }
-  editingId.value = null
+  return map
+})
+const recentConvs = computed<ConversationItem[]>(() => groupedConvs.value['__recent__'] || [])
+
+// ====================== 批量管理 ======================
+const batchMode = ref(false)
+const selectedIds = ref<Set<string>>(new Set())
+
+function enterBatch() {
+  batchMode.value = true
+  selectedIds.value = new Set()
+}
+function exitBatch() {
+  batchMode.value = false
+  selectedIds.value = new Set()
+}
+function toggleSelect(id: string) {
+  if (selectedIds.value.has(id)) {
+    selectedIds.value.delete(id)
+  } else {
+    selectedIds.value.add(id)
+  }
+  // 触发响应式
+  selectedIds.value = new Set(selectedIds.value)
+}
+function selectAll() {
+  selectedIds.value = new Set(props.conversations.map(c => c.id))
+}
+function invertSelection() {
+  selectedIds.value = new Set(
+    props.conversations.filter(c => !selectedIds.value.has(c.id)).map(c => c.id),
+  )
+}
+function onBatchDelete() {
+  const ids = Array.from(selectedIds.value)
+  if (ids.length === 0) return
+  if (window.confirm(`确定删除选中的 ${ids.length} 个会话？此操作不可恢复。`)) {
+    emit('batchDelete', ids)
+    exitBatch()
+  }
+}
+function onBatchMove() {
+  const ids = Array.from(selectedIds.value)
+  if (ids.length === 0) return
+  // 把全部选中 id 抛给父组件，由统一的「移动分组」对话框批量处理
+  emit('openMoveGroup', ids)
+  exitBatch()
 }
 
-function cancelEdit() {
-  editingId.value = null
+// ====================== 全局点击关闭菜单 ======================
+function onDocClick() {
+  // 留空：子组件（ConversationGroup）已自行管理各自的菜单开闭
 }
+onMounted(() => document.addEventListener('click', onDocClick))
+onBeforeUnmount(() => document.removeEventListener('click', onDocClick))
 
+// ====================== 底部固定区 ======================
 const confirmingClear = ref(false)
 function onClearAll() {
   if (confirmingClear.value) return
@@ -61,20 +116,9 @@ function onClearAll() {
   confirmingClear.value = false
 }
 
-/** 格式化相对时间 */
-function formatDate(iso: string): string {
-  if (!iso) return ''
-  const d = new Date(iso)
-  const now = new Date()
-  const diffMs = now.getTime() - d.getTime()
-  const diffMin = Math.floor(diffMs / 60000)
-  if (diffMin < 1) return '刚刚'
-  if (diffMin < 60) return `${diffMin}分钟前`
-  const diffHr = Math.floor(diffMin / 60)
-  if (diffHr < 24) return `${diffHr}小时前`
-  const diffDay = Math.floor(diffHr / 24)
-  if (diffDay < 7) return `${diffDay}天前`
-  return d.toLocaleDateString('zh-CN', { month: 'short', day: 'numeric' })
+/** AI 设置（占位） */
+function openSettings() {
+  emit('openSettings')
 }
 </script>
 
@@ -95,82 +139,99 @@ function formatDate(iso: string): string {
       </button>
     </div>
 
-    <!-- 会话列表（可滚动） -->
-    <div class="hide-scrollbar-container flex-1 overflow-y-auto px-2 pb-2 space-y-1">
-      <div
-        v-for="conv in conversations"
-        :key="conv.id"
-        class="group relative"
-      >
+    <!-- 滚动区 -->
+    <div class="hide-scrollbar-container flex-1 overflow-y-auto px-2 pb-2 space-y-2">
+      <!-- 顶部工具栏：批量管理开关 -->
+      <div class="flex items-center justify-between px-2 pt-1">
         <button
-          @click="editingId === conv.id ? null : emit('select', conv.id)"
-          class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors"
-          :class="
-            activeId === conv.id
-              ? ['theme-primary-bg', 'text-white']
-              : ['theme-card', 'theme-card-hover', 'theme-text-main']
-          "
+          class="text-xs px-2 py-0.5 rounded-md transition-colors"
+          :class="batchMode
+            ? 'agent-batch-checkbox-on text-white'
+            : ['theme-text-muted hover:bg-black/5']"
+          @click="batchMode ? exitBatch() : enterBatch()"
         >
-          <!-- 行内编辑态 -->
-          <input
-            v-if="editingId === conv.id"
-            ref="editInputRef"
-            v-model="editingTitle"
-            @click.stop
-            @keydown.enter.prevent="saveEdit(conv.id)"
-            @keydown.esc.prevent="cancelEdit"
-            @blur="saveEdit(conv.id)"
-            class="w-full bg-transparent outline-none border-b border-dashed border-white/60 text-white placeholder-white/60"
-            :class="activeId === conv.id ? '' : 'theme-text-main'"
-          />
-          <template v-else>
-            <span class="truncate block pr-14">{{ conv.title || '新的对话' }}</span>
-            <span class="text-xs mt-0.5 block truncate" :class="activeId === conv.id ? 'text-white/60' : 'opacity-50'">
-              {{ formatDate(conv.updateTime) }}
-            </span>
-          </template>
+          {{ batchMode ? '退出批量' : '批量管理' }}
         </button>
+      </div>
 
-        <!-- 悬浮操作：编辑 / 删除 -->
-        <div
-          v-if="editingId !== conv.id"
-          class="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity"
-        >
-          <button
-            @click="startEdit(conv, $event)"
-            class="p-1 rounded-md transition-colors"
-            :class="activeId === conv.id ? 'text-white/70 hover:text-white hover:bg-white/20' : 'theme-text-muted hover:text-indigo-400 hover:bg-black/5'"
-            title="编辑标题"
-          >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
-              <path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z" />
-            </svg>
-          </button>
-          <button
-            @click.stop="emit('delete', conv.id)"
-            class="p-1 rounded-md transition-colors"
-            :class="activeId === conv.id ? 'text-white/70 hover:text-white hover:bg-white/20' : 'theme-text-muted hover:text-red-400 hover:bg-black/5'"
-            title="删除会话"
-          >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-            </svg>
-          </button>
+      <!-- 对话分组 section -->
+      <div v-if="groups.length > 0">
+        <ConversationGroup
+          v-for="g in groups"
+          :key="g.id"
+          :group="g"
+          :conversations="groupedConvs[g.id] || []"
+          :active-id="activeId"
+          :batch-mode="batchMode"
+          :selected-ids="selectedIds"
+          @select="(id) => emit('select', id)"
+          @rename="(id, t) => emit('rename', id, t)"
+          @delete="(id) => emit('delete', id)"
+          @pin="(id, p) => emit('pin', id, p)"
+          @move-to-group="(id) => emit('moveToGroup', id)"
+          @toggle-select="toggleSelect"
+          @rename-group="(gid, name) => emit('renameGroup', gid, name)"
+          @delete-group="(gid) => emit('deleteGroup', gid)"
+        />
+        <button class="agent-add-group-btn" @click="emit('openCreateGroup')">
+          <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <line x1="12" y1="5" x2="12" y2="19" />
+            <line x1="5" y1="12" x2="19" y2="12" />
+          </svg>
+          新分组
+        </button>
+      </div>
+      <button v-else class="agent-add-group-btn" @click="emit('openCreateGroup')">
+        <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <line x1="12" y1="5" x2="12" y2="19" />
+          <line x1="5" y1="12" x2="19" y2="12" />
+        </svg>
+        新分组
+      </button>
+
+      <!-- 最近对话 section -->
+      <div>
+        <div class="flex items-center px-3 py-1.5">
+          <span class="text-xs font-medium" :class="['theme-text-muted']">
+            最近对话<span v-if="recentConvs.length > 0" class="opacity-60 ml-1">({{ recentConvs.length }})</span>
+          </span>
+        </div>
+        <!-- 复用 ConversationGroup 渲染最近对话（虚拟分组，禁用 header 菜单） -->
+        <ConversationGroup
+          v-if="recentConvs.length > 0"
+          :group="{ id: '__recent__', name: '最近对话' }"
+          :conversations="recentConvs"
+          :active-id="activeId"
+          :batch-mode="batchMode"
+          :selected-ids="selectedIds"
+          @select="(id) => emit('select', id)"
+          @rename="(id, t) => emit('rename', id, t)"
+          @delete="(id) => emit('delete', id)"
+          @pin="(id, p) => emit('pin', id, p)"
+          @move-to-group="(id) => emit('moveToGroup', id)"
+          @toggle-select="toggleSelect"
+        />
+        <div v-else class="text-center py-6">
+          <p class="text-xs" :class="['theme-text-muted']">暂无对话</p>
         </div>
       </div>
 
-      <!-- 无会话空态 -->
-      <div v-if="conversations.length === 0" class="text-center py-8">
-        <p class="text-xs" :class="['theme-text-muted']">暂无对话</p>
+      <!-- 批量态底部操作栏（sticky 到滚动容器底） -->
+      <div v-if="batchMode" class="agent-batch-bar">
+        <span class="text-xs flex-1" :class="['theme-text-muted']">
+          已选 <span :class="['theme-text-main', 'font-medium']">{{ selectedIds.size }}</span> 个
+        </span>
+        <button class="text-xs px-2 py-1 rounded-md" :class="['theme-text-muted hover:bg-black/5']" @click="selectAll">全选</button>
+        <button class="text-xs px-2 py-1 rounded-md" :class="['theme-text-muted hover:bg-black/5']" @click="invertSelection">反选</button>
+        <button class="text-xs px-2 py-1 rounded-md" :class="['theme-text-muted hover:bg-black/5']" @click="onBatchMove">移动分组</button>
+        <button class="text-xs px-2 py-1 rounded-md text-red-500 hover:bg-red-500/10" @click="onBatchDelete">删除</button>
       </div>
     </div>
 
-    <!-- 底部固定区（不随列表滚动） -->
+    <!-- 底部固定区 -->
     <div class="p-3 border-t space-y-2" :class="['theme-border']">
       <button
-        @click="emit('openSettings')"
+        @click="openSettings"
         class="w-full flex items-center gap-2 px-3 py-2 rounded-xl text-sm transition-colors"
         :class="['theme-card', 'theme-card-hover', 'theme-text-main']"
         title="AI 设置（设定 System Prompt、选择模型）"
