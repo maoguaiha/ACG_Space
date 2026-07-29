@@ -7,6 +7,7 @@ Phase 3：/chat 接入只读 Bangumi 工具（function calling）+ TTL 缓存；
 """
 import json
 import os
+import re
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -31,6 +32,41 @@ corpus = build_corpus(_CORPUS_DIR, embed)
 def _sse(obj: dict) -> str:
     """构造 SSE data 帧（与前端 useAgentApi 的解析约定一致：data:{json}\\n\\n）。"""
     return f"data:{json.dumps(obj, ensure_ascii=False)}\n\n"
+
+
+def _parse_longcat_tool_calls(content: str) -> list[tuple[str, dict]]:
+    """从 LongCat 自定义 XML 格式里抠出工具调用。
+
+    LongCat（LLM_CHAT_MODEL）不支持 OpenAI 标准 function-calling 的 tool_calls 字段，
+    而是把工具调用写成自有的 XML 标记，直接塞进回复 content：
+        <longcat_tool_call>search_bangumi
+        <longcat_arg_key>keyword</longcat_arg_key>
+        <longcat_arg_value>推理</longcat_arg_value>
+        <longcat_arg_key>limit</longcat_arg_key>
+        <longcat_arg_value>8</longcat_arg_value>
+        </longcat_tool_call>
+
+    返回 [(工具名, 参数字典), ...]；无 XML 时返回空列表。
+    """
+    calls: list[tuple[str, dict]] = []
+    for block in re.finditer(
+        r"<longcat_tool_call>(.*?)</longcat_tool_call>", content, re.DOTALL
+    ):
+        inner = block.group(1)
+        lines = [ln.strip() for ln in inner.strip().splitlines() if ln.strip()]
+        if not lines:
+            continue
+        name = lines[0]  # 工具名在首行
+        args: dict = {}
+        for km, vm in re.finditer(
+            r"<longcat_arg_key>(.*?)</longcat_arg_key>\s*"
+            r"<longcat_arg_value>(.*?)</longcat_arg_value>",
+            inner,
+            re.DOTALL,
+        ):
+            args[km.group(1).strip()] = vm.group(1).strip()
+        calls.append((name, args))
+    return calls
 
 
 def _run_tool(name: str, args: dict) -> dict:
@@ -100,6 +136,32 @@ async def chat(req: ChatRequest):
                             "role": "tool",
                             "tool_call_id": tc.id,
                             "content": json.dumps(result, ensure_ascii=False),
+                        }
+                    )
+
+            elif assistant_msg.content:
+                # LongCat 自定义 XML 工具调用兜底：模型把工具调用写成
+                # <longcat_tool_call>...</longcat_tool_call> 文本而非 OpenAI tool_calls 字段。
+                longcat_calls = _parse_longcat_tool_calls(assistant_msg.content)
+                if longcat_calls:
+                    # 清空原始 XML 内容，避免它作为「回答」流到前端
+                    assistant_msg.content = ""
+                    tool_blocks = []
+                    for name, args in longcat_calls:
+                        result = _run_tool(name, args)
+                        tool_blocks.append(
+                            f"[工具 {name} 返回]\n{json.dumps(result, ensure_ascii=False)}"
+                        )
+                    # 非原生 tool-calling 模型：把工具结果作为 user 消息回填，
+                    # 要求模型直接基于结果作答（不要重复调用、不要输出 XML）。
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "以下是你刚才请求的工具调用的返回结果，请基于它直接回答用户的问题"
+                                "（不要重复调用工具，也不要输出任何 XML 标签）：\n\n"
+                                + "\n\n".join(tool_blocks)
+                            ),
                         }
                     )
 
