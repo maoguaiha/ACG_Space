@@ -22,6 +22,10 @@ from app.tools.registry import TOOLS
 
 app = FastAPI(title="ACG Space Agent", version="0.3.0")
 
+# 长对话上下文压缩：单边历史保留的最大消息条数（约 8 轮对话）。
+# 超出部分在 main.chat 中截断并以系统备注概括，避免逼近 token 上限。
+_MAX_HISTORY_MESSAGES = 16
+
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _CORPUS_DIR = os.path.join(_BASE_DIR, "corpus")
 
@@ -110,7 +114,24 @@ async def chat(req: ChatRequest):
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT.format(context=context)}
             ]
-            for h in req.history:
+            # 1.5) 长对话上下文压缩：历史过长时只保留最近若干条，
+            # 更早的以一条系统备注概括数量，避免逼近 token 上限导致报错。
+            history = list(req.history)
+            omitted = 0
+            if len(history) > _MAX_HISTORY_MESSAGES:
+                omitted = len(history) - _MAX_HISTORY_MESSAGES
+                history = history[-_MAX_HISTORY_MESSAGES:]
+                messages.append(
+                    {
+                        "role": "system",
+                        "content": (
+                            f"（已省略较早的 {omitted} 条历史消息，仅保留最近 "
+                            f"{_MAX_HISTORY_MESSAGES} 条以维持上下文精简；"
+                            "若需回顾更早内容，请用户主动提及。）"
+                        ),
+                    }
+                )
+            for h in history:
                 messages.append({"role": h.role, "content": h.content})
             messages.append({"role": "user", "content": req.message})
 
