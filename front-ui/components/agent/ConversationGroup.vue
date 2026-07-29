@@ -105,8 +105,8 @@ function isSelected(id: string): boolean {
         </svg>
         <span class="truncate">{{ group.name }}<span v-if="group.id !== '__recent__' && conversations.length > 0" class="opacity-60 ml-1">({{ conversations.length }})</span></span>
       </button>
-      <!-- 分组级三点菜单 -->
-      <div class="relative">
+      <!-- 分组级三点菜单（最近对话无管理需求，隐藏避免被下方会话遮挡） -->
+      <div v-if="group.id !== '__recent__'" class="relative">
         <button
           class="p-1 rounded-md opacity-0 group-hover/header:opacity-100 transition-opacity"
           :class="['theme-text-muted hover:bg-black/5']"
@@ -121,14 +121,14 @@ function isSelected(id: string): boolean {
         </button>
         <Transition name="agent-menu">
           <div v-if="headerMenuOpen" class="agent-context-menu" @click.stop>
-            <button v-if="group.id !== '__recent__'" class="agent-context-menu-item" @click="onHeaderNewConv">
+            <button class="agent-context-menu-item" @click="onHeaderNewConv">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <line x1="12" y1="5" x2="12" y2="19" />
                 <line x1="5" y1="12" x2="19" y2="12" />
               </svg>
               新建对话
             </button>
-            <div v-if="group.id !== '__recent__'" class="agent-context-menu-divider" />
+            <div class="agent-context-menu-divider" />
             <button class="agent-context-menu-item" @click="onHeaderRename">
               <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                 <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />
