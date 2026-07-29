@@ -537,18 +537,6 @@ onMounted(() => { loadConversations() })
             ✨ 驱动核心: {{ MODEL_LABEL }}
           </span>
 
-          <!-- 新对话 -->
-          <button
-            class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs transition-colors"
-            :class="['theme-card', 'theme-card-hover', 'theme-text-muted']"
-            @click="handleCreateConv"
-          >
-            <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-              <line x1="12" y1="5" x2="12" y2="19" />
-              <line x1="5" y1="12" x2="19" y2="12" />
-            </svg>
-            新对话
-          </button>
         </header>
 
         <!-- 加载骨架 -->
@@ -558,7 +546,7 @@ onMounted(() => { loadConversations() })
 
         <!-- 对话区域（max-w-3xl 居中，避免大屏单行过长） -->
         <template v-else>
-          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col">
+          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col mb-[100px]">
             <ChatWindow
               ref="chatWindowRef"
               class="h-full"
