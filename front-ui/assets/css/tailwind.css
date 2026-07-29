@@ -107,3 +107,35 @@ button:active:not(:disabled),
     transform: translateY(0);
   }
 }
+
+/* ══════════════════════════════════════
+   T6: 千问式细透明滚动条
+   - 默认透明（看不出有滚动条）
+   - .is-scrolling 时浮现 4px 灰色 thumb
+   - 同时适配 WebKit (::-webkit-scrollbar) 和 Firefox (scrollbar-width)
+   ══════════════════════════════════════ */
+.hide-scrollbar-container {
+  /* Firefox：细滚动条，颜色由 thumb / track 控制 */
+  scrollbar-width: thin;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.25s ease;
+}
+.hide-scrollbar-container.is-scrolling {
+  scrollbar-color: rgba(127, 127, 127, 0.45) transparent;
+}
+/* WebKit / Blink (Chrome / Edge / Safari)：自定义 thumb 颜色 */
+.hide-scrollbar-container::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+.hide-scrollbar-container::-webkit-scrollbar-track {
+  background: transparent;
+}
+.hide-scrollbar-container::-webkit-scrollbar-thumb {
+  background-color: transparent;
+  border-radius: 9999px;
+  transition: background-color 0.25s ease;
+}
+.hide-scrollbar-container.is-scrolling::-webkit-scrollbar-thumb {
+  background-color: rgba(127, 127, 127, 0.45);
+}

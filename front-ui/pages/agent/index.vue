@@ -647,7 +647,7 @@ onMounted(() => { loadConversations() })
 
           <!-- 会话内搜索 -->
           <div class="relative hidden sm:block">
-            <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" :class="['theme-text-muted']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 pointer-events-none z-10" :class="['theme-text-muted']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <circle cx="11" cy="11" r="8" />
               <line x1="21" y1="21" x2="16.65" y2="16.65" />
             </svg>
@@ -655,9 +655,21 @@ onMounted(() => { loadConversations() })
               v-model="searchQuery"
               type="text"
               placeholder="搜索消息"
-              class="agent-dialog-input w-36 pl-8 py-1.5 text-xs rounded-lg"
+              class="agent-dialog-input w-44 pl-9 pr-3 py-1.5 text-xs rounded-lg"
               :class="['theme-text-main', 'theme-card']"
             />
+            <button
+              v-if="searchQuery"
+              type="button"
+              class="absolute right-2 top-1/2 -translate-y-1/2 p-0.5 rounded hover:bg-current/10"
+              :class="['theme-text-muted']"
+              title="清空搜索"
+              @click="searchQuery = ''"
+            >
+              <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round">
+                <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+              </svg>
+            </button>
           </div>
 
           <!-- 导出对话 -->
@@ -691,10 +703,10 @@ onMounted(() => { loadConversations() })
 
         <!-- 对话区域（max-w-3xl 居中，避免大屏单行过长） -->
         <template v-else>
-          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col mb-[37px]">
+          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col">
             <ChatWindow
               ref="chatWindowRef"
-              class="h-full"
+              class="flex-1 min-h-0"
               :conversation-id="activeConversationId"
               :messages="messages"
               :has-streaming="isStreaming"

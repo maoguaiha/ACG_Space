@@ -9,7 +9,7 @@
  *   - 流式进行中：就地渲染 Markdown + 闪烁光标
  *   - 自动滚动：仅在用户已处于底部时自动跟随，否则保持原位不打扰阅读
  */
-import { ref, watch, computed, nextTick, onUnmounted } from 'vue'
+import { ref, watch, computed, nextTick, onUnmounted, onMounted } from 'vue'
 import MarkdownIt from 'markdown-it'
 
 const props = defineProps<{
@@ -115,7 +115,19 @@ function checkStickToBottom() {
   if (!el) return
   const distFromBottom = el.scrollHeight - el.scrollTop - el.clientHeight
   stickToBottom.value = distFromBottom < 80
+  // 同步：正在滚动（用于细滚动条淡入）
+  isScrolling.value = true
+  scheduleScrollIdle()
 }
+
+/** 滚动条可见性：滚动时浮现，停 1s 后淡出（千问式） */
+const isScrolling = ref(false)
+let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null
+function scheduleScrollIdle() {
+  if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
+  scrollIdleTimer = setTimeout(() => { isScrolling.value = false }, 1000)
+}
+onUnmounted(() => { if (scrollIdleTimer) clearTimeout(scrollIdleTimer) })
 
 function scrollToBottom() {
   if (!stickToBottom.value) return
@@ -130,6 +142,8 @@ watch(() => props.conversationId, () => {
   stickToBottom.value = false
   nextTick(() => {
     scrollContainerRef.value?.scrollTo({ top: 0, behavior: 'auto' })
+    // 重置 scroll-spy：IntersectionObserver 下一轮再算
+    activeUserIdx.value = 0
   })
 }, { immediate: true })
 
@@ -146,12 +160,75 @@ defineExpose({ forceScrollToBottom })
 
 watch(() => props.messages.length, () => { checkStickToBottom(); scrollToBottom() })
 watch(() => props.streamingContent, () => { scrollToBottom() })
+
+// ==================== 千问式右侧小横杠 scroll-spy ====================
+/** 用户问题序列（按消息顺序，仅 role==='user'） */
+const userQuestions = computed(() => props.messages.filter((m) => m.role === 'user'))
+const questionIdxs = computed(() => userQuestions.value.map((_, i) => i))
+
+/** 当前可见的用户问题在 userQuestions 里的索引 */
+const activeUserIdx = ref(0)
+
+/** 点击右侧小横杠：滚到对应用户问题（顶部留 14px ≈ pt-14） */
+function scrollToUserQuestion(idx: number) {
+  const el = scrollContainerRef.value
+  if (!el) return
+  // 找对应消息的真实 DOM：用 [data-user-idx] 选择器
+  const target = el.querySelector<HTMLElement>(`[data-user-idx="${idx}"]`)
+  if (!target) return
+  const top = target.offsetTop - 14
+  el.scrollTo({ top, behavior: 'smooth' })
+}
+
+/** IntersectionObserver 监听每个用户问题元素，更新 activeUserIdx */
+let userQObserver: IntersectionObserver | null = null
+function setupUserQObserver() {
+  // 断开旧观察器
+  if (userQObserver) {
+    userQObserver.disconnect()
+    userQObserver = null
+  }
+  const root = scrollContainerRef.value
+  if (!root) return
+  userQObserver = new IntersectionObserver(
+    (entries) => {
+      // 选最靠近视区上 1/3 处的元素
+      let bestIdx = activeUserIdx.value
+      let bestScore = -Infinity
+      for (const e of entries) {
+        const idxStr = (e.target as HTMLElement).dataset.userIdx
+        if (idxStr == null) continue
+        const idx = Number(idxStr)
+        // 评分：元素顶部距离视区顶部越近分数越高（>0 表示已滚过）
+        const top = e.boundingClientRect.top - root.getBoundingClientRect().top
+        const score = -Math.abs(top - 40) // 越接近顶部 40px 越好
+        if (e.isIntersecting && score > bestScore) {
+          bestScore = score
+          bestIdx = idx
+        }
+      }
+      if (bestScore > -Infinity) activeUserIdx.value = bestIdx
+    },
+    { root, rootMargin: '-40px 0px -60% 0px', threshold: [0, 0.1, 0.5, 1] },
+  )
+  // 注册所有当前用户问题
+  for (const idx of questionIdxs.value) {
+    const node = root.querySelector<HTMLElement>(`[data-user-idx="${idx}"]`)
+    if (node) userQObserver.observe(node)
+  }
+}
+
+onMounted(() => { nextTick(setupUserQObserver) })
+/** 用户问题变化（增/删/切会话）时重建观察器 */
+watch(questionIdxs, () => { nextTick(setupUserQObserver) })
+onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
 </script>
 
 <template>
   <div
     ref="scrollContainerRef"
-    class="hide-scrollbar-container flex-1 overflow-y-auto px-4 pt-14 pb-8"
+    class="hide-scrollbar-container flex-1 min-h-0 overflow-y-auto px-4 pt-14 pb-8 relative"
+    :class="{ 'is-scrolling': isScrolling }"
     @scroll="checkStickToBottom"
   >
     <!-- 空态：无消息且无流式 -->
@@ -200,7 +277,11 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
     <TransitionGroup name="chat-list" tag="div" class="max-w-3xl mx-auto relative">
       <div v-for="msg in displayMessages" :key="msg.id">
         <!-- 用户消息：右对齐，浅色/粉色主题气泡背景，Markdown 不解析避免误渲染 -->
-        <div v-if="msg.role === 'user'" class="flex gap-3 pt-2 pb-3 justify-end items-start">
+        <div
+          v-if="msg.role === 'user'"
+          :data-user-idx="userQuestions.findIndex(q => q.id === msg.id)"
+          class="flex gap-3 pt-2 pb-3 justify-end items-start"
+        >
           <div
             class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
             :class="['theme-user-bubble']"
@@ -328,6 +409,23 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
 
     <!-- 锚点：自动滚动至此 -->
     <div ref="anchorRef" class="h-1" />
+
+    <!-- 千问式右侧小横杠 scroll-spy：每个用户问题一个，当前可见的标主色 -->
+    <div
+      v-if="userQuestions.length >= 2"
+      class="agent-scroll-spy"
+      :class="['is-scrolling-spy']"
+    >
+      <button
+        v-for="(_, idx) in userQuestions"
+        :key="idx"
+        type="button"
+        class="agent-scroll-spy-bar"
+        :class="{ 'is-active': idx === activeUserIdx, ['theme-text-muted']: idx !== activeUserIdx, ['theme-primary-bg']: idx === activeUserIdx }"
+        :title="`跳到第 ${idx + 1} 个问题`"
+        @click="scrollToUserQuestion(idx)"
+      />
+    </div>
   </div>
 </template>
 
@@ -486,5 +584,36 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
 }
 @keyframes blink {
   50% { opacity: 0; }
+}
+
+/* ===== 千问式右侧小横杠 scroll-spy ===== */
+.agent-scroll-spy {
+  position: absolute;
+  top: 50%;
+  right: 6px;
+  transform: translateY(-50%);
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  z-index: 10;
+  pointer-events: auto;
+}
+.agent-scroll-spy-bar {
+  width: 16px;
+  height: 3px;
+  border-radius: 9999px;
+  opacity: 0.35;
+  transition: opacity 0.2s, width 0.2s, background-color 0.2s;
+  cursor: pointer;
+  padding: 0;
+  background-color: rgba(127, 127, 127, 0.5);
+}
+.agent-scroll-spy-bar:hover {
+  opacity: 0.7;
+  width: 20px;
+}
+.agent-scroll-spy-bar.is-active {
+  opacity: 1;
+  width: 20px;
 }
 </style>
