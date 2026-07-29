@@ -6,7 +6,7 @@
  * - 底部「+ 新分组」输入项（输入文字即创建并选中）
  * - 选中后点确定 → 调 moveConversationToGroup
  */
-import { ref, computed, watch } from 'vue'
+import { ref, computed, watch, nextTick } from 'vue'
 import type { GroupItem } from '~/composables/useAgentApi'
 
 const props = defineProps<{
@@ -25,6 +25,7 @@ const emit = defineEmits<{
 
 const selectedId = ref<string | null>(null) // null=最近对话；数字=已有分组 ID；'__new__'=新建
 const newGroupName = ref('')
+const newGroupInputRef = ref<HTMLInputElement | null>(null)
 
 watch(
   () => props.open,
@@ -35,6 +36,16 @@ watch(
     }
   },
   { immediate: true },
+)
+
+// 选中「新建分组」时自动聚焦输入框（修复"点了没反应"的体验问题）
+watch(
+  () => selectedId.value === '__new__',
+  (isNew) => {
+    if (isNew) {
+      nextTick(() => newGroupInputRef.value?.focus())
+    }
+  },
 )
 
 const canConfirm = computed(() => {
@@ -117,6 +128,7 @@ function onKeydown(e: KeyboardEvent) {
                   <line x1="5" y1="12" x2="19" y2="12" />
                 </svg>
                 <input
+                  ref="newGroupInputRef"
                   v-if="selectedId === '__new__'"
                   v-model="newGroupName"
                   type="text"
@@ -125,6 +137,7 @@ function onKeydown(e: KeyboardEvent) {
                   class="agent-new-group-input"
                   :class="['theme-text-main']"
                   @click.stop
+                  @keydown.enter.stop="onConfirm"
                 />
                 <span v-else class="truncate" :class="['theme-text-main']">新建分组</span>
               </span>

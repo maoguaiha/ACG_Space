@@ -28,6 +28,8 @@ const emit = defineEmits<{
   toggleSelect: [id: string]
   renameGroup: [groupId: string, name: string]
   deleteGroup: [groupId: string]
+  /** 进入批量管理模式（全局） */
+  enterBatch: []
 }>()
 
 const collapsed = ref(false)
@@ -94,7 +96,7 @@ function isSelected(id: string): boolean {
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
-        <span class="text-xs font-medium truncate" :class="['theme-text-muted']">
+        <span class="text-sm font-medium truncate" :class="['theme-text-muted']">
           {{ group.name }}<span v-if="conversations.length > 0" class="opacity-60 ml-1">({{ conversations.length }})</span>
         </span>
       </button>
@@ -187,6 +189,14 @@ function isSelected(id: string): boolean {
           </button>
           <Transition name="agent-menu">
             <div v-if="itemMenuOpen === conv.id" class="agent-context-menu" @click.stop>
+              <button class="agent-context-menu-item" @click="emit('enterBatch'); closeItemMenu()">
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <polyline points="9 11 12 14 22 4" />
+                  <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+                </svg>
+                批量管理
+              </button>
+              <div class="agent-context-menu-divider" />
               <button class="agent-context-menu-item" @click="emit('rename', conv.id, conv.title || ''); closeItemMenu()">
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                   <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7" />

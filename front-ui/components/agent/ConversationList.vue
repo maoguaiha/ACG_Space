@@ -148,25 +148,12 @@ function openSettings() {
 
     <!-- 滚动区 -->
     <div class="hide-scrollbar-container flex-1 overflow-y-auto px-2 pb-2 space-y-2">
-      <!-- 顶部工具栏：批量管理开关 -->
-      <div class="flex items-center justify-between px-2 pt-1">
-        <button
-          class="text-xs px-2 py-0.5 rounded-md transition-colors"
-          :class="batchMode
-            ? 'agent-batch-checkbox-on text-white'
-            : ['theme-text-muted hover:bg-black/5']"
-          @click="batchMode ? exitBatch() : enterBatch()"
-        >
-          {{ batchMode ? '退出批量' : '批量管理' }}
-        </button>
-      </div>
-
       <!-- 对话分组 目录（可折叠） -->
       <div>
         <div class="flex items-center justify-between px-3 py-1.5">
           <button
             type="button"
-            class="flex-1 min-w-0 flex items-center gap-1.5 text-left text-xs font-medium theme-text-muted hover:text-current transition-colors"
+            class="flex-1 min-w-0 flex items-center gap-1.5 text-left text-sm font-medium theme-text-muted hover:text-current transition-colors"
             @click="toggleGroupsDir"
           >
             <svg
@@ -176,7 +163,7 @@ function openSettings() {
             >
               <polyline points="6 9 12 15 18 9" />
             </svg>
-            <svg class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
               <path d="M3 7a2 2 0 0 1 2-2h4l2 2h8a2 2 0 0 1 2 2v8a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z" />
             </svg>
             <span class="truncate">对话分组<span v-if="groups.length > 0" class="opacity-60 ml-1">({{ groups.length }})</span></span>
@@ -196,7 +183,7 @@ function openSettings() {
         </div>
 
         <div v-show="groupsExpanded">
-          <div v-if="groups.length > 0" class="space-y-1">
+          <div v-if="groups.length > 0" class="ml-3 pl-3 border-l theme-border space-y-1">
             <ConversationGroup
               v-for="g in groups"
               :key="g.id"
@@ -213,6 +200,7 @@ function openSettings() {
               @toggle-select="toggleSelect"
               @rename-group="(gid, name) => emit('renameGroup', gid, name)"
               @delete-group="(gid) => emit('deleteGroup', gid)"
+              @enter-batch="enterBatch"
             />
           </div>
           <div v-else class="px-3 py-2 text-center">
@@ -236,6 +224,7 @@ function openSettings() {
           @pin="(id, p) => emit('pin', id, p)"
           @move-to-group="(id) => emit('moveToGroup', id)"
           @toggle-select="toggleSelect"
+          @enter-batch="enterBatch"
         />
         <div v-else class="text-center py-6">
           <p class="text-xs" :class="['theme-text-muted']">暂无对话</p>
@@ -251,6 +240,7 @@ function openSettings() {
         <button class="text-xs px-2 py-1 rounded-md" :class="['theme-text-muted hover:bg-black/5']" @click="invertSelection">反选</button>
         <button class="text-xs px-2 py-1 rounded-md" :class="['theme-text-muted hover:bg-black/5']" @click="onBatchMove">移动分组</button>
         <button class="text-xs px-2 py-1 rounded-md text-red-500 hover:bg-red-500/10" @click="onBatchDelete">删除</button>
+        <button class="text-xs px-2 py-1 rounded-md ml-1" :class="['theme-text-muted hover:bg-black/5']" @click="exitBatch">退出批量</button>
       </div>
     </div>
 
