@@ -65,40 +65,10 @@ watch(inputText, () => {
   <div class="border-t px-4 py-3" :class="['theme-border', 'theme-bg-secondary']">
     <div class="max-w-3xl mx-auto">
       <div class="flex items-end gap-2">
-        <!-- 输入框胶囊：清空按钮 + 输入框聚合为统一外底板（任务 3） -->
+        <!-- 输入框胶囊：仅包含输入框 + 底部状态挂件（垃圾桶/左上别针已移除） -->
         <div class="agent-input-capsule flex-1 flex items-start rounded-2xl px-1 py-1">
-          <!-- 清除上下文（胶囊内左侧，不再是孤岛） -->
-          <button
-            type="button"
-            @click="emit('clearContext')"
-            :disabled="isStreaming"
-            class="agent-clear-btn flex-shrink-0 p-3 rounded-xl transition-all duration-200 hover:-translate-y-[2px] active:scale-[0.92] disabled:opacity-40"
-            :class="['theme-text-muted']"
-            title="开启新话题（清空对话记忆）"
-          >
-            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-              <polyline points="3 6 5 6 21 6" />
-              <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-              <line x1="11" y1="11" x2="11" y2="17" />
-              <line x1="15" y1="11" x2="15" y2="17" />
-            </svg>
-          </button>
-
-          <!-- 输入框 + 附件占位 + 底部状态挂件 -->
+          <!-- 输入框 + 底部状态挂件（别针已移入状态栏） -->
           <div class="relative flex-1">
-            <!-- 附件占位（输入框内部左上，多模态能力预留） -->
-            <button
-              type="button"
-              @click="handleAttach"
-              class="absolute left-3 top-[13px] p-1 rounded-lg transition-all duration-200 hover:-translate-y-[2px] active:scale-[0.92]"
-              :class="['theme-text-muted', 'hover:theme-text-main']"
-              title="上传图片 / 文件（即将支持）"
-            >
-              <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
-              </svg>
-            </button>
-
             <textarea
               ref="textareaRef"
               v-model="inputText"
@@ -106,13 +76,24 @@ watch(inputText, () => {
               :disabled="disabled"
               rows="1"
               @keydown="handleKeydown"
-              class="agent-textarea w-full resize-none rounded-xl pl-10 pr-4 pt-3 text-sm leading-relaxed focus:outline-none transition-colors placeholder:opacity-40"
+              class="agent-textarea w-full resize-none rounded-xl pl-3 pr-4 pt-3 text-sm leading-relaxed focus:outline-none transition-colors placeholder:opacity-40"
               :class="['theme-text-main']"
               style="min-height: 54px; max-height: 200px; padding-bottom: 36px"
             />
 
-            <!-- 底部状态挂件：网络状态 + 模型（不遮挡文字，textarea 已留 padding-bottom） -->
+            <!-- 底部状态挂件：别针 + 网络状态 + 模型（不遮挡文字，textarea 已留 padding-bottom） -->
             <div class="agent-input-status">
+              <button
+                type="button"
+                @click="handleAttach"
+                class="agent-attach-btn"
+                :class="['theme-text-muted']"
+                title="上传图片 / 文件（即将支持）"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+                </svg>
+              </button>
               <span class="flex items-center gap-1">
                 <span class="agent-status-dot" />
                 已连接
@@ -158,11 +139,11 @@ watch(inputText, () => {
 </template>
 
 <style scoped>
-/* 底部状态挂件：绝对定位于输入框左下角，pointer-events:none 不挡输入 */
+/* 底部状态挂件：绝对定位于输入框左下角，pointer-events:none 不挡输入（按钮单独再开 auto） */
 .agent-input-status {
   position: absolute;
   bottom: 7px;
-  left: 40px; /* 对齐 textarea 的 pl-10 */
+  left: 12px; /* 对齐 textarea 的 pl-3 */
   display: flex;
   align-items: center;
   gap: 6px;
@@ -171,6 +152,26 @@ watch(inputText, () => {
   color: var(--text-muted);
   pointer-events: none;
   user-select: none;
+}
+
+/* 状态栏里的附件按钮：单独开 pointer-events 以便可点击，hover 颜色加深 */
+.agent-attach-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2px;
+  border-radius: 6px;
+  pointer-events: auto;
+  cursor: pointer;
+  transition: color 0.2s, transform 0.2s, background-color 0.2s;
+}
+.agent-attach-btn:hover {
+  color: var(--text-main, #ec4899);
+  background-color: rgba(127, 127, 127, 0.12);
+  transform: translateY(-1px);
+}
+.agent-attach-btn:active {
+  transform: scale(0.92);
 }
 
 /* 连接状态小绿点 */
