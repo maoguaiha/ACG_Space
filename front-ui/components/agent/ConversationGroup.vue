@@ -86,19 +86,17 @@ function isSelected(id: string): boolean {
     <!-- 分组标题 -->
     <div class="flex items-center px-3 py-1.5 group/header">
       <button
-        class="flex-1 flex items-center gap-1.5 min-w-0 text-left"
+        class="flex-1 flex items-center gap-1.5 min-w-0 text-left text-sm font-medium theme-text-muted hover:text-current transition-colors"
         @click="collapsed = !collapsed"
       >
         <svg
           class="w-3 h-3 shrink-0 transition-transform"
-          :class="[collapsed ? '-rotate-90' : '', 'theme-text-muted']"
+          :class="[collapsed ? '-rotate-90' : '']"
           viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
         >
           <polyline points="6 9 12 15 18 9" />
         </svg>
-        <span class="text-sm font-medium truncate" :class="['theme-text-muted']">
-          {{ group.name }}<span v-if="conversations.length > 0" class="opacity-60 ml-1">({{ conversations.length }})</span>
-        </span>
+        <span class="truncate">{{ group.name }}<span v-if="group.id !== '__recent__' && conversations.length > 0" class="opacity-60 ml-1">({{ conversations.length }})</span></span>
       </button>
       <!-- 分组级三点菜单 -->
       <div class="relative">
