@@ -144,6 +144,7 @@ export async function deleteGroup(id: string): Promise<boolean> {
  * @param onError        收到 error 帧时回调
  * @param onDone         流正常结束时回调
  * @param signal         AbortSignal，用于停止生成
+ * @param onToolStatus   收到 tool_status 帧时回调（工具执行中提示，空串表示结束）
  */
 export async function streamChat(
   message: string,
@@ -152,6 +153,7 @@ export async function streamChat(
   onError: (content: string) => void,
   onDone: () => void,
   signal?: AbortSignal,
+  onToolStatus?: (content: string) => void,
 ): Promise<void> {
   // 透传 Bearer token——与 apiFetch 一致，Java 侧通过 SecurityUtils.getUserId() 鉴权
   const userStore = useUserStore()
@@ -212,6 +214,8 @@ export async function streamChat(
               onToken(json.content)
             } else if (json.type === 'error') {
               onError(json.content || '未知错误')
+            } else if (json.type === 'tool_status') {
+              onToolStatus?.(json.content || '')
             }
             // type === 'done' 由流关闭自然触发，不单独回调
           } catch {

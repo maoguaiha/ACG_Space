@@ -64,6 +64,7 @@ const activeConversationId = ref<string | null>(null)
 const messages = ref<LocalMessage[]>([])
 const isStreaming = ref(false)
 const streamingContent = ref('')
+const toolStatus = ref('')  // 工具执行中提示（python-agent 发来的 tool_status 事件）
 const abortController = ref<AbortController | null>(null)
 const sidebarOpen = ref(false)
 const sidebarCollapsed = ref(false)
@@ -387,6 +388,7 @@ async function handleSend(content: string) {
   // 启动 SSE 流
   isStreaming.value = true
   streamingContent.value = ''
+  toolStatus.value = ''
   abortController.value = new AbortController()
 
   try {
@@ -405,9 +407,11 @@ async function handleSend(content: string) {
           messages.value.push({ id: nextMsgId(), role: 'assistant', content: final })
         }
         streamingContent.value = ''
+        toolStatus.value = ''
         isStreaming.value = false
       },
       abortController.value.signal,
+      (status) => { toolStatus.value = status },
     )
   } catch (e: any) {
     // AbortError = 用户手动停止，不显示错误
@@ -423,6 +427,7 @@ async function handleSend(content: string) {
     // 这是修复「AI 思考/输出后停止按钮卡住、无法继续发消息」的关键防线。
     isStreaming.value = false
     streamingContent.value = ''
+    toolStatus.value = ''
     abortController.value = null
   }
 }
@@ -433,6 +438,7 @@ function handleStop() {
   const partial = streamingContent.value || '_（已停止）_'
   messages.value.push({ id: nextMsgId(), role: 'assistant', content: partial })
   streamingContent.value = ''
+  toolStatus.value = ''
   isStreaming.value = false
 }
 
@@ -546,7 +552,7 @@ onMounted(() => { loadConversations() })
 
         <!-- 对话区域（max-w-3xl 居中，避免大屏单行过长） -->
         <template v-else>
-          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col mb-[120px]">
+          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col mb-[37px]">
             <ChatWindow
               ref="chatWindowRef"
               class="h-full"
@@ -554,6 +560,7 @@ onMounted(() => { loadConversations() })
               :messages="messages"
               :has-streaming="isStreaming"
               :streaming-content="streamingContent"
+              :tool-status="toolStatus"
               @quick-send="handleQuickSend"
             />
             <ChatInput

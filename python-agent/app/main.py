@@ -121,6 +121,7 @@ async def chat(req: ChatRequest):
 
             if tool_calls:
                 # 回传 assistant 的 tool_calls 消息（OpenAI 要求）
+                yield _sse({"type": "tool_status", "content": "正在查询番剧库…"})
                 messages.append(
                     {
                         "role": "assistant",
@@ -138,6 +139,7 @@ async def chat(req: ChatRequest):
                             "content": json.dumps(result, ensure_ascii=False),
                         }
                     )
+                yield _sse({"type": "tool_status", "content": ""})
 
             elif assistant_msg.content:
                 # LongCat 自定义 XML 工具调用兜底：模型把工具调用写成
@@ -145,6 +147,7 @@ async def chat(req: ChatRequest):
                 longcat_calls = _parse_longcat_tool_calls(assistant_msg.content)
                 if longcat_calls:
                     # 清空原始 XML 内容，避免它作为「回答」流到前端
+                    yield _sse({"type": "tool_status", "content": "正在查询番剧库…"})
                     assistant_msg.content = ""
                     tool_blocks = []
                     for name, args in longcat_calls:
@@ -164,6 +167,7 @@ async def chat(req: ChatRequest):
                             ),
                         }
                     )
+                    yield _sse({"type": "tool_status", "content": ""})
 
             # 3) 流式最终回答（无论是否经过工具，统一走流式）
             for token in chat_stream(messages):

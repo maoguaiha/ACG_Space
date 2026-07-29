@@ -23,6 +23,8 @@ const props = defineProps<{
   }>
   hasStreaming: boolean
   streamingContent: string
+  /** 工具执行中提示（python-agent 发来的 tool_status 事件，空串表示结束） */
+  toolStatus?: string
 }>()
 
 const emit = defineEmits<{
@@ -220,14 +222,22 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
           class="px-4 py-3 rounded-2xl flex items-center gap-2"
           :class="['theme-card', 'theme-text-muted']"
         >
-          <span class="flex gap-1">
-            <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 0ms" />
-            <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 150ms" />
-            <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 300ms" />
-          </span>
-          <span class="text-sm"
-            >AI 助手正在思考<span v-if="thinkingSeconds > 0"> · {{ thinkingSeconds }}s</span><span v-else>...</span></span
-          >
+          <!-- 工具执行中：显示具体状态（如「正在查询番剧库…」）+ 旋转图标 -->
+          <template v-if="toolStatus">
+            <span class="animate-spin w-3.5 h-3.5 rounded-full border-2 border-current border-t-transparent" />
+            <span class="text-sm">{{ toolStatus }}</span>
+          </template>
+          <!-- 纯思考中：三点跳动 + 累计秒数 -->
+          <template v-else>
+            <span class="flex gap-1">
+              <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 0ms" />
+              <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 150ms" />
+              <span class="w-2 h-2 rounded-full bg-current typing-dot" style="animation-delay: 300ms" />
+            </span>
+            <span class="text-sm"
+              >AI 助手正在思考<span v-if="thinkingSeconds > 0"> · {{ thinkingSeconds }}s</span><span v-else>...</span></span
+            >
+          </template>
         </div>
       </div>
 
