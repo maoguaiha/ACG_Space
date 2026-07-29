@@ -125,7 +125,8 @@ const isScrolling = ref(false)
 let scrollIdleTimer: ReturnType<typeof setTimeout> | null = null
 function scheduleScrollIdle() {
   if (scrollIdleTimer) clearTimeout(scrollIdleTimer)
-  scrollIdleTimer = setTimeout(() => { isScrolling.value = false }, 1000)
+  // 停止滚动 3 秒后滑块隐身（千问式：细透明滑块仅在滚动时出现）
+  scrollIdleTimer = setTimeout(() => { isScrolling.value = false }, 3000)
 }
 onUnmounted(() => { if (scrollIdleTimer) clearTimeout(scrollIdleTimer) })
 
@@ -610,7 +611,7 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
   transform: translateY(-50%);
   display: flex;
   flex-direction: column;
-  gap: 12px; /* 横杠间距拉开 */
+  gap: 24px; /* 横杠间距拉开一倍 */
   z-index: 50;
   pointer-events: auto;
 }

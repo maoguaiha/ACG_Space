@@ -661,7 +661,7 @@ onMounted(() => { loadConversations() })
               v-model="searchQuery"
               type="text"
               placeholder="搜索消息"
-              class="agent-dialog-input w-44 pl-9 pr-3 py-1.5 text-xs rounded-lg"
+              class="agent-dialog-input w-48 !pl-10 pr-3 py-1.5 text-xs rounded-lg"
               :class="['theme-text-main', 'theme-card']"
             />
             <button

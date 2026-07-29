@@ -115,13 +115,14 @@ button:active:not(:disabled),
    - 同时适配 WebKit (::-webkit-scrollbar) 和 Firefox (scrollbar-width)
    ══════════════════════════════════════ */
 .hide-scrollbar-container {
-  /* Firefox：细滚动条，颜色由 thumb / track 控制 */
+  /* Firefox：细滚动条；默认完全透明（隐身），滚动时浮现半透明细线 */
   scrollbar-width: thin;
-  scrollbar-color: rgba(127, 127, 127, 0.2) transparent;
-  transition: scrollbar-color 0.25s ease;
+  scrollbar-color: transparent transparent;
+  transition: scrollbar-color 0.3s ease;
 }
 .hide-scrollbar-container.is-scrolling {
-  scrollbar-color: rgba(127, 127, 127, 0.45) transparent;
+  /* 比较透明、比较细的滑块（千问式） */
+  scrollbar-color: rgba(127, 127, 127, 0.35) transparent;
 }
 /* WebKit / Blink (Chrome / Edge / Safari)：自定义 thumb 颜色 */
 .hide-scrollbar-container::-webkit-scrollbar {
@@ -132,10 +133,10 @@ button:active:not(:disabled),
   background: transparent;
 }
 .hide-scrollbar-container::-webkit-scrollbar-thumb {
-  background-color: rgba(127, 127, 127, 0.2);
+  background-color: transparent;
   border-radius: 9999px;
-  transition: background-color 0.25s ease;
+  transition: background-color 0.3s ease;
 }
 .hide-scrollbar-container.is-scrolling::-webkit-scrollbar-thumb {
-  background-color: rgba(127, 127, 127, 0.45);
+  background-color: rgba(127, 127, 127, 0.35);
 }
