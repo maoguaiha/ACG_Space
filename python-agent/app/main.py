@@ -8,6 +8,8 @@ Phase 3：/chat 接入只读 Bangumi 工具（function calling）+ TTL 缓存；
 import json
 import os
 import re
+import threading
+import time
 
 from fastapi import FastAPI
 from fastapi.responses import StreamingResponse
@@ -31,6 +33,46 @@ _CORPUS_DIR = os.path.join(_BASE_DIR, "corpus")
 
 # 启动时构建语料（向量化）。缺 embedding Key 时此处会抛错，由 uvicorn 启动失败暴露，便于及时发现配置缺失。
 corpus = build_corpus(_CORPUS_DIR, embed)
+
+
+def _corpus_dir_mtime() -> float:
+    """取语料目录下所有文件的最新修改时间（用于热更新检测）。"""
+    mtime = 0.0
+    for root, _dirs, files in os.walk(_CORPUS_DIR):
+        for f in files:
+            try:
+                mtime = max(mtime, os.path.getmtime(os.path.join(root, f)))
+            except OSError:
+                pass
+    return mtime
+
+
+def _start_corpus_watcher(interval: int = 30) -> None:
+    """后台守护线程：轮询语料目录 mtime，变更后自动重建索引（无需手动 /rebuild 或重启）。
+
+    用标准库轮询而非 watchdog，避免额外依赖。
+    """
+    global corpus
+    last_mtime = _corpus_dir_mtime()
+
+    def _loop() -> None:
+        nonlocal last_mtime
+        while True:
+            time.sleep(interval)
+            try:
+                m = _corpus_dir_mtime()
+                if m > last_mtime:
+                    last_mtime = m
+                    new_corpus = build_corpus(_CORPUS_DIR, embed)
+                    corpus = new_corpus
+                    print(f"[corpus-watcher] 语料已热更新，chunks={len(corpus.chunks)}")
+            except Exception as e:  # noqa: BLE001
+                print(f"[corpus-watcher] 重建失败：{e}")
+
+    threading.Thread(target=_loop, daemon=True).start()
+
+
+_start_corpus_watcher()
 
 
 def _sse(obj: dict) -> str:
@@ -73,18 +115,25 @@ def _parse_longcat_tool_calls(content: str) -> list[tuple[str, dict]]:
     return calls
 
 
-def _run_tool(name: str, args: dict) -> dict:
-    """分发只读 Bangumi 工具；任何异常都转为 error 结果，交由 LLM 回退说明。"""
-    try:
-        if name == "search_bangumi":
-            return search_bangumi(**args)
-        if name == "get_bangumi_detail":
-            return get_bangumi_detail(**args)
-        if name == "get_airing_now":
-            return get_airing_now()
-    except Exception as e:  # noqa: BLE001
-        return {"error": f"工具 {name} 调用失败：{e}"}
-    return {"error": f"未知工具：{name}"}
+def _run_tool(name: str, args: dict, retries: int = 2) -> dict:
+    """分发只读 Bangumi 工具；失败自动重试，仍失败则转 error 结果交由 LLM 回退。
+
+    retries: 额外重试次数（默认 2，共最多 3 次尝试）。
+    """
+    last_err: Exception | None = None
+    for _ in range(retries + 1):
+        try:
+            if name == "search_bangumi":
+                return search_bangumi(**args)
+            if name == "get_bangumi_detail":
+                return get_bangumi_detail(**args)
+            if name == "get_airing_now":
+                return get_airing_now()
+            return {"error": f"未知工具：{name}"}
+        except Exception as e:  # noqa: BLE001
+            last_err = e
+            continue
+    return {"error": f"工具 {name} 调用失败（重试 {retries} 次后仍失败）：{last_err}"}
 
 
 @app.get("/health")
@@ -135,13 +184,21 @@ async def chat(req: ChatRequest):
                 messages.append({"role": h.role, "content": h.content})
             messages.append({"role": "user", "content": req.message})
 
-            # 2) 首轮：带 tools，非流式，检测 tool_calls
-            first = chat_completion(
-                messages,
-                tools=TOOLS,
-                model=req.model,
-                temperature=req.temperature,
-            )
+            # 2) 首轮：带 tools，非流式，检测 tool_calls。
+            # 工具模式异常（模型不稳定等）时降级为无工具纯对话，让模型基于 RAG 直接答。
+            try:
+                first = chat_completion(
+                    messages,
+                    tools=TOOLS,
+                    model=req.model,
+                    temperature=req.temperature,
+                )
+            except Exception:
+                first = chat_completion(
+                    messages,
+                    model=req.model,
+                    temperature=req.temperature,
+                )
             assistant_msg = first.choices[0].message
             tool_calls = getattr(assistant_msg, "tool_calls", None)
 
