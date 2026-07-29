@@ -3332,7 +3332,7 @@ const handleLogout = () => {
   position: absolute;
   right: 0;
   top: calc(100% + 4px);
-  z-index: 50;
+  z-index: 60; /* 高于其他对话行（z-auto=0）、配合 row 临时 z-50，让浮出菜单不被下一行遮住 */
   min-width: 160px;
   padding: 4px;
   border-radius: 12px;

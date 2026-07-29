@@ -155,6 +155,7 @@ function isSelected(id: string): boolean {
         v-for="conv in conversations"
         :key="conv.id"
         class="group/item relative"
+        :class="itemMenuOpen === conv.id ? 'z-50' : ''"
       >
         <button
           @click="batchMode ? emit('toggleSelect', conv.id) : (itemMenuOpen === conv.id ? null : emit('select', conv.id))"
