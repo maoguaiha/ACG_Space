@@ -275,6 +275,11 @@ async def chat(req: ChatRequest):
                 model=req.model,
                 temperature=req.temperature,
             ):
+                # 防御：模型在最终回答阶段又吐了 LongCat XML 工具调用，截断 stream
+                # 用子串检测可拦截跨 token 切碎的标签
+                if "longcat_tool_call" in token:
+                    yield _sse({"type": "error", "content": "模型响应异常（检测到工具调用 XML），请重试。"})
+                    break
                 yield _sse({"type": "token", "content": token})
         except RuntimeError as e:
             # 配置缺失（缺 API Key）等可预期错误：明确提示，便于排查
