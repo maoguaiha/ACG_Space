@@ -97,6 +97,13 @@ public class AgentServiceImpl implements IAgentService {
         body.put("conversation_id", conversationId);
         body.put("message", req.getMessage());
         body.put("history", history);
+        // 「AI 设置」透传：模型 / 温度（为空则不传，python-agent 用默认值）
+        if (req.getModel() != null && !req.getModel().isBlank()) {
+            body.put("model", req.getModel());
+        }
+        if (req.getTemperature() != null) {
+            body.put("temperature", req.getTemperature());
+        }
 
         Flux<ServerSentEvent<String>> upstream = agentWebClient.post()
                 .uri("/chat")

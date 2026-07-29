@@ -115,7 +115,12 @@ async def chat(req: ChatRequest):
             messages.append({"role": "user", "content": req.message})
 
             # 2) 首轮：带 tools，非流式，检测 tool_calls
-            first = chat_completion(messages, tools=TOOLS)
+            first = chat_completion(
+                messages,
+                tools=TOOLS,
+                model=req.model,
+                temperature=req.temperature,
+            )
             assistant_msg = first.choices[0].message
             tool_calls = getattr(assistant_msg, "tool_calls", None)
 
@@ -170,7 +175,11 @@ async def chat(req: ChatRequest):
                     yield _sse({"type": "tool_status", "content": ""})
 
             # 3) 流式最终回答（无论是否经过工具，统一走流式）
-            for token in chat_stream(messages):
+            for token in chat_stream(
+                messages,
+                model=req.model,
+                temperature=req.temperature,
+            ):
                 yield _sse({"type": "token", "content": token})
         except RuntimeError as e:
             # 配置缺失（缺 API Key）等可预期错误：明确提示，便于排查

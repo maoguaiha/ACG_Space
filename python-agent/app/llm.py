@@ -49,17 +49,18 @@ def embed(texts: list[str]) -> list[list[float]]:
     return ordered
 
 
-def chat_stream(messages: list[dict], tools=None):
+def chat_stream(messages: list[dict], tools=None, model: str | None = None, temperature: float | None = None):
     """流式对话，yield 文本增量字符串（content token）。
 
     tools: OpenAI function-calling 工具 schema 列表（Phase 3 启用）。
+    model / temperature: 可选覆盖，由前端「AI 设置」透传。
     """
     client = _chat_client()
     kwargs = {
-        "model": settings.llm_chat_model,
+        "model": model or settings.llm_chat_model,
         "messages": messages,
         "stream": True,
-        "temperature": 0.3,
+        "temperature": 0.3 if temperature is None else temperature,
     }
     if tools:
         kwargs["tools"] = tools
@@ -72,17 +73,17 @@ def chat_stream(messages: list[dict], tools=None):
             yield delta.content
 
 
-def chat_completion(messages: list[dict], tools=None):
+def chat_completion(messages: list[dict], tools=None, model: str | None = None, temperature: float | None = None):
     """非流式对话，返回完整响应对象（用于检测 tool_calls）。
 
     当 LLM 返回 tool_calls 时，调用方执行工具并把结果回填 messages，再做流式最终回答。
     """
     client = _chat_client()
     kwargs = {
-        "model": settings.llm_chat_model,
+        "model": model or settings.llm_chat_model,
         "messages": messages,
         "stream": False,
-        "temperature": 0.3,
+        "temperature": 0.3 if temperature is None else temperature,
     }
     if tools:
         kwargs["tools"] = tools

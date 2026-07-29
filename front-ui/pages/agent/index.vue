@@ -40,6 +40,7 @@ import ChatInput from '~/components/agent/ChatInput.vue'
 import ConversationList from '~/components/agent/ConversationList.vue'
 import RenameDialog from '~/components/agent/RenameDialog.vue'
 import MoveToGroupDialog from '~/components/agent/MoveToGroupDialog.vue'
+import AgentSettingsDialog from '~/components/agent/AgentSettingsDialog.vue'
 
 // ==================== 路由 / 认证 ====================
 definePageMeta({ middleware: ['auth'] })
@@ -361,10 +362,37 @@ async function handleClearAll() {
   }
 }
 
-/** AI 设置（占位，后续可扩展 System Prompt / 模型选择） */
-function handleOpenSettings() {
-  appStore.showMessage('AI 设置功能即将上线', 'info')
+/** AI 设置：模型 + 温度，存前端 localStorage，发送时透传（不落库） */
+const SETTINGS_KEY = 'acg_agent_settings'
+const agentSettings = ref<{ model: string; temperature: number }>({
+  model: 'LongCat-2.0',
+  temperature: 0.3,
+})
+try {
+  const saved = localStorage.getItem(SETTINGS_KEY)
+  if (saved) {
+    const parsed = JSON.parse(saved)
+    if (parsed?.model) agentSettings.value.model = parsed.model
+    if (typeof parsed?.temperature === 'number') agentSettings.value.temperature = parsed.temperature
+  }
+} catch {
+  /* localStorage 不可用（隐私模式等）时忽略，用默认值 */
 }
+const settingsOpen = ref(false)
+function handleOpenSettings() {
+  settingsOpen.value = true
+}
+function handleSettingsConfirm(s: { model: string; temperature: number }) {
+  agentSettings.value = s
+  try {
+    localStorage.setItem(SETTINGS_KEY, JSON.stringify(s))
+  } catch {
+    /* 忽略存储失败 */
+  }
+  appStore.showMessage('AI 设置已保存', 'success')
+}
+/** 可选模型列表（当前仅 LongCat-2.0；接入其他模型需在 python-agent 配 Key） */
+const availableModels = ['LongCat-2.0']
 
 /** 清除上下文 / 开启新话题（重置 AI 记忆） */
 function handleClearContext() {
@@ -412,6 +440,8 @@ async function handleSend(content: string) {
       },
       abortController.value.signal,
       (status) => { toolStatus.value = status },
+      agentSettings.value.model,
+      agentSettings.value.temperature,
     )
   } catch (e: any) {
     // AbortError = 用户手动停止，不显示错误
@@ -590,6 +620,15 @@ onMounted(() => { loadConversations() })
       v-model:open="moveDialogOpen"
       :groups="groups"
       @confirm="handleMoveToGroupConfirm"
+    />
+
+    <!-- AI 设置对话框（模型 + 温度，存 localStorage 透传） -->
+    <AgentSettingsDialog
+      v-model:open="settingsOpen"
+      :models="availableModels"
+      :current-model="agentSettings.model"
+      :current-temperature="agentSettings.temperature"
+      @confirm="handleSettingsConfirm"
     />
   </div>
 </template>

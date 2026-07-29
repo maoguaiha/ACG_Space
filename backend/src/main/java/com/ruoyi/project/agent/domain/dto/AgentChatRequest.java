@@ -27,4 +27,15 @@ public class AgentChatRequest implements Serializable {
     @NotBlank(message = "消息内容不能为空")
     @Size(max = 2000, message = "消息内容过长，请控制在 2000 字以内")
     private String message;
+
+    /**
+     * 指定模型（可选，覆盖 python-agent 默认 LLM_CHAT_MODEL）。
+     * 由前端「AI 设置」透传；为空时后端不传，python-agent 用默认值。
+     */
+    private String model;
+
+    /**
+     * 采样温度（可选，0~1）。为空时 python-agent 用默认值（0.3）。
+     */
+    private Double temperature;
 }

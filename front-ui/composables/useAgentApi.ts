@@ -154,6 +154,8 @@ export async function streamChat(
   onDone: () => void,
   signal?: AbortSignal,
   onToolStatus?: (content: string) => void,
+  model?: string,
+  temperature?: number,
 ): Promise<void> {
   // 透传 Bearer token——与 apiFetch 一致，Java 侧通过 SecurityUtils.getUserId() 鉴权
   const userStore = useUserStore()
@@ -163,10 +165,15 @@ export async function streamChat(
     headers['Authorization'] = `Bearer ${userStore.token}`
   }
 
+  // 「AI 设置」透传：模型 / 温度（为空则不传，后端用默认值）
+  const body: Record<string, unknown> = { message, conversationId }
+  if (model) body.model = model
+  if (typeof temperature === 'number') body.temperature = temperature
+
   const response = await fetch('/api/agent/chat', {
     method: 'POST',
     headers,
-    body: JSON.stringify({ message, conversationId }),
+    body: JSON.stringify(body),
     signal,
   })
 
