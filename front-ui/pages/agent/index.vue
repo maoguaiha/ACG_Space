@@ -546,7 +546,7 @@ onMounted(() => { loadConversations() })
 
         <!-- 对话区域（max-w-3xl 居中，避免大屏单行过长） -->
         <template v-else>
-          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col mb-[72px]">
+          <div class="flex-1 min-h-0 w-full max-w-3xl mx-auto flex flex-col mb-[80px]">
             <ChatWindow
               ref="chatWindowRef"
               class="h-full"
