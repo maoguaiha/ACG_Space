@@ -171,8 +171,8 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
     <!-- 消息列表（内联渲染，不依赖 ChatMessage 子组件，规避 pathPrefix 命名问题） -->
     <div class="max-w-3xl mx-auto">
       <template v-for="msg in messages" :key="msg.id">
-        <!-- 用户消息：右对齐，品牌主色气泡（Markdown 不解析，避免误渲染） -->
-        <div v-if="msg.role === 'user'" class="flex gap-3 py-3 justify-end">
+        <!-- 用户消息：右对齐，浅色/粉色主题气泡背景，Markdown 不解析避免误渲染 -->
+        <div v-if="msg.role === 'user'" class="flex gap-3 pt-2 pb-3 justify-end items-start">
           <div
             class="max-w-[80%] px-4 py-3 rounded-2xl whitespace-pre-wrap break-words text-sm leading-relaxed"
             :class="['theme-user-bubble']"
@@ -190,8 +190,8 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
           </div>
         </div>
 
-        <!-- 助手消息：左对齐；Markdown 渲染（v-html 因为 markdown-it 已 sanitize） -->
-        <div v-else class="flex gap-3 py-3 justify-start">
+        <!-- 助手消息：左对齐；头像与气泡顶部对齐；Markdown 渲染 -->
+        <div v-else class="flex gap-3 pt-2 pb-3 justify-start items-start">
           <div
             class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
             :class="['theme-primary-bg', 'text-white']"
@@ -232,7 +232,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
       </div>
 
       <!-- 流式生成中（已有 token）：就地渲染 Markdown + 闪烁光标 -->
-      <div v-else-if="hasStreaming" class="flex gap-3 py-3 justify-start">
+      <div v-else-if="hasStreaming" class="flex gap-3 pt-2 pb-3 justify-start items-start">
         <div
           class="flex-shrink-0 w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold select-none"
           :class="['theme-primary-bg', 'text-white']"

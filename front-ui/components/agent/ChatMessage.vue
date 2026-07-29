@@ -27,8 +27,8 @@ const bubbleClass = computed(() => {
 
 <template>
   <div
-    class="flex gap-3 py-3"
-    :class="message.role === 'user' ? 'justify-end' : 'justify-start'"
+    class="flex gap-3 pt-2 pb-3"
+    :class="[message.role === 'user' ? 'justify-end items-start' : 'justify-start items-start']"
   >
     <!-- 助手头像 -->
     <div
