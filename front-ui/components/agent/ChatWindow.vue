@@ -716,11 +716,12 @@ onUnmounted(() => { if (userQObserver) userQObserver.disconnect() })
 }
 
 /* ===== 自绘 mac 风格细滑块（overlay：静止隐藏，滚动浮现，可拖拽） ===== */
+/* fixed 直接贴视口右缘，避开 max-w-3xl 居中限制 */
 .agent-custom-scrollbar {
-  position: absolute;
+  position: fixed;
   top: 8px;
   bottom: 8px;
-  right: 2px;
+  right: 0;
   width: 6px;
   z-index: 20;
   opacity: 0;
