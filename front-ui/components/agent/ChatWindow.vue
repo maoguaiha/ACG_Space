@@ -159,7 +159,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
         <button
           v-for="q in ['抽赏保底机制是什么？', '如何兑换实物奖品？', '推荐几部机战番', '如何合成碎片？']"
           :key="q"
-          class="px-3 py-1.5 rounded-full text-xs transition-colors"
+          class="px-3 py-1.5 rounded-full text-xs transition-colors duration-300"
           :class="['theme-card', 'theme-card-hover', 'theme-text-muted']"
           @click="emit('quick-send', q)"
         >
@@ -168,9 +168,9 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
       </div>
     </div>
 
-    <!-- 消息列表（内联渲染，不依赖 ChatMessage 子组件，规避 pathPrefix 命名问题） -->
-    <div class="max-w-3xl mx-auto">
-      <template v-for="msg in messages" :key="msg.id">
+    <!-- 消息列表（<TransitionGroup> 入场丝滑 + 删除/高度变化 FLIP 位移） -->
+    <TransitionGroup name="chat-list" tag="div" class="max-w-3xl mx-auto relative">
+      <div v-for="msg in messages" :key="msg.id">
         <!-- 用户消息：右对齐，浅色/粉色主题气泡背景，Markdown 不解析避免误渲染 -->
         <div v-if="msg.role === 'user'" class="flex gap-3 pt-2 pb-3 justify-end items-start">
           <div
@@ -206,10 +206,10 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
             <div v-else v-html="renderMarkdown(msg.content)" />
           </div>
         </div>
-      </template>
+      </div>
 
       <!-- 思考中：等待首个 token，显示累计秒数（"AI 助手正在思考 · 3s"） -->
-      <div v-if="hasStreaming && streamingContent.length === 0" class="flex gap-3 py-3 justify-start items-start">
+      <div v-if="hasStreaming && streamingContent.length === 0" key="thinking" class="flex gap-3 py-3 justify-start items-start">
         <div
           class="flex-shrink-0 w-8 h-8 mt-3 rounded-full flex items-center justify-center text-xs font-bold select-none"
           :class="['theme-primary-bg', 'text-white']"
@@ -232,7 +232,7 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
       </div>
 
       <!-- 流式生成中（已有 token）：就地渲染 Markdown + 闪烁光标 -->
-      <div v-else-if="hasStreaming" class="flex gap-3 pt-2 pb-3 justify-start items-start">
+      <div v-else-if="hasStreaming" key="streaming" class="flex gap-3 pt-2 pb-3 justify-start items-start">
         <div
           class="flex-shrink-0 w-8 h-8 mt-3 rounded-full flex items-center justify-center text-xs font-bold select-none"
           :class="['theme-primary-bg', 'text-white']"
@@ -244,10 +244,10 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
           :class="['theme-card', 'theme-text-main']"
         >
           <div v-html="renderedStreaming" />
-          <span class="inline-block w-0.5 h-3.5 ml-0.5 align-middle bg-current animate-pulse select-none" />
+          <span class="typing-cursor" />
         </div>
       </div>
-    </div>
+    </TransitionGroup>
 
     <!-- 锚点：自动滚动至此 -->
     <div ref="anchorRef" class="h-1" />
@@ -373,5 +373,41 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
   margin: 0.4em 0;
   display: block;
   background: rgba(127, 127, 127, 0.1); /* 占位灰底，避免图裂时空 */
+}
+
+/* ===== 消息列表入场 / 位移动画 (FLIP) ===== */
+.chat-list-enter-from {
+  opacity: 0;
+  transform: translateY(20px) scale(0.98);
+}
+.chat-list-enter-active {
+  transition: all 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+.chat-list-leave-active {
+  transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+  position: absolute;
+  width: 100%;
+}
+.chat-list-leave-to {
+  opacity: 0;
+  transform: translateY(10px) scale(0.98);
+}
+/* 列表高度/顺序变化时的平滑位移（删除消息、流式增长挤压等） */
+.chat-list-move {
+  transition: transform 0.4s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+/* 流式打字机光标 */
+.typing-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 1.2em;
+  background-color: var(--theme-primary, #ec4899);
+  vertical-align: text-bottom;
+  margin-left: 2px;
+  animation: blink 1s step-end infinite;
+}
+@keyframes blink {
+  50% { opacity: 0; }
 }
 </style>

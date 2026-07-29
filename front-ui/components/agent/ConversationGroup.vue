@@ -159,7 +159,7 @@ function isSelected(id: string): boolean {
       >
         <button
           @click="batchMode ? emit('toggleSelect', conv.id) : (itemMenuOpen === conv.id ? null : emit('select', conv.id))"
-          class="w-full text-left px-3 py-2 rounded-xl text-sm transition-colors flex items-center gap-2"
+          class="w-full text-left px-3 py-2 rounded-xl text-sm transition-all duration-200 group-hover/item:translate-x-1 flex items-center gap-2"
           :class="
             activeId === conv.id
               ? ['theme-primary-bg', 'text-white']

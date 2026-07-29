@@ -72,7 +72,7 @@ watch(inputText, () => {
             type="button"
             @click="emit('clearContext')"
             :disabled="isStreaming"
-            class="agent-clear-btn flex-shrink-0 p-3 rounded-xl transition-colors disabled:opacity-40"
+            class="agent-clear-btn flex-shrink-0 p-3 rounded-xl transition-all duration-200 hover:-translate-y-[2px] active:scale-[0.92] disabled:opacity-40"
             :class="['theme-text-muted']"
             title="开启新话题（清空对话记忆）"
           >
@@ -90,7 +90,7 @@ watch(inputText, () => {
             <button
               type="button"
               @click="handleAttach"
-              class="absolute left-3 top-[13px] p-1 rounded-lg transition-colors"
+              class="absolute left-3 top-[13px] p-1 rounded-lg transition-all duration-200 hover:-translate-y-[2px] active:scale-[0.92]"
               :class="['theme-text-muted', 'hover:theme-text-main']"
               title="上传图片 / 文件（即将支持）"
             >
@@ -128,7 +128,7 @@ watch(inputText, () => {
           v-if="isStreaming"
           type="button"
           @click="emit('stop')"
-          class="flex-shrink-0 p-3 rounded-xl transition-colors"
+          class="flex-shrink-0 p-3 rounded-xl transition-all duration-200 hover:-translate-y-[2px] active:scale-[0.92]"
           :class="['bg-red-500/20', 'text-red-400', 'hover:bg-red-500/30']"
           title="停止生成"
         >
@@ -143,7 +143,7 @@ watch(inputText, () => {
           type="button"
           @click="handleSend"
           :disabled="!inputText.trim() || disabled || isStreaming"
-          class="flex-shrink-0 p-3 rounded-xl transition-all disabled:opacity-40 disabled:cursor-not-allowed"
+          class="flex-shrink-0 p-3 rounded-xl transition-all duration-200 hover:-translate-y-[2px] active:scale-[0.92] disabled:opacity-40 disabled:cursor-not-allowed"
           :class="['theme-primary-bg', 'text-white']"
           title="发送"
         >
