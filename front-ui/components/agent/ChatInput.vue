@@ -5,7 +5,7 @@
  * 交互：
  *   - Enter 发送（Shift+Enter 换行）
  *   - 输入框左侧外：🧹 清除上下文 / 开启新话题
- *   - 输入框内左侧：📎 附件占位（多模态能力预留）
+ *   - 输入框内左侧：📎 附件（文本文件随消息内联，V1 仅支持 txt/md/json/csv 等）
  *   - 发送按钮仅在内容非空且未流式时可用；流式中显示"停止生成"
  *   - textarea 自适应高度（基础 ~44px，最高 200px 后内部滚动）
  */
@@ -18,7 +18,7 @@ const props = defineProps<{
 }>()
 
 const emit = defineEmits<{
-  send: [content: string]
+  send: [content: string, file: File | null]
   stop: []
   clearContext: []
 }>()
@@ -33,8 +33,10 @@ const MODEL_LABEL = 'LongCat-2.0'
 function handleSend() {
   const text = inputText.value.trim()
   if (!text || props.disabled || props.isStreaming) return
-  emit('send', text)
+  // 发送时把当前选中的附件一并带上（无文件则传 null）；发送后清空，避免后续消息误带
+  emit('send', text, selectedFile.value)
   inputText.value = ''
+  clearSelectedFile()
 }
 
 /** Shift+Enter 换行 */
@@ -112,7 +114,7 @@ watch(inputText, () => {
                 @click="handleAttach"
                 class="agent-attach-btn"
                 :class="['theme-text-muted']"
-                title="上传图片 / 文件（选择后将以文件名附在输入区，多模态分析待接入）"
+                title="上传文本文件（.txt/.md/.json/.csv 等，将随本条消息发送给 AI）"
               >
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
@@ -125,8 +127,8 @@ watch(inputText, () => {
               <span class="opacity-40">·</span>
               <span>{{ MODEL_LABEL }}</span>
             </div>
-            <!-- 隐藏的文件选择器（别针触发） -->
-            <input ref="fileInputRef" type="file" class="hidden" @change="onFilePicked" />
+            <!-- 隐藏的文件选择器（别针触发）：V1 仅接受文本类扩展名 -->
+            <input ref="fileInputRef" type="file" class="hidden" accept=".txt,.md,.markdown,.json,.csv,.log,.yaml,.yml,.xml,.text" @change="onFilePicked" />
           </div>
         </div>
 

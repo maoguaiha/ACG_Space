@@ -145,6 +145,7 @@ export async function deleteGroup(id: string): Promise<boolean> {
  * @param onDone         流正常结束时回调
  * @param signal         AbortSignal，用于停止生成
  * @param onToolStatus   收到 tool_status 帧时回调（工具执行中提示，空串表示结束）
+ * @param attachment      可选附件（V1 仅文本）：{ filename, content }，随消息内联透传
  */
 export async function streamChat(
   message: string,
@@ -156,6 +157,7 @@ export async function streamChat(
   onToolStatus?: (content: string) => void,
   model?: string,
   temperature?: number,
+  attachment?: { filename: string; content: string },
 ): Promise<void> {
   // 透传 Bearer token——与 apiFetch 一致，Java 侧通过 SecurityUtils.getUserId() 鉴权
   const userStore = useUserStore()
@@ -169,6 +171,8 @@ export async function streamChat(
   const body: Record<string, unknown> = { message, conversationId }
   if (model) body.model = model
   if (typeof temperature === 'number') body.temperature = temperature
+  // 附件（V1 仅文本）：随消息内联透传，后端再转发给 python-agent
+  if (attachment && attachment.content) body.attachment = attachment
 
   const response = await fetch('/api/agent/chat', {
     method: 'POST',

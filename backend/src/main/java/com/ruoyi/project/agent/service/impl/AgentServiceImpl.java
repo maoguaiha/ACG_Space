@@ -104,6 +104,15 @@ public class AgentServiceImpl implements IAgentService {
         if (req.getTemperature() != null) {
             body.put("temperature", req.getTemperature());
         }
+        // 附件（V1 仅文本）：内联文件名 + 内容，透传给 python-agent 注入上下文
+        if (req.getAttachment() != null && req.getAttachment().getContent() != null
+                && !req.getAttachment().getContent().isBlank()) {
+            AgentChatRequest.AgentAttachment att = req.getAttachment();
+            body.put("attachment", Map.of(
+                    "filename", att.getFilename() == null ? "attachment" : att.getFilename(),
+                    "content", att.getContent()
+            ));
+        }
 
         Flux<ServerSentEvent<String>> upstream = agentWebClient.post()
                 .uri("/chat")

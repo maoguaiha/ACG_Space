@@ -38,4 +38,18 @@ public class AgentChatRequest implements Serializable {
      * 采样温度（可选，0~1）。为空时 python-agent 用默认值（0.3）。
      */
     private Double temperature;
+
+    /**
+     * 附件（可选，V1 仅支持文本类文件）。前端读取文件文本后随请求内联。
+     */
+    private AgentAttachment attachment;
+
+    /** 内联附件：文件名 + 文本内容（V1 仅文本，由前端限制扩展名）。 */
+    @Data
+    public static class AgentAttachment implements Serializable {
+        @Serial
+        private static final long serialVersionUID = 1L;
+        private String filename;
+        private String content;
+    }
 }

@@ -182,6 +182,23 @@ async def chat(req: ChatRequest):
                 )
             for h in history:
                 messages.append({"role": h.role, "content": h.content})
+            # 附件（V1 仅文本）：作为一条 user 消息注入，让 LLM 能引用文件内容
+            att = req.attachment
+            if att and att.content:
+                # 安全上限：超长文本截断，避免逼近 token 上限导致报错
+                MAX_ATTACH_CHARS = 30000
+                content = att.content
+                if len(content) > MAX_ATTACH_CHARS:
+                    content = content[:MAX_ATTACH_CHARS] + "\n…（内容过长已截断）"
+                messages.append(
+                    {
+                        "role": "user",
+                        "content": (
+                            f"【用户上传的文件《{att.filename or '未命名'}》内容如下，"
+                            f"请基于它回答我的问题】\n{content}"
+                        ),
+                    }
+                )
             messages.append({"role": "user", "content": req.message})
 
             # 2) 首轮：带 tools，非流式，检测 tool_calls。

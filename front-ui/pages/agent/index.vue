@@ -57,6 +57,7 @@ interface LocalMessage {
   role: 'user' | 'assistant'
   content: string
   isError?: boolean
+  attachmentName?: string  // 随本条消息发送的附件文件名（V1 仅展示，不持久化）
 }
 
 const conversations = ref<ConversationItem[]>([])
@@ -404,11 +405,27 @@ function handleClearContext() {
 
 // ==================== 对话 ====================
 
-async function handleSend(content: string) {
+async function handleSend(content: string, file?: File | null) {
   if (!content.trim() || isStreaming.value) return
+
+  // 读取附件文本（V1 仅文本类，ChatInput 已用 accept 限制扩展名）
+  let attachment: { filename: string; content: string } | undefined
+  let attachmentName: string | undefined
+  if (file) {
+    try {
+      const text = await file.text()
+      if (text && text.trim()) {
+        attachment = { filename: file.name, content: text }
+        attachmentName = file.name
+      }
+    } catch (e) {
+      console.warn('读取附件失败，将忽略附件发送', e)
+    }
+  }
 
   // 乐观更新：立即把用户消息渲染到列表（不等待接口返回）
   const userMsg: LocalMessage = { id: nextMsgId(), role: 'user', content }
+  if (attachmentName) userMsg.attachmentName = attachmentName
   messages.value.push(userMsg)
   // 用户主动发送：恢复底部跟随并滚到底部（切换会话时不会触发）
   chatWindowRef.value?.forceScrollToBottom()
@@ -442,6 +459,7 @@ async function handleSend(content: string) {
       (status) => { toolStatus.value = status },
       agentSettings.value.model,
       agentSettings.value.temperature,
+      attachment,
     )
   } catch (e: any) {
     // AbortError = 用户手动停止，不显示错误
