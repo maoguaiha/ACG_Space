@@ -25,11 +25,25 @@ const props = defineProps<{
   streamingContent: string
   /** 工具执行中提示（python-agent 发来的 tool_status 事件，空串表示结束） */
   toolStatus?: string
+  /** 会话内搜索关键词（仅前端过滤展示） */
+  searchQuery?: string
+  /** 反馈记录：messageId -> 'up' | 'down' */
+  feedbackMap?: Record<string, 'up' | 'down'>
 }>()
 
 const emit = defineEmits<{
   'quick-send': [q: string]
+  feedback: [msgId: string, type: 'up' | 'down']
+  regenerate: []
+  'update:searchQuery': [value: string]
 }>()
+
+// 搜索过滤后的展示列表（无关键词时展示全部）
+const displayMessages = computed(() => {
+  const q = (props.searchQuery || '').trim().toLowerCase()
+  if (!q) return props.messages
+  return props.messages.filter((m) => (m.content || '').toLowerCase().includes(q))
+})
 
 // ---------- Markdown 渲染器 ----------
 // html:false  阻止源 Markdown 中的原始 HTML 透传（防 XSS）
@@ -170,9 +184,21 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
       </div>
     </div>
 
+    <!-- 搜索无结果 -->
+    <div
+      v-else-if="searchQuery && searchQuery.trim() && messages.length > 0 && displayMessages.length === 0"
+      class="h-full flex flex-col items-center justify-center text-center px-4"
+      :class="['theme-text-muted']"
+    >
+      <p class="text-sm">未找到包含「{{ searchQuery.trim() }}」的消息</p>
+      <button class="mt-3 text-xs px-3 py-1.5 rounded-full" :class="['theme-card', 'theme-card-hover']" @click="emit('update:searchQuery', '')">
+        清除搜索
+      </button>
+    </div>
+
     <!-- 消息列表（<TransitionGroup> 入场丝滑 + 删除/高度变化 FLIP 位移） -->
     <TransitionGroup name="chat-list" tag="div" class="max-w-3xl mx-auto relative">
-      <div v-for="msg in messages" :key="msg.id">
+      <div v-for="msg in displayMessages" :key="msg.id">
         <!-- 用户消息：右对齐，浅色/粉色主题气泡背景，Markdown 不解析避免误渲染 -->
         <div v-if="msg.role === 'user'" class="flex gap-3 pt-2 pb-3 justify-end items-start">
           <div
@@ -200,12 +226,47 @@ watch(() => props.streamingContent, () => { scrollToBottom() })
           >
             AI
           </div>
-          <div
-            class="max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed agent-markdown"
-            :class="msg.isError ? ['bg-red-500/10', 'border', 'border-red-500/30', 'text-red-400'] : ['theme-card', 'theme-text-main']"
-          >
-            <div v-if="msg.isError" class="whitespace-pre-wrap">{{ msg.content }}</div>
-            <div v-else v-html="renderMarkdown(msg.content)" />
+          <div class="flex flex-col gap-1.5 min-w-0 group">
+            <div
+              class="max-w-[80%] px-4 py-3 rounded-2xl text-sm leading-relaxed agent-markdown"
+              :class="msg.isError ? ['bg-red-500/10', 'border', 'border-red-500/30', 'text-red-400'] : ['theme-card', 'theme-text-main']"
+            >
+              <div v-if="msg.isError" class="whitespace-pre-wrap">{{ msg.content }}</div>
+              <div v-else v-html="renderMarkdown(msg.content)" />
+            </div>
+            <!-- 操作行：反馈 + 重新生成 -->
+            <div class="flex items-center gap-1 pl-1 opacity-0 group-hover:opacity-100 transition-opacity" :class="['theme-text-muted']">
+              <button
+                class="p-1.5 rounded-lg transition-colors hover:bg-current/10"
+                :class="feedbackMap && feedbackMap[msg.id] === 'up' ? 'text-green-500' : ''"
+                title="有帮助"
+                @click="emit('feedback', msg.id, 'up')"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3" />
+                </svg>
+              </button>
+              <button
+                class="p-1.5 rounded-lg transition-colors hover:bg-current/10"
+                :class="feedbackMap && feedbackMap[msg.id] === 'down' ? 'text-red-500' : ''"
+                title="没帮助"
+                @click="emit('feedback', msg.id, 'down')"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M10 15v4a3 3 0 0 0 3 3l4-9V2H5.72a2 2 0 0 0-2 1.7l-1.38 9a2 2 0 0 0 2 2.3zm7 0h3a2 2 0 0 1 2 2v7a2 2 0 0 1-2 2h-3" />
+                </svg>
+              </button>
+              <button
+                class="p-1.5 rounded-lg transition-colors hover:bg-current/10 flex items-center gap-1"
+                title="重新生成"
+                @click="emit('regenerate', msg.id)"
+              >
+                <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <polyline points="23 4 23 10 17 10" />
+                  <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10" />
+                </svg>
+              </button>
+            </div>
           </div>
         </div>
       </div>

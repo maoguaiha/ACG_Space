@@ -45,9 +45,21 @@ function handleKeydown(e: KeyboardEvent) {
   }
 }
 
-/** 附件占位（多模态能力预留） */
+/** 附件：打开文件选择（多模态分析预留；当前仅展示文件名，真实解析待 LLM 支持图片输入） */
+const fileInputRef = ref<HTMLInputElement>()
+const selectedFile = ref<File | null>(null)
 function handleAttach() {
-  // TODO: 后续接入图片/文件上传与多模态分析
+  fileInputRef.value?.click()
+}
+function onFilePicked(e: Event) {
+  const input = e.target as HTMLInputElement
+  if (input.files && input.files.length) {
+    selectedFile.value = input.files[0]
+  }
+  input.value = '' // 允许重复选同一文件
+}
+function clearSelectedFile() {
+  selectedFile.value = null
 }
 
 /** textarea 自适应高度（44px ~ 200px） */
@@ -69,6 +81,18 @@ watch(inputText, () => {
         <div class="agent-input-capsule flex-1 flex items-start rounded-2xl px-1 py-1">
           <!-- 输入框 + 底部状态挂件（别针已移入状态栏） -->
           <div class="relative flex-1">
+            <!-- 已选附件气泡 -->
+            <div v-if="selectedFile" class="flex items-center gap-1.5 mb-1.5 px-2 py-1 rounded-lg w-fit max-w-full" :class="['theme-card']">
+              <svg class="w-3.5 h-3.5 flex-shrink-0" :class="['theme-text-muted']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
+              </svg>
+              <span class="text-xs truncate max-w-[160px]" :class="['theme-text-main']">{{ selectedFile.name }}</span>
+              <button type="button" class="flex-shrink-0 p-0.5 rounded hover:bg-current/10" :class="['theme-text-muted']" title="移除" @click="clearSelectedFile">
+                <svg class="w-3 h-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                  <line x1="18" y1="6" x2="6" y2="18" /><line x1="6" y1="6" x2="18" y2="18" />
+                </svg>
+              </button>
+            </div>
             <textarea
               ref="textareaRef"
               v-model="inputText"
@@ -88,7 +112,7 @@ watch(inputText, () => {
                 @click="handleAttach"
                 class="agent-attach-btn"
                 :class="['theme-text-muted']"
-                title="上传图片 / 文件（即将支持）"
+                title="上传图片 / 文件（选择后将以文件名附在输入区，多模态分析待接入）"
               >
                 <svg class="w-3.5 h-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
                   <path d="M21.44 11.05l-9.19 9.19a6 6 0 0 1-8.49-8.49l9.19-9.19a4 4 0 0 1 5.66 5.66l-9.2 9.19a2 2 0 0 1-2.83-2.83l8.49-8.48" />
@@ -101,6 +125,8 @@ watch(inputText, () => {
               <span class="opacity-40">·</span>
               <span>{{ MODEL_LABEL }}</span>
             </div>
+            <!-- 隐藏的文件选择器（别针触发） -->
+            <input ref="fileInputRef" type="file" class="hidden" @change="onFilePicked" />
           </div>
         </div>
 

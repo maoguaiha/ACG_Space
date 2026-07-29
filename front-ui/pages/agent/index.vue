@@ -472,6 +472,68 @@ function handleStop() {
   isStreaming.value = false
 }
 
+// ==================== 常见交互（重新生成 / 导出 / 搜索 / 反馈） ====================
+
+/** 重新生成：以 anchorId 对应的助手消息为准，重发其前一条用户消息；
+ *  不传 anchorId 时默认重发最后一条用户消息。 */
+function regenerateLast(anchorId?: string) {
+  if (isStreaming.value) return
+  let userIdx = -1
+  if (anchorId) {
+    const anchorIdx = messages.value.findIndex((m) => m.id === anchorId)
+    if (anchorIdx < 0) return
+    for (let i = anchorIdx - 1; i >= 0; i--) {
+      if (messages.value[i].role === 'user') { userIdx = i; break }
+    }
+  } else {
+    for (let i = messages.value.length - 1; i >= 0; i--) {
+      if (messages.value[i].role === 'user') { userIdx = i; break }
+    }
+  }
+  if (userIdx < 0) return
+  // 截断到该用户消息之后（丢弃其后的助手消息）
+  messages.value = messages.value.slice(0, userIdx + 1)
+  handleSend(messages.value[userIdx].content)
+}
+
+/** 导出当前会话为 Markdown 文件下载 */
+function exportConversation() {
+  if (!messages.value.length) return
+  const lines = ['# ACG Space AI 对话导出', '', `> 导出时间：${new Date().toLocaleString()}`, '']
+  for (const m of messages.value) {
+    const who = m.role === 'user' ? '**用户**' : '**AI 助手**'
+    lines.push(`${who}\n\n${m.content}\n`)
+  }
+  const blob = new Blob([lines.join('\n')], { type: 'text/markdown;charset=utf-8' })
+  const url = URL.createObjectURL(blob)
+  const a = document.createElement('a')
+  a.href = url
+  a.download = `acg-agent-${activeConversationId.value || 'chat'}-${Date.now()}.md`
+  a.click()
+  URL.revokeObjectURL(url)
+}
+
+/** 会话内搜索（过滤消息，仅前端展示，不影响底层数据） */
+const searchQuery = ref('')
+
+/** 点赞/点踩反馈：存 localStorage（key 按会话+消息 id） */
+const FEEDBACK_KEY = 'acg_agent_feedback'
+const feedbackMap = ref<Record<string, 'up' | 'down'>>({})
+try {
+  const saved = localStorage.getItem(FEEDBACK_KEY)
+  if (saved) feedbackMap.value = JSON.parse(saved)
+} catch { /* ignore */ }
+function submitFeedback(msgId: string, type: 'up' | 'down') {
+  if (feedbackMap.value[msgId] === type) {
+    delete feedbackMap.value[msgId] // 再次点击取消
+  } else {
+    feedbackMap.value[msgId] = type
+  }
+  try {
+    localStorage.setItem(FEEDBACK_KEY, JSON.stringify(feedbackMap.value))
+  } catch { /* ignore */ }
+}
+
 /** 快捷问题发送（空态建议） */
 function handleQuickSend(q: string) {
   handleSend(q)
@@ -565,6 +627,35 @@ onMounted(() => { loadConversations() })
             {{ activeTitle }}
           </h1>
 
+          <!-- 会话内搜索 -->
+          <div class="relative hidden sm:block">
+            <svg class="w-3.5 h-3.5 absolute left-2.5 top-1/2 -translate-y-1/2 pointer-events-none" :class="['theme-text-muted']" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+              <circle cx="11" cy="11" r="8" />
+              <line x1="21" y1="21" x2="16.65" y2="16.65" />
+            </svg>
+            <input
+              v-model="searchQuery"
+              type="text"
+              placeholder="搜索对话"
+              class="agent-dialog-input w-36 pl-8 py-1.5 text-xs rounded-lg"
+              :class="['theme-text-main', 'theme-card']"
+            />
+          </div>
+
+          <!-- 导出对话 -->
+          <button
+            class="hidden sm:flex p-2 rounded-lg transition-all duration-200 hover:-translate-y-[2px] active:scale-[0.92]"
+            :class="['theme-card', 'theme-card-hover', 'theme-text-muted']"
+            title="导出对话为 Markdown"
+            @click="exportConversation"
+          >
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4" />
+              <polyline points="7 10 12 15 17 10" />
+              <line x1="12" y1="15" x2="12" y2="3" />
+            </svg>
+          </button>
+
           <!-- 驱动模型标签 -->
           <span
             class="hidden sm:inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-xs font-medium"
@@ -591,7 +682,11 @@ onMounted(() => { loadConversations() })
               :has-streaming="isStreaming"
               :streaming-content="streamingContent"
               :tool-status="toolStatus"
+              v-model:search-query="searchQuery"
+              :feedback-map="feedbackMap"
               @quick-send="handleQuickSend"
+              @feedback="submitFeedback"
+              @regenerate="regenerateLast"
             />
             <ChatInput
               :disabled="false"
