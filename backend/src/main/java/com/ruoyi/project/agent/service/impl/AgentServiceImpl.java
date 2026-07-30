@@ -171,7 +171,9 @@ public class AgentServiceImpl implements IAgentService {
                     cb.onError(1, TimeUnit.MILLISECONDS, ex);
                     sendJson(emitter, Map.of("type", "error", "content", MSG_UNAVAILABLE));
                     try {
-                        emitter.completeWithError(ex);
+                        // 用 complete() 而非 completeWithError()：错误帧已发给前端，干净结束即可，
+                        // 避免触发 Spring 异步错误重派发导致 SecurityContext 丢失 -> AccessDeniedException。
+                        emitter.complete();
                     } catch (Exception ignore) {
                         // 连接已断开，忽略
                     }
@@ -197,8 +199,10 @@ public class AgentServiceImpl implements IAgentService {
                 holder[0].dispose();
             }
             cb.onError(1, TimeUnit.MILLISECONDS, new TimeoutException(MSG_TIMEOUT));
+            sendJson(emitter, Map.of("type", "error", "content", MSG_TIMEOUT));
             try {
-                emitter.completeWithError(new TimeoutException(MSG_TIMEOUT));
+                // 同样用 complete() 避免异步错误重派发触发 AccessDeniedException
+                emitter.complete();
             } catch (Exception ignore) {
                 // 忽略
             }
