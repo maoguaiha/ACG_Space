@@ -25,6 +25,18 @@ export default defineEventHandler(async (event) => {
       || (event.node?.req?.headers?.['cookie'] as string | undefined)
       || event.headers.get('cookie')
 
+    // 兜底：Authorization 头拿不到时(H3/Nitro 某些版本读不到),从 acg_token cookie 还原 Bearer token。
+    // 浏览器对同域 /api-proxy 必带 cookie,acg_token 值就是当前登录 JWT。
+    let authHeader = authorization
+    if (!authHeader && cookie) {
+      const m = cookie.match(/(?:^|;\s*)acg_token=([^;]+)/)
+      if (m) {
+        try { authHeader = `Bearer ${decodeURIComponent(m[1])}` }
+        catch { authHeader = `Bearer ${m[1]}` }
+      }
+    }
+    console.log(`[api-proxy] ${event.path} authHdr=${authorization ? "Y" : "N"} cookieToken=${cookie && /acg_token=/.test(cookie) ? "Y" : "N"} finalAuth=${authHeader ? "Y" : "N"}`)
+
     // 取所有头，去掉浏览器专用头（避免后端安全过滤器判定跨域失败）
     const allHeaders = Object.fromEntries(event.headers.entries())
     const { origin, referer, 'sec-fetch-site': _sfs,
@@ -34,7 +46,7 @@ export default defineEventHandler(async (event) => {
       ...forwardHeaders } = allHeaders as Record<string, string>
 
     // 显式塞回 authorization 和 cookie（保证不被之前的解构漏掉）
-    if (authorization) forwardHeaders['authorization'] = authorization
+    if (authHeader) forwardHeaders['authorization'] = authHeader
     if (cookie) forwardHeaders['cookie'] = cookie
 
     const res = await fetch(targetUrl, {
