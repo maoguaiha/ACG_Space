@@ -122,7 +122,17 @@ public class AgentServiceImpl implements IAgentService {
                 .retrieve()
                 .bodyToFlux(new ParameterizedTypeReference<ServerSentEvent<String>>() {
                 })
-                .timeout(Duration.ofMinutes(8));
+                .timeout(Duration.ofMinutes(8))
+                // 在 Flux 层面就 catch 错误并吞掉（转为空流），
+                // 避免异步错误重派发触发 AccessDeniedException。
+                .onErrorResume(e -> {
+                    errored[0] = true;
+                    log.warn("agent upstream error, suppressing to avoid async error re-dispatch", e);
+                    cb.onError(1, TimeUnit.MILLISECONDS, e);
+                    sendJson(emitter, Map.of("type", "error", "content", MSG_UNAVAILABLE));
+                    try { emitter.complete(); } catch (Exception ignore) {}
+                    return Flux.empty();
+                });
 
         final StringBuilder assistantBuf = new StringBuilder();
         final boolean[] done = {false};
