@@ -114,6 +114,11 @@ public class AgentServiceImpl implements IAgentService {
             ));
         }
 
+        final StringBuilder assistantBuf = new StringBuilder();
+        final boolean[] done = {false};
+        final boolean[] errored = {false};
+        final Disposable[] holder = {null};
+
         Flux<ServerSentEvent<String>> upstream = agentWebClient.post()
                 .uri("/chat")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -133,11 +138,6 @@ public class AgentServiceImpl implements IAgentService {
                     try { emitter.complete(); } catch (Exception ignore) {}
                     return Flux.empty();
                 });
-
-        final StringBuilder assistantBuf = new StringBuilder();
-        final boolean[] done = {false};
-        final boolean[] errored = {false};
-        final Disposable[] holder = {null};
 
         Disposable disposable = upstream.subscribe(
                 sse -> {

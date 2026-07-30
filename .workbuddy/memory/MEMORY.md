@@ -41,3 +41,63 @@
   - `BizArticleController.delete()` — 删除文章时通知作者
   - `BizCommentController.delete()` — 删除评论时通知评论作者（截取30字）
   - `BizRedeemOrderServiceImpl.createOrder()` — 订单创建成功时通知用户
+
+
+## 关键坑：Edit/Write 工具的传输层会把 multi-line new_string 压成字面量 [omitted]
+- 现象：用 Edit 修改文件时，若 new_string 是多行内容（含 Python 代码/中文/复杂结构），
+  传输/渲染层会把整个 new_string 压成字面量字符串 [omitted] 写入文件，工具仍报成功但文件已被破坏。
+  首次发现 2026-07-29：改 python-agent/app/main.py 时 ~40 行和 ~5 行的 new_string 都被压。
+- 症状链：文件含 [omitted] 字面量 → Python SyntaxError → 容器 uvicorn 启动失败 →
+  docker restart 进入无限 restart loop（Restarting (1) N seconds ago）。
+- Write 工具写完整文件时风险相同。
+- 绕开方法：用 Bash + python -c 直接读写文件。Bash 命令字符串传输从未遇过压缩，可靠：
+  git checkout HEAD -- <file>   # 先恢复
+  python -c "
+  with open("<file>","r",encoding="utf-8") as f: c=f.read()
+  old = \"\"\"...\"\"\"
+  new = \"\"\"...\"\"\"
+  assert old in c
+  c = c.replace(old, new, 1)
+  with open("<file>","w",encoding="utf-8") as f: f.write(c)
+  "
+  shell 外层用单引号包 python -c，Python 用 \"\"\"...\"\"\" 三引号字符串可含 " \
+。
+- 验证：grep -c "[omitted]" <file> 必须为 0；docker 化项目还要 docker exec grep [omitted] 为 0，
+  且容器 Up 而非 Restarting。
+- 仍可放心用 Edit 的场景：单行替换（如 mb-4 → mb-6）、纯 CSS/Tailwind class 替换、
+  简单结构（不含代码逻辑）—— 这些从未触发压缩。
+- 教训：含 Python 代码或中文的多行改动，默认走 Bash + python -c，别赌 Edit/Write。
+
+## Agent LongCat-2.0 工具调用 XML 拦截
+- LongCat 不支持 OpenAI tool_calls 字段，把工具调用写成
+  <longcat_tool_call>name<longcat_arg_key>k</longcat_arg_key><longcat_arg_value>v</longcat_arg_value>...</longcat_tool_call> XML。
+- 第一轮 chat_completion 后 python 解析 XML + 清空 assistant_msg.content + 工具结果回填，OK。
+- 第二轮 chat_stream 时模型倾向再次输出同样的 XML；原 stream 循环没有 XML 过滤，
+  token 直接 yield 给前端 → 用户看到裸 <longcat_tool_call> 文本。
+- 修复（2026-07-29, 856eeb9）：
+  1. main.py 在每个 token yield 前检测 longcat_tool_call 子串（子串而非完整标签，可拦跨 token 切碎），
+     命中则截断 stream + yield error。
+  2. prompts.py SYSTEM_PROMPT 加硬禁令：严禁输出 longcat_tool_call 等 XML 工具调用标签。
+- 部署：docker cp python-agent/app/main.py acg_python_agent:/app/app/main.py + restart。
+
+
+## Railway 部署限制（2026 实测/查证）
+- 免费版(Free plan, trial 结束后): 每项目最多 **3 个服务** + 仅 1 个项目 + 0.5GB RAM/服务 + $1/月信用。Trial 期(30天/$5): 5 项目 / 5 服务每项目。
+- ACG_Space 已占 backend / front-ui / admin-ui 三个免费额度，python-agent 是第 4 个 → 免费版加不进。
+- 解法 A: 升级 Hobby($5/月) 解除 3 服务限制，按 runbook 直接加 python-agent。
+- 解法 B: python-agent 部署到外部免费平台(Render/Fly.io/Koyeb/国内云函数)，backend 用 AGENT_API_BASE_URL=https://<公网> 调(走 https 不走 railway.internal)。
+- 解法 B 注意: 跨公网部署 python-agent 需加 **CORS 白名单 + 简单鉴权 header**，否则 LLM key 被公网白嫖。
+
+
+## python-agent 部署位置约束（2026-07-30 确认）
+- python-agent 调 api.longcat.chat(LongCat) + dashscope.aliyuncs.com(通义)，均国内域名。
+- 部署位置应靠近国内（国内云函数 / 新加坡区域），否则聊天延迟高/不稳。
+- 外部平台(非 Railway)部署时：backend 用 AGENT_API_BASE_URL=https://<公网> 调；python-agent 需加 CORS 白名单 + 鉴权 header，否则 LLM key 暴露公网被白嫖。
+- 验证：Render 免费 750h/月、512MB、15min 休眠冷启动 30-60s、免信用卡；Fly.io 常驻需信用卡；国内阿里云FC/腾讯云SCF 按调用计费、离 LLM API 近。
+
+## 6 服务在 Railway 免费版不可全部署（2026-07-30 澄清）
+- 6 服务 = 用户端(front-ui) + 后端(backend) + 管理端(admin-ui) + MySQL + Redis + agent(python-agent)。
+- MySQL/Redis 是 Railway 插件，会计入服务数（截图已证 5 服务含这俩）。
+- 免费版(Free, trial 后) = 3 服务/项目；trial 期 = 5 服务/项目。6 个任何一档都超。
+- 用户当前 trial 剩 23 天、5 服务已满，agent 加不进。trial 后 5>3 会被冻。
+- 路线1(升 Hobby $5/月): 6 个全留 Railway。路线2(0成本): 数据库(Upstash Redis/外部MySQL)+agent 外置，Railway 仅留 3 应用服务符合 Free 3 限制。
