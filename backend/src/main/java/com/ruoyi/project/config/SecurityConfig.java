@@ -61,7 +61,7 @@ public class SecurityConfig {
      */
     @Bean
     public InitializingBean securityContextHolderInitializer() {
-        return () -> SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLE_THREADLOCAL);
+        return () -> SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
     }
 
     @Bean("securityCorsSource")
