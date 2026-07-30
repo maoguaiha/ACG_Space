@@ -6,7 +6,6 @@
   },
   "deploy": {
     "startCommand": "node .output/server/index.mjs",
-    "region": "asia-southeast1-eqsg3a",
     "healthcheckPath": "/health",
     "healthcheckTimeout": 120,
     "restartPolicyType": "ON_FAILURE"
