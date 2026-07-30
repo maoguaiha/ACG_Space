@@ -16,8 +16,14 @@ export default defineEventHandler(async (event) => {
 
   try {
     // 从 event.headers 单独取关键头（避免 Object.fromEntries 漏字段时间复杂性）
-    const authorization = event.headers.get('authorization')
-    const cookie = event.headers.get('cookie')
+    // 注意：用 Nitro 官方 getRequestHeader 取，并对 node.req.headers 兜底，
+    // 避免个别 Nitro 版本下 event.headers.get('authorization') 返回 null 导致后端收不到 token。
+    const authorization = getRequestHeader(event, 'authorization')
+      || (event.node?.req?.headers?.['authorization'] as string | undefined)
+      || event.headers.get('authorization')
+    const cookie = getRequestHeader(event, 'cookie')
+      || (event.node?.req?.headers?.['cookie'] as string | undefined)
+      || event.headers.get('cookie')
 
     // 取所有头，去掉浏览器专用头（避免后端安全过滤器判定跨域失败）
     const allHeaders = Object.fromEntries(event.headers.entries())

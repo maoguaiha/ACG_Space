@@ -17,6 +17,8 @@ import java.io.IOException;
 import java.util.List;
 import java.util.Set;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 
 /**
@@ -29,6 +31,8 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
 
     private final JwtUtils jwtUtils;
+
+    private static final Logger log = LoggerFactory.getLogger(JwtAuthenticationTokenFilter.class);
 
     /** 无需 Token 校验的公开路径前缀（GET 方法生效） */
     private static final Set<String> PUBLIC_PREFIXES = Set.of(
@@ -72,6 +76,10 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
                 }
             } catch (Exception e) {
                 // Token 无效或过期，不设置上下文，后续过滤器会处理权限
+                log.warn("JWT 校验失败 path={} tokenPrefix={} err={}",
+                        request.getRequestURI(),
+                        token.length() > 14 ? token.substring(0, 14) : token,
+                        e.toString());
             }
         }
         chain.doFilter(request, response);
