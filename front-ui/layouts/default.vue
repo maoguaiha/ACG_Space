@@ -1,5 +1,13 @@
 <template>
-  <div :class="[currentTheme, 'min-h-screen flex flex-col font-sans transition-colors duration-500']">
+  <div
+    :class="[
+      currentTheme,
+      ($route.meta as any).fullHeight
+        ? 'h-screen overflow-hidden flex flex-col'
+        : 'min-h-screen flex flex-col',
+      'font-sans transition-colors duration-500'
+    ]"
+  >
     <!-- Navbar -->
     <header class="sticky top-0 z-50 w-full backdrop-blur-md border-b theme-header">
       <div class="container mx-auto px-4 h-16 flex items-center justify-between">
@@ -18,6 +26,7 @@
           <NuxtLink to="/follows" class="hover:text-indigo-400 transition-colors" active-class="active-link">我的追番</NuxtLink>
           <NuxtLink to="/community" class="hover:text-indigo-400 transition-colors" active-class="active-link">社区</NuxtLink>
           <NuxtLink to="/gacha" class="hover:text-amber-400 transition-colors" active-class="active-link text-amber-400">抽赏</NuxtLink>
+          <NuxtLink to="/agent" class="hover:text-indigo-400 transition-colors" active-class="active-link">AI 助手</NuxtLink>
         </nav>
 
         <div class="flex items-center gap-6">
@@ -90,8 +99,8 @@
       </div>
     </transition>
 
-    <!-- Footer -->
-    <footer class="border-t theme-footer py-12 mt-20">
+    <!-- Footer（agent 等「全屏沉浸式」页可通过 meta.hideFooter 隐藏） -->
+    <footer v-if="!($route.meta as any).hideFooter" class="border-t theme-footer py-12 mt-20">
       <div class="container mx-auto px-4 text-center text-slate-500 text-sm">
         <p>© 2026 ACG Space. All rights reserved.</p>
         <p class="mt-2">专注于高质量动漫分享与讨论的纯粹社区。</p>
@@ -178,6 +187,8 @@ const handleLogout = () => {
 /* 默认深色变量 (Dark) - 蓝紫科技风 */
 .theme-dark {
   --bg-main: #0f172a;
+  --bg-main-rgb: 15, 23, 42;
+  --theme-border-color: rgba(255, 255, 255, 0.08);
   --bg-secondary: #1e293b;
   --bg-card: rgba(30, 41, 59, 0.6);
   --bg-header: rgba(15, 23, 42, 0.85);
@@ -203,6 +214,8 @@ const handleLogout = () => {
 /* 浅色变量 (Light) - 清透白昼风 */
 .theme-light {
   --bg-main: #F8FAFC;
+  --bg-main-rgb: 248, 250, 252;
+  --theme-border-color: rgba(0, 0, 0, 0.06);
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.9);
   --bg-header: rgba(255, 255, 255, 0.95);
@@ -263,6 +276,8 @@ const handleLogout = () => {
 /* 粉色变量 (Pink) - 温馨甜美风 */
 .theme-pink {
   --bg-main: #fdf2f8;
+  --bg-main-rgb: 253, 242, 248;
+  --theme-border-color: rgba(0, 0, 0, 0.06);
   --bg-secondary: #ffffff;
   --bg-card: rgba(255, 255, 255, 0.8);
   --bg-header: rgba(255, 241, 242, 0.95);
@@ -1578,6 +1593,24 @@ const handleLogout = () => {
 .theme-pink .theme-primary-bg {
   background: linear-gradient(135deg, #ec4899, #f472b6);
   box-shadow: 0 10px 25px rgba(236, 72, 153, 0.3);
+}
+
+/* 用户自己的对话气泡：浅色/粉色模式用浅色底（像番剧库选中标签），避免主色实底太重；
+   dark 模式仍用实心主色渐变保持对比。 */
+.theme-dark .theme-user-bubble {
+  background: linear-gradient(135deg, #6366f1, #8b5cf6);
+  color: #ffffff;
+  box-shadow: 0 8px 20px rgba(99, 102, 241, 0.25);
+}
+.theme-light .theme-user-bubble {
+  background: rgba(59, 130, 246, 0.12);
+  color: #3B82F6;
+  box-shadow: none;
+}
+.theme-pink .theme-user-bubble {
+  background: rgba(236, 72, 153, 0.12);
+  color: #db2777;
+  box-shadow: none;
 }
 
 .theme-dark .theme-search-input {
@@ -3200,5 +3233,356 @@ const handleLogout = () => {
 .theme-pink .theme-carousel-desc {
   color: #581c3a;
   text-shadow: 0 1px 8px rgba(236, 72, 153, 0.15);
+}
+
+/* ═══════════════════════════════════════════
+   AI 助手聊天页 — 细节质感优化（4 项）
+   ═══════════════════════════════════════════ */
+
+/* —— 任务 1：彻底隐藏滚动条但保留原生滚动（聊天区 & 侧边栏通用）——
+   参考 Gemini 沉浸式体验：滚动条不可见，滚轮 / 触控滑动照常工作。 */
+.hide-scrollbar-container {
+  overflow-y: auto;
+  scrollbar-width: none;          /* Firefox */
+  -ms-overflow-style: none;       /* IE / 旧 Edge */
+}
+.hide-scrollbar-container::-webkit-scrollbar {
+  display: none;                  /* WebKit (Chrome / Safari / 新版 Edge) */
+  width: 0;
+  height: 0;
+}
+
+/* —— 任务 2：侧边栏与聊天区的极细微分割线（深色模式为微弱高光线） —— */
+.agent-sidebar {
+  border-right: 1px solid var(--theme-border-color);
+}
+
+/* —— 任务 2：顶部 Header 毛玻璃 + 边界感 ——
+   底边线比 --theme-border-color 更细，深色下仅 5% 不透明度，几乎隐入背景 */
+.agent-header {
+  background-color: rgba(var(--bg-main-rgb), 0.8);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+  border-bottom: 1px solid rgba(128, 128, 128, 0.08);
+}
+.theme-dark .agent-header {
+  border-bottom-color: rgba(255, 255, 255, 0.05);
+}
+.theme-light .agent-header,
+.theme-pink .agent-header {
+  border-bottom-color: rgba(0, 0, 0, 0.05);
+}
+
+/* —— 任务 2.5：补全死类 .theme-border —— 修复前因为没有真实 CSS，
+   所有 border-t theme-border 走 currentColor，在深色模式下显白。
+   统一用更淡的色值（比 --theme-border-color 还轻），适配聊天输入框 / 侧边栏底
+   分割线等所有位置，避免突兀白线 */
+.theme-border {
+  border-color: rgba(128, 128, 128, 0.12);
+}
+.theme-dark .theme-border {
+  border-color: rgba(255, 255, 255, 0.05);
+}
+.theme-light .theme-border,
+.theme-pink .theme-border {
+  border-color: rgba(0, 0, 0, 0.05);
+}
+
+/* —— 任务 3：清空按钮 Hover 圆形背景强化 —— */
+.agent-clear-btn {
+  border-radius: 9999px;
+  transition: background-color 0.2s ease, color 0.2s ease;
+}
+.theme-dark .agent-clear-btn:hover {
+  background-color: rgba(99, 102, 241, 0.15);
+  color: #818cf8;
+}
+.theme-light .agent-clear-btn:hover {
+  background-color: rgba(79, 70, 229, 0.12);
+  color: #4f46e5;
+}
+.theme-pink .agent-clear-btn:hover {
+  background-color: rgba(236, 72, 153, 0.12);
+  color: #ec4899;
+}
+
+/* —— 任务 3：清空按钮 + 输入框 聚合为统一胶囊外底板 —— */
+.agent-input-capsule {
+  background-color: var(--bg-card);
+  border: 1px solid var(--border-color);
+  transition: border-color 0.2s ease, box-shadow 0.2s ease;
+}
+.agent-input-capsule:focus-within {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 15%, transparent);
+}
+/* 覆盖默认主题对 textarea 的强制背景（保持胶囊内透明） */
+.agent-input-capsule textarea.agent-textarea {
+  background-color: transparent !important;
+  border-color: transparent !important;
+  color: var(--text-main);
+}
+.agent-input-capsule textarea.agent-textarea::placeholder {
+  opacity: 0.4;
+}
+
+/* —— 任务 4：空状态视觉重心上移（物理中心略偏上） —— */
+.agent-empty-state {
+  transform: translateY(-8%);
+}
+
+/* ═══════════════════════════════════════════
+   V2.4 千问式侧边栏 — 对话框 / 三点菜单 / 批量栏（三主题）
+   ═══════════════════════════════════════════ */
+
+/* —— 三点弹出的右键菜单 —— */
+.agent-context-menu {
+  position: absolute;
+  right: 0;
+  top: calc(100% + 4px);
+  z-index: 60; /* 高于其他对话行（z-auto=0）、配合 row 临时 z-50，让浮出菜单不被下一行遮住 */
+  min-width: 160px;
+  padding: 4px;
+  border-radius: 12px;
+  background-color: var(--bg-card);
+  border: 1px solid var(--theme-border-color);
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.12), 0 2px 6px rgba(0, 0, 0, 0.06);
+  font-size: 0.8125rem;
+}
+.theme-dark .agent-context-menu {
+  box-shadow: 0 6px 24px rgba(0, 0, 0, 0.45), 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+.agent-context-menu-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.45rem 0.6rem;
+  border-radius: 8px;
+  text-align: left;
+  color: var(--text-main);
+  transition: background-color 0.12s ease;
+}
+.agent-context-menu-item:hover {
+  background-color: rgba(0, 0, 0, 0.05);
+}
+.theme-dark .agent-context-menu-item:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+.agent-context-menu-item-danger {
+  color: #ef4444;
+}
+.agent-context-menu-item-danger:hover {
+  background-color: rgba(239, 68, 68, 0.1);
+}
+.agent-context-menu-divider {
+  height: 1px;
+  margin: 4px 0;
+  background-color: var(--theme-border-color);
+}
+
+/* —— 模态对话框（背板 + 面板） —— */
+.agent-dialog-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+  background-color: rgba(0, 0, 0, 0.45);
+  backdrop-filter: blur(2px);
+}
+.theme-dark .agent-dialog-backdrop {
+  background-color: rgba(0, 0, 0, 0.65);
+}
+.theme-pink .agent-dialog-backdrop {
+  background-color: rgba(236, 72, 153, 0.12);
+}
+
+.agent-dialog-panel {
+  width: 100%;
+  max-width: 24rem;
+  border-radius: 16px;
+  overflow: hidden;
+  background-color: var(--bg-card);
+  border: 1px solid var(--theme-border-color);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.18), 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+.theme-dark .agent-dialog-panel {
+  background-color: rgba(36, 36, 42, 0.96);
+  backdrop-filter: blur(20px);
+  box-shadow: 0 24px 48px rgba(0, 0, 0, 0.6), 0 8px 16px rgba(0, 0, 0, 0.35);
+  border-color: rgba(255, 255, 255, 0.08);
+}
+.theme-pink .agent-dialog-panel {
+  border-color: rgba(236, 72, 153, 0.2);
+}
+
+.agent-dialog-close {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  transition: background-color 0.12s ease;
+}
+.agent-dialog-close:hover {
+  background-color: rgba(0, 0, 0, 0.06);
+}
+.theme-dark .agent-dialog-close:hover {
+  background-color: rgba(255, 255, 255, 0.08);
+}
+
+.agent-dialog-input {
+  width: 100%;
+  padding: 0.6rem 0.8rem;
+  border-radius: 10px;
+  border: 1px solid var(--theme-border-color);
+  outline: none;
+  font-size: 0.875rem;
+  transition: border-color 0.15s ease, box-shadow 0.15s ease;
+}
+.agent-dialog-input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 18%, transparent);
+}
+.theme-dark .agent-dialog-input {
+  background-color: rgba(255, 255, 255, 0.04);
+}
+
+/* —— 按钮 —— */
+.agent-dialog-btn {
+  padding: 0.45rem 1rem;
+  border-radius: 10px;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  border: 1px solid transparent;
+  transition: background-color 0.15s ease, opacity 0.15s ease, transform 0.1s ease;
+  cursor: pointer;
+}
+.agent-dialog-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+.agent-dialog-btn:not(:disabled):active {
+  transform: scale(0.97);
+}
+.agent-dialog-btn-cancel {
+  background-color: transparent;
+  color: var(--text-main);
+  border-color: var(--theme-border-color);
+}
+.agent-dialog-btn-cancel:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+.theme-dark .agent-dialog-btn-cancel:hover {
+  background-color: rgba(255, 255, 255, 0.06);
+}
+/* 主按钮（高亮确认色）：跟随主题主色 */
+.agent-dialog-btn-primary {
+  background-color: var(--accent);
+  color: #fff;
+}
+.theme-light .agent-dialog-btn-primary { background-color: #4f46e5; }
+.theme-pink .agent-dialog-btn-primary { background-color: #ec4899; }
+.agent-dialog-btn-primary:not(:disabled):hover {
+  filter: brightness(1.08);
+}
+.agent-dialog-btn-danger {
+  background-color: #ef4444;
+  color: #fff;
+}
+.agent-dialog-btn-danger:not(:disabled):hover {
+  background-color: #dc2626;
+}
+
+/* —— 移动分组对话框的分组选项行 —— */
+.agent-group-option {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.55rem 0.6rem;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: background-color 0.12s ease;
+  font-size: 0.8125rem;
+}
+.agent-group-option:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+}
+.theme-dark .agent-group-option:hover {
+  background-color: rgba(255, 255, 255, 0.05);
+}
+.agent-group-option-active {
+  background-color: color-mix(in srgb, var(--accent) 12%, transparent);
+  border: 1px solid color-mix(in srgb, var(--accent) 35%, transparent);
+}
+.theme-dark .agent-group-option-active {
+  background-color: color-mix(in srgb, var(--accent) 22%, transparent);
+  border-color: color-mix(in srgb, var(--accent) 50%, transparent);
+}
+.agent-group-option-new {
+  border: 1px dashed var(--theme-border-color);
+}
+.agent-new-group-input {
+  flex: 1;
+  min-width: 0;
+  border: none;
+  outline: none;
+  background-color: transparent;
+  font-size: inherit;
+}
+.agent-new-group-input::placeholder {
+  opacity: 0.5;
+}
+
+/* —— 批量态复选框配色 —— */
+.agent-batch-checkbox-on {
+  background-color: var(--accent);
+  border-color: var(--accent);
+}
+.theme-light .agent-batch-checkbox-on { background-color: #4f46e5; border-color: #4f46e5; }
+.theme-pink .agent-batch-checkbox-on { background-color: #ec4899; border-color: #ec4899; }
+.agent-batch-checkbox-off {
+  background-color: transparent;
+}
+
+/* —— 底部固定批量操作栏 —— */
+.agent-batch-bar {
+  position: sticky;
+  bottom: 0;
+  margin: 0 -0.5rem -0.5rem;
+  padding: 0.6rem 0.75rem;
+  background-color: var(--bg-card);
+  border-top: 1px solid var(--theme-border-color);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  backdrop-filter: blur(8px);
+}
+.theme-dark .agent-batch-bar {
+  background-color: rgba(36, 36, 42, 0.96);
+}
+
+/* —— 「+ 新分组」按钮 —— */
+.agent-add-group-btn {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.4rem 0.65rem;
+  margin: 0 0.5rem 0.25rem;
+  border-radius: 10px;
+  font-size: 0.75rem;
+  color: var(--text-muted);
+  transition: background-color 0.12s ease, color 0.12s ease;
+}
+.agent-add-group-btn:hover {
+  background-color: rgba(0, 0, 0, 0.04);
+  color: var(--accent);
+}
+.theme-dark .agent-add-group-btn:hover {
+  background-color: rgba(255, 255, 255, 0.06);
 }
 </style>

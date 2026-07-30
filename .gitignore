@@ -17,6 +17,7 @@ npm-debug.log*
 .env
 .env.local
 .env.*.local
+python-agent/.env
 
 # IDE
 .vscode/
@@ -36,6 +37,13 @@ logs/
 
 # Maven tmp
 .maventmp/
+
+# Python
+__pycache__/
+*.py[cod]
+.python-version
+.venv/
+venv/
 
 # Workspace memory (per-project tool data)
 .workbuddy/memory/

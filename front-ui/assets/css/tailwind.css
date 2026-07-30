@@ -107,3 +107,21 @@ button:active:not(:disabled),
     transform: translateY(0);
   }
 }
+
+/* ══════════════════════════════════════
+   T6: 千问式细透明滚动条
+   - 默认显示细灰线（半透明 0.2），用户能感知到「这里有滚动条」
+   - .is-scrolling 时变明显（0.45），强化「正在滚」的反馈
+   - 同时适配 WebKit (::-webkit-scrollbar) 和 Firefox (scrollbar-width)
+   ══════════════════════════════════════ */
+/* 隐藏原生滚动条：改用 Vue 自绘的 mac 风格细滑块（.agent-custom-scrollbar）
+   原因：macOS 上自定义 ::-webkit-scrollbar 会被切到「经典常驻」模式，
+   无法做出"静止隐藏、滚动浮现"的 overlay 效果；自绘 div 可跨系统统一行为。 */
+.hide-scrollbar-container {
+  scrollbar-width: none; /* Firefox：完全隐藏原生滚动条 */
+}
+.hide-scrollbar-container::-webkit-scrollbar {
+  width: 0;
+  height: 0;
+  display: none; /* WebKit：完全隐藏原生滚动条 */
+}

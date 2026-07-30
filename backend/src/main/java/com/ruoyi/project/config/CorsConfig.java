@@ -1,6 +1,7 @@
 package com.ruoyi.project.config;
 
 import org.springframework.context.annotation.Bean;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
@@ -13,6 +14,9 @@ import org.springframework.web.filter.CorsFilter;
 @Configuration
 public class CorsConfig {
 
+    @Value("${CORS_ALLOWED_ORIGINS:}")
+    private String allowedOrigins;
+
     @Bean("globalCorsFilter")
     public CorsFilter corsFilter() {
         CorsConfiguration config = new CorsConfiguration();
@@ -23,6 +27,12 @@ public class CorsConfig {
         config.addAllowedOrigin("http://localhost:5173");
         config.addAllowedOrigin("http://127.0.0.1:3000");
         config.addAllowedOrigin("http://127.0.0.1:5173");
+        // 生产环境（Railway 等）通过 CORS_ALLOWED_ORIGINS 注入前端/管理端公网域名
+        if (allowedOrigins != null && !allowedOrigins.isBlank()) {
+            for (String origin : allowedOrigins.split(",")) {
+                config.addAllowedOrigin(origin.trim());
+            }
+        }
         // 允许所有请求头
         config.addAllowedHeader("*");
         // 允许所有 HTTP 方法
