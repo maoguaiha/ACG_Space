@@ -7,11 +7,10 @@ load_dotenv()
 
 
 class Settings:
-    # Chat 模型：Agnes AI（免费，OpenAI 兼容，支持标准 tool_calls）。
-    # 也可通过 LLM_BASE_URL_CHAT 环境变量切换回 LongCat 或其他供应商。
-    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://apihub.agnes-ai.com/v1")
+    # Chat 模型：LongCat（美团"龙猫"，OpenAI 兼容，中文工具调用效果好）。
+    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.longcat.chat/openai")
     llm_api_key_chat: str = os.getenv("LLM_API_KEY_CHAT", "")
-    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "agnes-2.0-flash")
+    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "LongCat-2.0")
     # Embedding 使用本地 FastEmbed（ONNX），无需外部 API 和网络连接。
 
     # Bangumi（只读 GET，仅需 User-Agent；与后端 bangumi.api.* 配置保持一致）
