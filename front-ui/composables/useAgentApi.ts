@@ -183,7 +183,10 @@ export async function streamChat(
 
   if (!response.ok) {
     if (response.status === 401) {
-      userStore.logout()
+      // 仅客户端清除登录态，避免 SSR 401 通过 Set-Cookie 清掉客户端 cookie
+      if (import.meta.client) {
+        userStore.logout()
+      }
       throw new Error('登录已过期，请重新登录')
     }
     const text = await response.text().catch(() => '')

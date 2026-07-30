@@ -107,7 +107,10 @@ async function v2Fetch<T>(
     onResponseError({ response }) {
       console.error(`[V2 API Error] ${path} -> ${response.status}: ${response._data?.msg}`)
       if (response.status === 401) {
-        userStore.logout() // Token 失效，退出登录
+        // 仅客户端清除登录态，避免 SSR 401 通过 Set-Cookie 清掉客户端 cookie
+        if (import.meta.client) {
+          userStore.logout() // Token 失效，退出登录
+        }
       }
     }
   })

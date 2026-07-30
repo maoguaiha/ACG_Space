@@ -112,7 +112,11 @@ export async function apiFetch<T>(
     onResponseError({ response }) {
       console.error(`[API Error] ${path} -> ${response.status}: ${response._data?.msg}`)
       if (response.status === 401) {
-        userStore.logout() // Token 失效，退出登录
+        // 仅客户端清除登录态：SSR 阶段若因旧 token 触发 401 就 logout，
+        // 会通过 Set-Cookie 把客户端 acg_token 清掉，导致“每次进入需登录页都被强制登出”。
+        if (import.meta.client) {
+          userStore.logout() // Token 失效，退出登录
+        }
       }
     }
   }
