@@ -18,6 +18,7 @@ from app.config import settings
 from app.llm import chat_completion, chat_stream, embed
 from app.prompts import SYSTEM_PROMPT
 from app.rag import build_corpus
+from app.anime_loader import ensure_anime_json
 from app.schemas import ChatRequest
 from app.tools.bangumi import get_airing_now, get_bangumi_detail, search_bangumi
 from app.tools.registry import TOOLS
@@ -30,6 +31,13 @@ _MAX_HISTORY_MESSAGES = 16
 
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _CORPUS_DIR = os.path.join(_BASE_DIR, "corpus")
+
+# 尝试从后端 API 拉取番剧数据生成 anime.json（免手动部署语料文件）
+try:
+    backend_url = os.getenv("BACKEND_URL", "http://backend:8080")
+    ensure_anime_json(backend_url)
+except Exception as e:
+    print(f"[startup] 拉取番剧语料失败（{e}），跳过番剧知识源")
 
 # 启动时尝试构建语料（向量化）。embedding 不可达时降级为 None，服务仍 healthy，
 # 由后台 watcher 重试或首次请求时懒加载重建，避免启动即崩导致健康检查失败。
