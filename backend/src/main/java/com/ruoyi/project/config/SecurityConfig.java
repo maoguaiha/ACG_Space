@@ -88,6 +88,8 @@ public class SecurityConfig {
                 .requestMatchers("/swagger-ui/**", "/swagger-ui.html", "/v3/api-docs/**", "/doc.html").permitAll()
                 // Spring 错误页面
                 .requestMatchers("/error").permitAll()
+                // 健康检查端点（Railway / 容器探活，必须匿名可访问，否则返回 401 导致健康检查失败）
+                .requestMatchers("/health").permitAll()
 
                 // ===== 管理端接口（需 ADMIN 角色） =====
                 .requestMatchers("/api/admin/**").hasRole("ADMIN")
