@@ -128,6 +128,47 @@ def _parse_longcat_tool_calls(content: str) -> list[tuple[str, dict]]:
     return calls
 
 
+def _parse_agnes_tool_calls(content: str) -> list[tuple[str, dict]]:
+    """从 Agnes AI 的 XML 格式里抠出工具调用。
+
+    Agnes AI（LLM_CHAT_MODEL）也不走 OpenAI 标准 tool_calls,而是把工具调用写成
+    自有 XML 标签直接塞进 content:
+        <tool_call>
+        <function=get_bangumi_detail>
+        <parameter=id>
+        274613
+        </parameter>
+        </function>
+        </tool_call>
+
+    返回 [(工具名, 参数字典), ...];无 XML 时返回空列表。
+    """
+    calls: list[tuple[str, dict]] = []
+    # 预处理：剥离零宽空格（U+200B），让 XML 标签格式微调也能匹配
+    content = content.replace("\u200b", "")
+    for block in re.finditer(
+        r"<tool_call>(.*?)</tool_call>", content, re.DOTALL
+    ):
+        inner = block.group(1)
+        # 工具名在 <function=NAME> 里
+        name_m = re.search(r"<function=([^\s>]+)>", inner)
+        if not name_m:
+            continue
+        name = name_m.group(1).strip()
+        # 参数: <parameter=KEY>...VALUE...</parameter>
+        args: dict = {}
+        for pm in re.finditer(
+            r"<parameter=([^>]+)>(.*?)</parameter>",
+            inner,
+            re.DOTALL,
+        ):
+            key = pm.group(1).strip()
+            val = pm.group(2).strip()
+            args[key] = val
+        calls.append((name, args))
+    return calls
+
+
 def _run_tool(name: str, args: dict, retries: int = 2) -> dict:
     """分发只读 Bangumi 工具；失败自动重试，仍失败则转 error 结果交由 LLM 回退。
 
@@ -272,15 +313,18 @@ async def chat(req: ChatRequest):
                 yield _sse({"type": "tool_status", "content": ""})
 
             elif assistant_msg.content:
-                # LongCat 自定义 XML 工具调用兜底：模型把工具调用写成
-                # <longcat_tool_call>...</longcat_tool_call> 文本而非 OpenAI tool_calls 字段。
-                longcat_calls = _parse_longcat_tool_calls(assistant_msg.content)
-                if longcat_calls:
+                # 自定义 XML 工具调用兜底：部分模型（LongCat、Agnes AI 等）不走
+                # OpenAI 标准 tool_calls,而是把工具调用写成 XML 标签塞进 content。
+                # 按顺序尝试 LongCat 和 Agnes 两种格式,谁先匹配上就执行谁。
+                xml_calls = _parse_longcat_tool_calls(assistant_msg.content)
+                if not xml_calls:
+                    xml_calls = _parse_agnes_tool_calls(assistant_msg.content)
+                if xml_calls:
                     # 清空原始 XML 内容，避免它作为「回答」流到前端
                     yield _sse({"type": "tool_status", "content": "正在查询番剧库…"})
                     assistant_msg.content = ""
                     tool_blocks = []
-                    for name, args in longcat_calls:
+                    for name, args in xml_calls:
                         result = _run_tool(name, args)
                         tool_blocks.append(
                             f"[工具 {name} 返回]\n{json.dumps(result, ensure_ascii=False)}"
