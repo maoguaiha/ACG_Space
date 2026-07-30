@@ -31,8 +31,13 @@ _MAX_HISTORY_MESSAGES = 16
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _CORPUS_DIR = os.path.join(_BASE_DIR, "corpus")
 
-# 启动时构建语料（向量化）。缺 embedding Key 时此处会抛错，由 uvicorn 启动失败暴露，便于及时发现配置缺失。
-corpus = build_corpus(_CORPUS_DIR, embed)
+# 启动时尝试构建语料（向量化）。embedding 不可达时降级为 None，服务仍 healthy，
+# 由后台 watcher 重试或首次请求时懒加载重建，避免启动即崩导致健康检查失败。
+try:
+    corpus = build_corpus(_CORPUS_DIR, embed)
+except Exception as e:  # noqa: BLE001
+    print(f'[startup] 语料构建失败（embedding 暂不可达），服务仍以无语料状态启动：{e}')
+    corpus = None
 
 
 def _corpus_dir_mtime() -> float:
@@ -138,15 +143,22 @@ def _run_tool(name: str, args: dict, retries: int = 2) -> dict:
 
 @app.get("/health")
 def health():
-    return {"status": "ok", "chunks": len(corpus.chunks)}
+    return {
+        "status": "ok",
+        "corpus_ready": corpus is not None,
+        "chunks": len(corpus.chunks) if corpus else 0,
+    }
 
 
 @app.post("/rebuild")
 def rebuild():
     """重新构建 RAG 索引（规则/FAQ/番剧快照变更后调用，或重启服务）。"""
     global corpus
-    corpus = build_corpus(_CORPUS_DIR, embed)
-    return {"status": "rebuilt", "chunks": len(corpus.chunks)}
+    try:
+        corpus = build_corpus(_CORPUS_DIR, embed)
+    except Exception as e:  # noqa: BLE001
+        return {"status": "error", "detail": str(e)}
+    return {"status": "rebuilt", "chunks": len(corpus.chunks) if corpus else 0}
 
 
 @app.post("/chat")
@@ -155,7 +167,16 @@ async def chat(req: ChatRequest):
 
     async def event_stream():
         try:
-            # 1) 检索相关分块
+            # 1) 检索相关分块（语料未就绪时先尝试懒加载一次）
+            if corpus is None:
+                try:
+                    corpus = build_corpus(_CORPUS_DIR, embed)
+                except Exception as e:  # noqa: BLE001
+                    yield _sse(
+                        {"type": "error", "content": f"语料未就绪（embedding 连接失败）：{e}"}
+                    )
+                    yield _sse({"type": "done", "content": ""})
+                    return
             chunks = corpus.search(req.message, top_k=5)
             context = "\n\n".join(
                 f"[来源:{c.source} / {c.title}]\n{c.text}" for c in chunks

@@ -5,7 +5,9 @@
 - 密钥仅来自 settings（.env / 环境变量），不硬编码。
 - 客户端惰性创建：缺少密钥时在使用处抛清晰错误，避免 /health 在导入期崩溃。
 """
-from openai import OpenAI
+import time
+
+from openai import APIConnectionError, OpenAI
 
 from app.config import settings
 
@@ -23,7 +25,12 @@ def _embed_client() -> OpenAI:
         raise RuntimeError(
             "LLM_API_KEY_EMBED 未配置：请在 python-agent/.env 设置通义 embedding API Key"
         )
-    return OpenAI(base_url=settings.llm_base_url_embed, api_key=settings.llm_api_key_embed)
+    return OpenAI(
+        base_url=settings.llm_base_url_embed,
+        api_key=settings.llm_api_key_embed,
+        timeout=30.0,
+        max_retries=3,
+    )
 
 
 # 通义 text-embedding-v3 单次请求最多 10 条输入，分批留余量
@@ -42,7 +49,17 @@ def embed(texts: list[str]) -> list[list[float]]:
     ordered: list[list[float]] = [None] * len(texts)  # type: ignore
     for i in range(0, len(texts), _EMBED_BATCH_SIZE):
         batch = texts[i : i + _EMBED_BATCH_SIZE]
-        resp = client.embeddings.create(model=settings.llm_embed_model, input=batch)
+        resp = None
+        for attempt in range(3):
+            try:
+                resp = client.embeddings.create(
+                    model=settings.llm_embed_model, input=batch
+                )
+                break
+            except APIConnectionError:
+                if attempt == 2:
+                    raise
+                time.sleep(2 ** attempt)
         # 部分供应商不保证 data 顺序，按 index 归位
         for item in resp.data:
             ordered[i + item.index] = item.embedding
