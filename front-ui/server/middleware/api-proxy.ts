@@ -16,8 +16,23 @@ export default defineEventHandler(async (event) => {
 
   try {
     // 从 event.headers 单独取关键头（避免 Object.fromEntries 漏字段时间复杂性）
-    const authorization = event.headers.get('authorization')
+    // authorization 用 let：当客户端未携带 Authorization 头时，从 acg_token cookie 兜底还原
+    let authorization = event.headers.get('authorization')
     const cookie = event.headers.get('cookie')
+
+    // 兜底：客户端 apiFetch 本应注入 Authorization，但若因某种原因（如 store 未就绪、
+    // 部署版本差异）头缺失，浏览器仍会携带同域 acg_token cookie —— 从中还原 Bearer token，
+    // 保证后端（只从 Authorization 头取 token）始终能拿到登录态，避免“登录成功却 401”。
+    if (!authorization && cookie) {
+      const m = cookie.match(/(?:^|;\s*)acg_token=([^;]+)/)
+      if (m) {
+        try {
+          authorization = `Bearer ${decodeURIComponent(m[1])}`
+        } catch {
+          authorization = `Bearer ${m[1]}`
+        }
+      }
+    }
 
     // 取所有头，去掉浏览器专用头（避免后端安全过滤器判定跨域失败）
     const allHeaders = Object.fromEntries(event.headers.entries())

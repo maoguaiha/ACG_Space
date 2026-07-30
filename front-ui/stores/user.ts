@@ -22,15 +22,21 @@ export const useUserStore = defineStore('user', () => {
   const isLoggedIn = computed(() => !!token.value)
 
   async function loadUserInfo() {
-    if (!token.value) return
+    // 记录发起请求时的 token，用于竞态防护：
+    // 若本次 /auth/me 因旧 token 过期返回 401，但期间用户已重新登录拿到新 token，
+    // 则不应把新 token 误清除（否则出现“刚登录又被登出 / 请求 401”的诡异现象）。
+    const tokenAtCall = token.value
+    if (!tokenAtCall) return
     try {
       const { fetchMe } = await import('~/composables/useApi')
       const user = await fetchMe()
       userInfo.value = user
     } catch (e) {
       console.error('Failed to load user info', e)
-      // 如果 Token 过效，清除状态
-      logout()
+      // 仅当 token 未发生变化时才清除，避免竞态误清新 token
+      if (token.value === tokenAtCall) {
+        logout()
+      }
     }
   }
 
