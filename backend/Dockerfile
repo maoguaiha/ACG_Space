@@ -22,11 +22,5 @@ USER acgspace
 # -Xms256m -Xmx512m: 堆内存
 # -XX:+UseG1GC: G1 垃圾回收器(适合大堆)
 # -Djava.security.egd=file:/dev/./urandom: 加快随机数生成（避免阻塞）
-ENTRYPOINT ["java", \
-    "-Xms256m", "-Xmx512m", \
-    "-XX:+UseG1GC", \
-    "-Djava.security.egd=file:/dev/./urandom", \
-    "-DDB_HOST=mysql", \
-    "-DREDIS_HOST=redis", \
-    "-DROCKETMQ_NAMESRV=rmqnamesrv:9876", \
-    "-jar", "app.jar"]
+ENTRYPOINT ["sh", "-c", "java -Xms256m -Xmx512m -XX:+UseG1GC -Djava.security.egd=file:/dev/./urandom -DDB_HOST=mysql -DREDIS_HOST=redis -DROCKETMQ_NAMESRV=rmqnamesrv:9876 -Dserver.port=${PORT:-18083} -jar app.jar"]
+
