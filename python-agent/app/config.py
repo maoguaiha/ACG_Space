@@ -13,10 +13,10 @@ class Settings:
     llm_api_key_chat: str = os.getenv("LLM_API_KEY_CHAT", "")
     llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "agnes-2.0-flash")
 
-    # LongCat embedding（OpenAI 兼容，与 chat 共用同个 key）。
-    # LongCat 的 /openai 路径也提供 text-embedding-ada-002 模型。
+    # LongCat embedding（OpenAI 兼容）。
+    # base_url 必须带 /v1（OpenAI SDK v1+ 不会自动补充路径版本号）。
     llm_base_url_embed: str = os.getenv(
-        "LLM_BASE_URL_EMBED", "https://api.longcat.chat/openai"
+        "LLM_BASE_URL_EMBED", "https://api.longcat.chat/openai/v1"
     )
     llm_api_key_embed: str = os.getenv("LLM_API_KEY_EMBED", "")
     llm_embed_model: str = os.getenv("LLM_EMBED_MODEL", "text-embedding-ada-002")
