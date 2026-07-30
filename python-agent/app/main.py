@@ -174,6 +174,7 @@ async def chat(req: ChatRequest):
     """SSE 流式对话：RAG 检索 → 拼系统提示 → LLM（带 Bangumi 工具）→ 工具执行 → 流式回答。"""
 
     async def event_stream():
+        global corpus  # event_stream 内部需要重新赋值 corpus,Python 闭包规则必须显式声明
         try:
             # 1) 检索相关分块（语料未就绪时先尝试懒加载一次）
             if corpus is None:
