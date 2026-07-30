@@ -47,11 +47,25 @@ def embed(texts: list[str]) -> list[list[float]]:
     return [v.tolist() for v in vectors]
 
 
+# 供应商切换时的模型名兼容映射：旧名 → 新名（None 表示用配置默认值）。
+# 当 req.model 携带旧供应商模型名时,自动映射以避免 model_not_found 错误。
+_MODEL_ALIASES = {
+    "LongCat-2.0": None,
+}
+
+
+def _resolve_model(model: str | None) -> str | None:
+    """解析模型名：别名映射 + 空值回退。"""
+    if not model:
+        return None
+    return _MODEL_ALIASES.get(model, model)
+
+
 def chat_stream(messages: list[dict], tools=None, model: str | None = None, temperature: float | None = None):
     """流式对话，yield 文本增量字符串（content token）。"""
     client = _chat_client()
     kwargs = {
-        "model": model or settings.llm_chat_model,
+        "model": _resolve_model(model) or settings.llm_chat_model,
         "messages": messages,
         "stream": True,
         "temperature": 0.3 if temperature is None else temperature,
@@ -71,7 +85,7 @@ def chat_completion(messages: list[dict], tools=None, model: str | None = None, 
     """非流式对话，返回完整响应对象（用于检测 tool_calls）。"""
     client = _chat_client()
     kwargs = {
-        "model": model or settings.llm_chat_model,
+        "model": _resolve_model(model) or settings.llm_chat_model,
         "messages": messages,
         "stream": False,
         "temperature": 0.3 if temperature is None else temperature,
