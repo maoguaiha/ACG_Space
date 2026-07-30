@@ -144,8 +144,10 @@ def _parse_agnes_tool_calls(content: str) -> list[tuple[str, dict]]:
     返回 [(工具名, 参数字典), ...];无 XML 时返回空列表。
     """
     calls: list[tuple[str, dict]] = []
-    # 预处理：剥离零宽空格（U+200B），让 XML 标签格式微调也能匹配
-    content = content.replace("\u200b", "")
+    # 预处理：剥离常见零宽/不可见字符(ZWSP/ZWNJ/ZWJ/BOM/LRM/RLM)
+    # 让 XML 标签格式微调也能匹配
+    _ZERO_WIDTH = "\u200b\u200c\u200d\ufeff\u200e\u200f"
+    content = content.translate(str.maketrans("", "", _ZERO_WIDTH))
     for block in re.finditer(
         r"<tool_call>(.*?)</tool_call>", content, re.DOTALL
     ):
