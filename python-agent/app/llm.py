@@ -23,7 +23,7 @@ def _chat_client() -> OpenAI:
 def _embed_client() -> OpenAI:
     if not settings.llm_api_key_embed:
         raise RuntimeError(
-            "LLM_API_KEY_EMBED 未配置：请在 python-agent/.env 设置通义 embedding API Key"
+            "LLM_API_KEY_EMBED 未配置：请在 python-agent/.env 设置 embedding API Key"
         )
     return OpenAI(
         base_url=settings.llm_base_url_embed,
