@@ -2,13 +2,11 @@ package com.ruoyi.project.config;
 
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.beans.factory.InitializingBean;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -47,21 +45,6 @@ public class SecurityConfig {
     @Bean
     public PasswordEncoder passwordEncoder() {
         return new BCryptPasswordEncoder();
-    }
-
-    /**
-     * 修复 SSE/异步流式推送时 Spring Security 抛出 AccessDeniedException 的问题。
-     * <p>
-     * SSE（SseEmitter）在异步线程上逐帧推送 token，流异常时 Spring 会做异步错误重派发，
-     * 而异步线程默认不继承请求线程的 SecurityContext（ThreadLocal 不跨线程），
-     * 导致重派发经过 AuthorizationFilter 时认为“未登录”而拒绝（Access Denied），
-     * 且响应已提交无法渲染错误页，最终前端拿到残缺流报错。
-     * 改用 INHERITABLE_THREADLOCAL 让 SecurityContext 自动继承到子线程（含异步/重派发线程）即可解决。
-     * 注：本项目 @Async 线程池（AsyncConfig）只做碎片掉落/积分通知等非安全敏感操作，上下文泄漏风险可忽略。
-     */
-    @Bean
-    public InitializingBean securityContextHolderInitializer() {
-        return () -> SecurityContextHolder.setStrategyName(SecurityContextHolder.MODE_INHERITABLETHREADLOCAL);
     }
 
     @Bean("securityCorsSource")
