@@ -353,15 +353,54 @@ async def chat(req: ChatRequest):
                     yield _sse({"type": "tool_status", "content": ""})
 
             # 3) 流式最终回答（无论是否经过工具，统一走流式）
+            #
+            # 安全间隔：LongCat / Agnes AI 都会在 streaming 阶段吐出 XML 工具调用。
+            # 单 token 子串检测 + 简单 buffer 都会被跨 token 切碎绕过，且会把
+            # 部分开标签前缀（如 "<longcat_tool_"）直接 yield 到前端。
+            # 采用 "hold-back" 策略：每次收到 token 先入缓冲，找到 buffer 末尾
+            # 最后一个 "<"，把它之前的安全区段 yield 出去，"<" 及之后的内容
+            # 扣住暂不发送，直到下一 token 进来确认它不是开标签。这样
+            # 引入最多一个 token 长度的人眼不可感知延迟，但保证零 XML 泄露。
+            #   1) 开标签识别："<longcat_tool_call" 与 "<tool_call>"（Agnes 含 U+200B）；
+            #   2) 命中即 yield 错误并 break，stream 进入 done；
+            #   3) 流末残留的疑似 "<" 开头片段也丢弃，避免截屏看到半截标签。
+            _xml_buf = ""
+            _xml_hit = False
+            _MAX_LOOKAHEAD = 32  # 最长开标签 18 字符，留余量
             for token in chat_stream(
                 messages,
                 model=req.model,
                 temperature=req.temperature,
             ):
-                # 防御：跳过含 XML 的 token 继续流,避免中断整个回答
-                if "longcat_tool_call" in token or "tool_call>" in token:
+                if _xml_hit:
+                    # 已检测到开标签，后续 token 全部丢弃，直到 stream 结束
                     continue
-                yield _sse({"type": "token", "content": token})
+                _xml_buf += token
+                # 一旦 buffer 出现完整开标签 -> 截断 stream + 报错
+                if "<longcat_tool_call" in _xml_buf or "<t​ool_call>" in _xml_buf:
+                    _xml_hit = True
+                    yield _sse({"type": "error", "content": "模型响应异常（检测到工具调用 XML），请重试。"})
+                    break
+                # hold-back：找到 buffer 末尾最后一个 "<"，它之前部分安全可以发送
+                _safe_until = max(0, len(_xml_buf) - _MAX_LOOKAHEAD)
+                _last_lt = _xml_buf.rfind("<", _safe_until)
+                if _last_lt < 0:
+                    # 末尾 32 字符内没有 "<"，整段安全
+                    yield _sse({"type": "token", "content": _xml_buf})
+                    _xml_buf = ""
+                else:
+                    yield _sse({"type": "token", "content": _xml_buf[:_last_lt]})
+                    _xml_buf = _xml_buf[_last_lt:]
+                    if len(_xml_buf) > _MAX_LOOKAHEAD * 2:
+                        _xml_buf = _xml_buf[-_MAX_LOOKAHEAD:]
+            # 流结束：若 buffer 还有残留疑似 "<" 开头片段，丢弃
+            if not _xml_hit and _xml_buf:
+                if ("<longcat_tool_call" in _xml_buf
+                        or "<t​ool_call>" in _xml_buf
+                        or _xml_buf.lstrip().startswith("<")):
+                    yield _sse({"type": "error", "content": "模型响应异常（流末残留疑似 XML），请重试。"})
+                else:
+                    yield _sse({"type": "token", "content": _xml_buf})
         except RuntimeError as e:
             # 配置缺失（缺 API Key）等可预期错误：明确提示，便于排查
             yield _sse({"type": "error", "content": f"配置或依赖缺失：{e}"})
