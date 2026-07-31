@@ -60,6 +60,24 @@ public class JwtAuthenticationTokenFilter extends OncePerRequestFilter {
         return path.startsWith("/api/auth/");
     }
 
+    /**
+     * 异步 dispatch 时不再重新执行 JWT 鉴权。
+     * <p>
+     * 背景：/api/agent/chat 是 SseEmitter 异步流。controller 返回后 response
+     * 立即 committed（SSE 已开始吐数据），随后 Tomcat 以异步线程继续写流；
+     * 流结束/超时/客户端断开时会触发一次 ASYNC dispatch，过滤器链再次执行。
+     * 此时 SecurityContextHolder（ThreadLocal）在主线程解析的认证上下文不
+     * 会传播到异步线程，若在此重新鉴权会抛 AccessDeniedException，且因
+     * response 已 committed 无法写入 403 —— 日志表现为：
+     *   "Unable to handle the Spring Security Exception because the response
+     *    is already committed."
+     * 修复：ASYNC dispatch 跳过 JWT 解析（认证已在首次请求完成，无需重复）。
+     */
+    @Override
+    protected boolean shouldNotFilterAsyncDispatch() {
+        return true;
+    }
+
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response, FilterChain chain)
             throws ServletException, IOException {

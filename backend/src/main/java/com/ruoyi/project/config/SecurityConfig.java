@@ -18,6 +18,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.ruoyi.project.common.api.Result;
 import com.ruoyi.project.common.exception.BizErrorCode;
+import jakarta.servlet.DispatcherType;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
 
@@ -72,6 +73,13 @@ public class SecurityConfig {
             // 无状态会话 — JWT 本身就是会话载体
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .authorizeHttpRequests(auth -> auth
+                // ===== 异步/错误 dispatch 一律放行 =====
+                // SseEmitter（/api/agent/chat）是异步流：流结束/超时/客户端断开时
+                // Tomcat 触发 ASYNC dispatch，过滤器链会重新执行。异步线程没有
+                // 主线程的 SecurityContext（ThreadLocal 不跨线程），若在此要求认证
+                // 会抛 AccessDeniedException，且 response 已 committed 无法写 403。
+                // 故 ASYNC/ERROR dispatch 全部放行（认证已在首次请求完成）。
+                .dispatcherTypeMatchers(DispatcherType.ASYNC, DispatcherType.ERROR).permitAll()
                 // ===== 公开接口（无需认证） =====
                 // 认证相关
                 .requestMatchers("/api/auth/**").permitAll()
