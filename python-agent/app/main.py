@@ -359,7 +359,8 @@ async def chat(req: ChatRequest):
                 temperature=req.temperature,
             ):
                 # 防御：跳过含 XML 的 token 继续流,避免中断整个回答
-                if "longcat_tool_call" in token or "tool_call>" in token:/n                    continue
+                if "longcat_tool_call" in token or "tool_call>" in token:
+                    continue
                 yield _sse({"type": "token", "content": token})
         except RuntimeError as e:
             # 配置缺失（缺 API Key）等可预期错误：明确提示，便于排查

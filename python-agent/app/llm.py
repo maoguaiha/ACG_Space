@@ -9,7 +9,6 @@ import time
 
 import numpy as np
 from openai import APIConnectionError, OpenAI
-from fastembed import TextEmbedding
 
 from app.config import settings
 
@@ -17,10 +16,16 @@ from app.config import settings
 _embedder = None
 
 
-def _get_embedder() -> TextEmbedding:
-    """惰性初始化本地嵌入器（首次调用时下载模型并缓存到 HuggingFace cache）。"""
+def _get_embedder():
+    """惰性初始化本地嵌入器（首次调用时下载模型并缓存到 HuggingFace cache）。
+
+    注意：fastembed 在此处延迟导入——顶层导入可能因 ONNX/依赖问题导致
+    uvicorn 启动即崩，健康检查失败。延迟导入让服务先起来，模型加载失败也不阻塞。
+    """
     global _embedder
     if _embedder is None:
+        from fastembed import TextEmbedding  # noqa: PLC0415  延迟导入
+
         # bge-small-zh-v1.5 约 33MB，中文语义向量，速度约 1000 条/秒 (CPU)
         _embedder = TextEmbedding(
             model_name="BAAI/bge-small-zh-v1.5",
