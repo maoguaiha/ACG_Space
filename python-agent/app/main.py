@@ -181,6 +181,39 @@ def _format_tool_results(tool_blocks):
     return "\n".join(parts) if parts else "(工具未返回可展示的结果)"
 
 
+def _tool_names(tool_blocks):
+    """从工具返回块里提取展示名称列表（中文名优先）。
+
+    用于 LLM 评论阶段：只给名称列表，不给 JSON/格式化文本，
+    避免模型重复输出番剧卡片。
+    """
+    names = []
+    for blk in tool_blocks:
+        try:
+            head, sep, rest = blk.partition(" 返回]\n")
+            if not sep:
+                continue
+            data = json.loads(rest) if rest.strip() else {}
+        except Exception:
+            continue
+        inner = None
+        if isinstance(data, dict):
+            for key in ("items", "data", "list", "results"):
+                v = data.get(key)
+                if isinstance(v, list):
+                    inner = v
+                    break
+        elif isinstance(data, list):
+            inner = data
+        for item in (inner or []):
+            if not isinstance(item, dict):
+                continue
+            nm = item.get("name_cn") or item.get("title") or item.get("name")
+            if nm and nm not in names:
+                names.append(nm)
+    return names
+
+
 def _sse(obj: dict) -> str:
     """构造 SSE data 帧（与前端 useAgentApi 的解析约定一致：data:{json}\\n\\n）。"""
     return f"data:{json.dumps(obj, ensure_ascii=False)}\n\n"
@@ -456,20 +489,36 @@ async def chat(req: ChatRequest):
                         )
                     yield _sse({"type": "tool_status", "content": ""})
 
-                    # 工具执行完成：直接 yield 格式化结果，跳过 LLM 流式生成。
-                    # LLM 流式在番剧推荐/介绍场景下会偷懒省略封面图/剧情简介/链接，
-                    # 改由 _format_tool_results 统一渲染：每部含封面/标题/中文名/评分/链接，
-                    # 100% 保证有图有信息。代价：失去 LLM 自然语言评论（DeepSeek 流式
-                    # 质量不稳定，这条路更稳）。如需 LLM 评论可加 system 指令
-                    # "不要重复列番剧、只写评论"配合 LLM 流式输出。
+                    # 双轨输出：
+                    # 1) 先 yield 格式化工具结果（封面图/中文名/评分/剧情简介/链接，100% 有图有信息）
+                    # 2) 追加 system 指令让 LLM 写一段自然语言评论（不重复列表），然后继续走
+                    #    #3 流式最终回答 —— 既有质量保证的结构化信息，又有 LLM 自由评论。
                     if _tool_blocks_for_fallback:
                         yield _sse({
                             "type": "token",
                             "content": _format_tool_results(_tool_blocks_for_fallback)
                             + "\n\n（来源：Bangumi）",
                         })
-                    yield _sse({"type": "done", "content": ""})
-                    return
+                    # 评论阶段：过滤掉 tool 消息（避免 LLM 从 JSON 复述卡片），
+                    # 只留 system/user/assistant 文本 + 番剧名称列表。
+                    _names = _tool_names(_tool_blocks_for_fallback)
+                    if _names:
+                        messages = [m for m in messages if m.get("role") != "tool" and not m.get("tool_calls")]
+                        messages.append(
+                            {
+                                "role": "system",
+                                "content": (
+                                    "番剧信息已在上方展示给用户（封面/名称/评分/简介/链接）。"
+                                    "请对以下番剧写一段 100~200 字的自然语言评论，点评看点、"
+                                    "亮点、适合人群或相互对比。严禁重复列出番剧名称、"
+                                    "评分、链接、图片或简介——只输出你的评论文字。"
+                                ),
+                            }
+                        )
+                        messages.append(
+                            {"role": "user", "content": "番剧名称列表：" + "、".join(_names)}
+                        )
+                    # 不 return：继续走 #3 流式最终回答，LLM 生成评论
 
                 elif assistant_msg.content:
                     # 自定义 XML 工具调用兜底：部分模型（LongCat、Agnes AI 等）不走
@@ -521,16 +570,33 @@ async def chat(req: ChatRequest):
                         )
                         yield _sse({"type": "tool_status", "content": ""})
 
-                        # 工具执行完成：直接 yield 格式化结果，跳过 LLM 流式生成。
-                        # 原因同 if tool_calls 分支的注释。
+                        # 双轨输出（同 if tool_calls 分支）：先 yield 格式化工具结果，
+                        # 再让 LLM 流式生成自然语言评论。
                         if _tool_blocks_for_fallback:
                             yield _sse({
                                 "type": "token",
                                 "content": _format_tool_results(_tool_blocks_for_fallback)
                                 + "\n\n（来源：Bangumi）",
                             })
-                        yield _sse({"type": "done", "content": ""})
-                        return
+                        # 评论阶段：过滤 tool 消息 + 只给番剧名称列表，避免模型重复输出卡片。
+                        _names = _tool_names(_tool_blocks_for_fallback)
+                        if _names:
+                            messages = [m for m in messages if m.get("role") != "tool" and not m.get("tool_calls")]
+                            messages.append(
+                                {
+                                    "role": "system",
+                                    "content": (
+                                        "番剧信息已在上方展示给用户（封面/名称/评分/简介/链接）。"
+                                        "请对以下番剧写一段 100~200 字的自然语言评论，点评看点、"
+                                        "亮点、适合人群或相互对比。严禁重复列出番剧名称、"
+                                        "评分、链接、图片或简介——只输出你的评论文字。"
+                                    ),
+                                }
+                            )
+                            messages.append(
+                                {"role": "user", "content": "番剧名称列表：" + "、".join(_names)}
+                            )
+                        # 不 return：继续走 #3 流式最终回答
 
 
             # 3) 流式最终回答（无论是否经过工具，统一走流式）
