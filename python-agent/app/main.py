@@ -126,13 +126,14 @@ def _parse_longcat_tool_calls(content: str) -> list[tuple[str, dict]]:
             continue
         name = lines[0]  # 工具名在首行
         args: dict = {}
-        for km, vm in re.finditer(
+        # finditer 返回的是单个 Match 对象迭代器，不能解包成两个变量
+        for m in re.finditer(
             r"<longcat_arg_key>(.*?)</longcat_arg_key>\s*"
             r"<longcat_arg_value>(.*?)</longcat_arg_value>",
             inner,
             re.DOTALL,
         ):
-            args[km.group(1).strip()] = vm.group(1).strip()
+            args[m.group(1).strip()] = m.group(2).strip()
         calls.append((name, args))
     return calls
 
