@@ -1,37 +1,35 @@
-"""LLM 客户端：OpenAI 兼容 chat + 本地 FastEmbed 向量化。
+"""LLM 客户端：OpenAI 兼容 chat + 通义 text-embedding-v3 向量化。
 
 - chat 由环境变量配置（LLM_BASE_URL_CHAT / LLM_API_KEY_CHAT / LLM_CHAT_MODEL）。
-- embed 本地运行（fastembed / ONNX），零网络依赖、无需 API Key。
+- embed 走通义千问 text-embedding-v3（DASHSCOPE_API_KEY）。
+  曾用本地 FastEmbed(ONNX)，但模型需从 huggingface 在线下载，Railway 容器
+  无缓存且 HF 不可达会卡死首轮对话，故换回通义 API（本地验证过的路径）。
 - 密钥仅来自 settings（.env / 环境变量），不硬编码。
-- 客户端/嵌入器惰性创建：在首次调用处初始化，避免导入期崩溃。
+- 客户端惰性创建：在首次调用处初始化，避免导入期崩溃。
 """
 import time
 
-import numpy as np
 from openai import APIConnectionError, OpenAI
 
 from app.config import settings
 
 
-_embedder = None
+_embed_client = None
 
 
-def _get_embedder():
-    """惰性初始化本地嵌入器（首次调用时下载模型并缓存到 HuggingFace cache）。
-
-    注意：fastembed 在此处延迟导入——顶层导入可能因 ONNX/依赖问题导致
-    uvicorn 启动即崩，健康检查失败。延迟导入让服务先起来，模型加载失败也不阻塞。
-    """
-    global _embedder
-    if _embedder is None:
-        from fastembed import TextEmbedding  # noqa: PLC0415  延迟导入
-
-        # bge-small-zh-v1.5 约 33MB，中文语义向量，速度约 1000 条/秒 (CPU)
-        _embedder = TextEmbedding(
-            model_name="BAAI/bge-small-zh-v1.5",
-            max_length=512,
+def _get_embed_client() -> OpenAI:
+    """惰性初始化通义 embedding 客户端。"""
+    global _embed_client
+    if _embed_client is None:
+        if not settings.dashscope_api_key:
+            raise RuntimeError(
+                "DASHSCOPE_API_KEY 未配置：请在 python-agent/.env 设置通义 embedding Key"
+            )
+        _embed_client = OpenAI(
+            base_url=settings.dashscope_base_url,
+            api_key=settings.dashscope_api_key,
         )
-    return _embedder
+    return _embed_client
 
 
 def _chat_client() -> OpenAI:
@@ -43,13 +41,25 @@ def _chat_client() -> OpenAI:
 
 
 def embed(texts: list[str]) -> list[list[float]]:
-    """本地批量向量化，返回与输入等长的 float 向量列表。"""
+    """批量向量化（通义 text-embedding-v3），返回与输入等长的 float 向量列表。
+
+    通义单次请求有批量上限（实测 ~10 条内安全），按 ≤8 分批规避。
+    """
     if not texts:
         return []
-    embedder = _get_embedder()
-    # passage_embed 返回 Generator[np.ndarray]
-    vectors = list(embedder.passage_embed(texts))
-    return [v.tolist() for v in vectors]
+    client = _get_embed_client()
+    batch = 8
+    vectors: list[list[float]] = []
+    for i in range(0, len(texts), batch):
+        chunk = texts[i : i + batch]
+        resp = client.embeddings.create(
+            model=settings.dashscope_embedding_model,
+            input=chunk,
+        )
+        # 按输入顺序对齐（通义返回 data 顺序与输入一致）
+        ordered = sorted(resp.data, key=lambda d: d.index)
+        vectors.extend([v.embedding for v in ordered])
+    return vectors
 
 
 # 供应商切换时的模型名兼容映射：旧名 → 新名（None 表示用配置默认值）。

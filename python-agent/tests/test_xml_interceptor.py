@@ -13,6 +13,24 @@ ZWSP = ''
 LONGCAT_OPEN = '<longcat_tool_call'
 AGNES_OPEN = '<t' + ZWSP + 'ool_call>'
 
+# ---------------------------------------------------------------------------
+# _needs_tools intent heuristic — mirrors main.py's _TOOL_HINT_RE exactly.
+# ---------------------------------------------------------------------------
+TOOL_HINT_RE = __import__('re').compile(
+    r'番剧|新番|动画|动漫|评分|bangumi|放送|开播|'
+    r'追番|声优|CV|剧集|番名|动画翻|电影版|'
+    r'推荐|类似|像|治愈|热血|机战|'
+    r'恋爱番|搞笑番|悬疑番|正太番|'
+    r'这[季周]|本季|本[周月]|几集|多少集|'
+    r'哪部|有没有好看的|'
+    r'这部|那部|什么番|哪部番|'
+    r'搜|《'  # 搜=搜索意图；《=书名号
+)
+
+
+def _needs_tools(message: str) -> bool:
+    return bool(TOOL_HINT_RE.search(message or ''))
+
 
 def stream_with_interceptor(messages, model, temperature, chat_stream):
     """Replicate the production interceptor block.
@@ -200,7 +218,46 @@ def run():
     print('  ✓ normal answer prefix preserved, then error fired')
     print()
 
-    print('ALL 4 CASES PASSED ✓')
+    print('=' * 60)
+    print('Case 5: _needs_tools intent heuristic (skip probe for non-anime)')
+    print('=' * 60)
+    # Non-anime questions must NOT trigger the probe (→ fast single-stream path)
+    non_anime = [
+        '积分怎么攒？',
+        '兑换规则是什么',
+        '我的订单物流到哪了',
+        '抽赏概率公示在哪看',
+        '你好',
+        '怎么联系客服',
+    ]
+    # Anime questions MUST trigger the probe (→ full tool path)
+    anime = [
+        '推荐几部机战番',
+        '有什么新番这周放送',
+        '类似《孤独摇滚》的番',
+        '这部番评分多少',
+        '搜一下《葬送的芙莉莲》',
+        '本季有什么好看的动画',
+        '追番列表在哪',
+    ]
+    all_ok = True
+    for q in non_anime:
+        v = _needs_tools(q)
+        status = '✓' if not v else '✗ FALSE-POSITIVE'
+        if v:
+            all_ok = False
+        print(f'  [{status}] non-anime: {q!r} -> needs_tools={v}')
+    for q in anime:
+        v = _needs_tools(q)
+        status = '✓' if v else '✗ MISSED'
+        if not v:
+            all_ok = False
+        print(f'  [{status}] anime: {q!r} -> needs_tools={v}')
+    assert all_ok, 'intent heuristic misclassified'
+    print('  ✓ intent heuristic correct on all 13 samples')
+    print()
+
+    print('ALL 5 CASES PASSED ✓')
 
 
 if __name__ == '__main__':

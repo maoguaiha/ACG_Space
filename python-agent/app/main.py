@@ -25,9 +25,11 @@ from app.tools.registry import TOOLS
 
 app = FastAPI(title="ACG Space Agent", version="0.3.0")
 
-# 长对话上下文压缩：单边历史保留的最大消息条数（约 8 轮对话）。
-# 超出部分在 main.chat 中截断并以系统备注概括，避免逼近 token 上限。
-_MAX_HISTORY_MESSAGES = 16
+# 长对话上下文压缩：单边历史保留的最大消息条数（约 2 轮对话）。
+# 之前 16（8 轮）会把 prompt 撑到 ~12K tokens，LongCat 在长 prompt + tools
+# 下 TTFT 达 20-40s。压到 4 条（2 轮）后 TTFT 显著下降；需要更早内容时
+# 由用户主动重述，或在 history 真摘要功能上线后补偿。
+_MAX_HISTORY_MESSAGES = 4
 
 _BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 _CORPUS_DIR = os.path.join(_BASE_DIR, "corpus")
@@ -199,6 +201,34 @@ def _run_tool(name: str, args: dict, retries: int = 2) -> dict:
     return {"error": f"工具 {name} 调用失败（重试 {retries} 次后仍失败）：{last_err}"}
 
 
+# 意图预判：用户消息是否可能涉及番剧工具调用。
+# 过去每次对话都先跑一轮 non-streaming 探测
+# (chat_completion 全量生成一遍来判断要不要调工具)，
+# LongCat 不支持标准 tool_calls，探测 = 完整生成，5-15s。
+# 这是“大几十秒”的最大来源。
+# 此函数用关键词判断：非番剧问题直接跳过探测，
+# 只走一次 streaming（简单回复 4-12s）。
+_TOOL_HINT_RE = re.compile(
+    r"番剧|新番|动画|动漫|评分|bangumi|放送|开播|"
+    r"追番|声优|CV|剧集|番名|动画翻|电影版|"
+    r"推荐|类似|像|治愈|热血|机战|"
+    r"恋爱番|搞笑番|悬疑番|正太番|"
+    r"这[季周]|本季|本[周月]|几集|多少集|"
+    r"哪部|有没有好看的|"
+    r"这部|那部|什么番|哪部番|"
+    r"搜|《"  # 搜=搜索意图；《=书名号（番名/作品名，如《葬送的芙莉莲》）
+)
+
+
+def _needs_tools(message: str) -> bool:
+    """判断当前消息是否可能需要调用番剧工具。
+
+    命中番剧相关关键词 -> True（走完整工具流程）；
+    否则 False（跳过探测，直接一次 streaming）。
+    """
+    return bool(_TOOL_HINT_RE.search(message or ""))
+
+
 @app.get("/health")
 def health():
     return {
@@ -226,20 +256,22 @@ async def chat(req: ChatRequest):
     async def event_stream():
         global corpus  # event_stream 内部需要重新赋值 corpus,Python 闭包规则必须显式声明
         try:
-            # 1) 检索相关分块（语料未就绪时先尝试懒加载一次）
+            # 1) 检索相关分块（语料未就绪时先尝试懒加载一次；
+            #    仍失败则降级为纯 LLM 问答，context 置空，不中断对话）
+            context = ""
             if corpus is None:
                 try:
                     corpus = build_corpus(_CORPUS_DIR, embed)
                 except Exception as e:  # noqa: BLE001
-                    yield _sse(
-                        {"type": "error", "content": f"语料未就绪（embedding 连接失败）：{e}"}
+                    print(f"[chat] 语料不可用，降级纯 LLM 问答：{e}")
+            if corpus is not None:
+                try:
+                    chunks = corpus.search(req.message, top_k=3)
+                    context = "\n\n".join(
+                        f"[来源:{c.source} / {c.title}]\n{c.text}" for c in chunks
                     )
-                    yield _sse({"type": "done", "content": ""})
-                    return
-            chunks = corpus.search(req.message, top_k=5)
-            context = "\n\n".join(
-                f"[来源:{c.source} / {c.title}]\n{c.text}" for c in chunks
-            )
+                except Exception as e:  # noqa: BLE001
+                    print(f"[chat] RAG 检索失败，降级纯 LLM 问答：{e}")
             messages = [
                 {"role": "system", "content": SYSTEM_PROMPT.format(context=context)}
             ]
@@ -281,76 +313,83 @@ async def chat(req: ChatRequest):
                 )
             messages.append({"role": "user", "content": req.message})
 
-            # 2) 首轮：带 tools，非流式，检测 tool_calls。
-            # 工具模式异常（模型不稳定等）时降级为无工具纯对话，让模型基于 RAG 直接答。
-            try:
-                first = chat_completion(
-                    messages,
-                    tools=TOOLS,
-                    model=req.model,
-                    temperature=req.temperature,
-                )
-            except Exception:
-                first = chat_completion(
-                    messages,
-                    model=req.model,
-                    temperature=req.temperature,
-                )
-            assistant_msg = first.choices[0].message
-            tool_calls = getattr(assistant_msg, "tool_calls", None)
-
-            if tool_calls:
-                # 回传 assistant 的 tool_calls 消息（OpenAI 要求）
-                yield _sse({"type": "tool_status", "content": "正在查询番剧库…"})
-                messages.append(
-                    {
-                        "role": "assistant",
-                        "content": assistant_msg.content or "",
-                        "tool_calls": [tc.model_dump() for tc in tool_calls],
-                    }
-                )
-                for tc in tool_calls:
-                    args = json.loads(tc.function.arguments or "{}")
-                    result = _run_tool(tc.function.name, args)
-                    messages.append(
-                        {
-                            "role": "tool",
-                            "tool_call_id": tc.id,
-                            "content": json.dumps(result, ensure_ascii=False),
-                        }
+            # 2) 工具探测：仅当用户消息可能涉及番剧时才执行。
+            # 过去每次对话都先跑一轮 non-streaming 探测，
+            # LongCat 不支持标准 tool_calls，探测 = 完整生成一遍，
+            # 即使简单规则问题也白等 5-15s。用意图预判跳过：
+            # 非番剧问题直接走一次 streaming（不传 tools），回复 4-12s。
+            if _needs_tools(req.message):
+                # 2) 首轮：带 tools，非流式，检测 tool_calls。
+                # 工具模式异常（模型不稳定等）时降级为无工具纯对话，让模型基于 RAG 直接答。
+                try:
+                    first = chat_completion(
+                        messages,
+                        tools=TOOLS,
+                        model=req.model,
+                        temperature=req.temperature,
                     )
-                yield _sse({"type": "tool_status", "content": ""})
+                except Exception:
+                    first = chat_completion(
+                        messages,
+                        model=req.model,
+                        temperature=req.temperature,
+                    )
+                assistant_msg = first.choices[0].message
+                tool_calls = getattr(assistant_msg, "tool_calls", None)
 
-            elif assistant_msg.content:
-                # 自定义 XML 工具调用兜底：部分模型（LongCat、Agnes AI 等）不走
-                # OpenAI 标准 tool_calls,而是把工具调用写成 XML 标签塞进 content。
-                # 按顺序尝试 LongCat 和 Agnes 两种格式,谁先匹配上就执行谁。
-                xml_calls = _parse_longcat_tool_calls(assistant_msg.content)
-                if not xml_calls:
-                    xml_calls = _parse_agnes_tool_calls(assistant_msg.content)
-                if xml_calls:
-                    # 清空原始 XML 内容，避免它作为「回答」流到前端
+                if tool_calls:
+                    # 回传 assistant 的 tool_calls 消息（OpenAI 要求）
                     yield _sse({"type": "tool_status", "content": "正在查询番剧库…"})
-                    assistant_msg.content = ""
-                    tool_blocks = []
-                    for name, args in xml_calls:
-                        result = _run_tool(name, args)
-                        tool_blocks.append(
-                            f"[工具 {name} 返回]\n{json.dumps(result, ensure_ascii=False)}"
-                        )
-                    # 非原生 tool-calling 模型：把工具结果作为 user 消息回填，
-                    # 要求模型直接基于结果作答（不要重复调用、不要输出 XML）。
                     messages.append(
                         {
-                            "role": "user",
-                            "content": (
-                                "以下是你刚才请求的工具调用的返回结果，请基于它直接回答用户的问题"
-                                "（不要重复调用工具，也不要输出任何 XML 标签）：\n\n"
-                                + "\n\n".join(tool_blocks)
-                            ),
+                            "role": "assistant",
+                            "content": assistant_msg.content or "",
+                            "tool_calls": [tc.model_dump() for tc in tool_calls],
                         }
                     )
+                    for tc in tool_calls:
+                        args = json.loads(tc.function.arguments or "{}")
+                        result = _run_tool(tc.function.name, args)
+                        messages.append(
+                            {
+                                "role": "tool",
+                                "tool_call_id": tc.id,
+                                "content": json.dumps(result, ensure_ascii=False),
+                            }
+                        )
                     yield _sse({"type": "tool_status", "content": ""})
+
+                elif assistant_msg.content:
+                    # 自定义 XML 工具调用兜底：部分模型（LongCat、Agnes AI 等）不走
+                    # OpenAI 标准 tool_calls,而是把工具调用写成 XML 标签塞进 content。
+                    # 按顺序尝试 LongCat 和 Agnes 两种格式,谁先匹配上就执行谁。
+                    xml_calls = _parse_longcat_tool_calls(assistant_msg.content)
+                    if not xml_calls:
+                        xml_calls = _parse_agnes_tool_calls(assistant_msg.content)
+                    if xml_calls:
+                        # 清空原始 XML 内容，避免它作为「回答」流到前端
+                        yield _sse({"type": "tool_status", "content": "正在查询番剧库…"})
+                        assistant_msg.content = ""
+                        tool_blocks = []
+                        for name, args in xml_calls:
+                            result = _run_tool(name, args)
+                            tool_blocks.append(
+                                f"[工具 {name} 返回]\n{json.dumps(result, ensure_ascii=False)}"
+                            )
+                        # 非原生 tool-calling 模型：把工具结果作为 user 消息回填，
+                        # 要求模型直接基于结果作答（不要重复调用、不要输出 XML）。
+                        messages.append(
+                            {
+                                "role": "user",
+                                "content": (
+                                    "以下是你刚才请求的工具调用的返回结果，请基于它直接回答用户的问题"
+                                    "（不要重复调用工具，也不要输出任何 XML 标签）：\n\n"
+                                    + "\n\n".join(tool_blocks)
+                                ),
+                            }
+                        )
+                        yield _sse({"type": "tool_status", "content": ""})
+
 
             # 3) 流式最终回答（无论是否经过工具，统一走流式）
             #

@@ -11,7 +11,17 @@ class Settings:
     llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.longcat.chat/openai")
     llm_api_key_chat: str = os.getenv("LLM_API_KEY_CHAT", "")
     llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "LongCat-2.0")
-    # Embedding 使用本地 FastEmbed（ONNX），无需外部 API 和网络连接。
+
+    # Embedding：通义千问 text-embedding-v3（阿里云 OpenAI 兼容端点）。
+    # 曾用本地 FastEmbed(ONNX)，但模型需从 huggingface 在线下载，
+    # Railway 容器无缓存且 HF 不可达时会卡死首轮对话，故换回通义 API。
+    dashscope_base_url: str = os.getenv(
+        "DASHSCOPE_BASE_URL", "https://dashscope.aliyuncs.com/compatible-mode/v1"
+    )
+    dashscope_api_key: str = os.getenv("DASHSCOPE_API_KEY", "")
+    dashscope_embedding_model: str = os.getenv(
+        "DASHSCOPE_EMBEDDING_MODEL", "text-embedding-v3"
+    )
 
     # Bangumi（只读 GET，仅需 User-Agent；与后端 bangumi.api.* 配置保持一致）
     bangumi_base_url: str = os.getenv("BANGUMI_BASE_URL", "https://bgmapi.anibt.net")
