@@ -270,6 +270,50 @@ def test_history_truncation():
     print(f"  ✓ history-trunc: {len(hist_msgs)} user/assistant msgs (4 hist + 1 current), oldest dropped, latest kept")
 
 
+# ---------------------------------------------------------------------------
+# Test 6: streaming interceptor soft fallback — when LongCat emits XML in
+# the streaming phase, the interceptor must NOT yield an error frame. If
+# the probe already executed tools, it must yield their results as tokens.
+# ---------------------------------------------------------------------------
+def test_streaming_soft_fallback():
+    fake_stream = FakeChatStream()
+    xml_content = (
+        "<longcat_tool_call>search_bangumi\n"
+        "<longcat_arg_key>keyword</longcat_arg_key>\n"
+        "<longcat_arg_value>机战</longcat_arg_value>\n"
+        "</longcat_tool_call>"
+    )
+    fake_comp = FakeCompletion(content=xml_content)
+    old_s, old_c, old_e, old_r = _m.chat_stream, _m.chat_completion, _m.embed, _m._run_tool
+
+    def fake_run_tool(name, args):
+        return {"title": "某机战番A", "rating": 8.5, "year": 2020}
+
+    _m.chat_stream = fake_stream
+    _m.chat_completion = fake_comp
+    _m.embed = FakeEmbed()
+    _m._run_tool = fake_run_tool
+    _m.corpus = FakeCorpus()
+    try:
+        # Ask an anime question so the probe runs. But monkey-patch chat_stream
+        # to emit XML in the streaming phase, simulating LongCat re-emitting.
+        xml_tokens = ['好的，让我再', '<', 'longcat_', 'tool_', 'call>']
+        _m.chat_stream = lambda messages, **kw: iter(xml_tokens)
+        frames = drain(make_request("推荐机战番"), _m)
+    finally:
+        _m.chat_stream, _m.chat_completion, _m.embed, _m._run_tool = old_s, old_c, old_e, old_r
+
+    errs = [f for f in frames if f.get("type") == "error"]
+    assert not errs, f"soft-fallback should NOT yield error frames, got {errs}"
+    # Tool result must appear as a token (or at least the notice must)
+    types = [f.get("type") for f in frames]
+    assert "token" in types, f"expected token frames with tool results, got {types}"
+    full = "".join(f.get("content", "") for f in frames if f.get("type") == "token")
+    assert "某机战番A" in full, f"tool result not surfaced in fallback: {full!r}"
+    assert "longcat_tool_call" not in full, f"XML leaked despite fallback: {full!r}"
+    print("  ✓ streaming-soft-fallback: no error, tool result surfaced, no XML leak")
+
+
 def run():
     print("=== L1: chat-flow mock tests ===")
     test_skip_probe_for_non_anime()
@@ -277,7 +321,8 @@ def run():
     test_xml_tool_call_in_probe()
     test_corpus_down_fallback()
     test_history_truncation()
-    print("\nL1 ALL 5 TESTS PASSED ✓")
+    test_streaming_soft_fallback()
+    print("\nL1 ALL 6 TESTS PASSED ✓")
 
 
 if __name__ == "__main__":

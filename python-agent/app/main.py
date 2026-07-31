@@ -97,6 +97,81 @@ def _start_corpus_watcher(interval: int = 30) -> None:
 _start_corpus_watcher()
 
 
+def _format_tool_results(tool_blocks):
+    """把工具返回的原始 JSON 块拼成简洁 Markdown 列表。
+
+    用于 hold-back 拦截器软 fallback：检测到工具调用 XML 时
+    不再报错，而是把已经执行完的工具结果拼出来代替。
+    """
+    parts = []
+    for blk in tool_blocks:
+        try:
+            head, sep, rest = blk.partition(" 返回]\n")
+            if not sep:
+                parts.append(blk)
+                continue
+            name = head.lstrip("[工具 ")
+            data = json.loads(rest) if rest.strip() else {}
+        except Exception:
+            parts.append(f"- (工具返回解析失败: {blk[:80]!r})")
+            continue
+        if isinstance(data, list):
+            for item in data[:8]:
+                if not isinstance(item, dict):
+                    continue
+                title = item.get("title") or item.get("name") or "未呷名"
+                year = item.get("year") or item.get("publishYear") or item.get("publish_year")
+                rating = item.get("rating")
+                url = item.get("url")
+                line = f"- **{title}**"
+                if year:
+                    line += f" ({year})"
+                if rating is not None:
+                    try:
+                        line += f" ⭐{round(float(rating), 1)}"
+                    except (TypeError, ValueError):
+                        pass
+                if url:
+                    line += f"  {url}"
+                parts.append(line)
+        elif isinstance(data, dict):
+            # 常见包裹字段：items / data / list / results（搜类工具通常把
+            # 结果放在 items 下，外层再包 count / query 等元数据）
+            inner = None
+            for key in ("items", "data", "list", "results"):
+                v = data.get(key)
+                if isinstance(v, list):
+                    inner = v
+                    break
+            if inner is not None:
+                # 递归处理——把 list 当作顶层处理
+                for item in inner[:8]:
+                    if not isinstance(item, dict):
+                        continue
+                    title = item.get("title") or item.get("name") or item.get("name_cn") or "未题名"
+                    year = item.get("year") or item.get("publishYear") or item.get("publish_year")
+                    rating = item.get("rating")
+                    url = item.get("url")
+                    line = f"- **{title}**"
+                    if year:
+                        line += f" ({year})"
+                    if rating is not None:
+                        try:
+                            line += f" ⭐{round(float(rating), 1)}"
+                        except (TypeError, ValueError):
+                            pass
+                    if url:
+                        line += f"  {url}"
+                    parts.append(line)
+            else:
+                title = data.get("title") or data.get("name") or ""
+                if title:
+                    parts.append(f"- **{title}**")
+        else:
+            parts.append(f"- (工具 {name} 返回不可预期类型: {type(data).__name__})")
+    return "\n".join(parts) if parts else "(工具未返回可展示的结果)"
+
+
 def _sse(obj: dict) -> str:
     """构造 SSE data 帧（与前端 useAgentApi 的解析约定一致：data:{json}\\n\\n）。"""
     return f"data:{json.dumps(obj, ensure_ascii=False)}\n\n"
@@ -256,6 +331,12 @@ async def chat(req: ChatRequest):
 
     async def event_stream():
         global corpus  # event_stream 内部需要重新赋值 corpus,Python 闭包规则必须显式声明
+        # 探测阶段可能不进入 XML 工具路径（LongCat 直接返回 content="" 或空
+        # 消息），所以 tool_blocks fallback 列表必须在入口先初始化，否则下面
+        # `if _tool_blocks_for_fallback:` 触发时会报 UnboundLocalError。
+        # 同时：禁止在任何分支对它做 `= []` 重新赋值，否则 Python 把整个函数
+        # 的这个名都当 local，导致这里的初始化被遮蔽。
+        _tool_blocks_for_fallback: list[str] = []
         try:
             # 1) 检索相关分块（语料未就绪时先尝试懒加载一次；
             #    仍失败则降级为纯 LLM 问答，context 置空，不中断对话）
@@ -351,6 +432,12 @@ async def chat(req: ChatRequest):
                     for tc in tool_calls:
                         args = json.loads(tc.function.arguments or "{}")
                         result = _run_tool(tc.function.name, args)
+                        # 同时填充 _tool_blocks_for_fallback：LongCat 即便走
+                        # 标准 tool_calls 路径，streaming 阶段仍可能再吐 XML，
+                        # 拦截器 fallback 用工具结果时不能漏
+                        _tool_blocks_for_fallback.append(
+                            f"[工具 {tc.function.name} 返回]\n{json.dumps(result, ensure_ascii=False)}"
+                        )
                         messages.append(
                             {
                                 "role": "tool",
@@ -371,10 +458,14 @@ async def chat(req: ChatRequest):
                         # 清空原始 XML 内容，避免它作为「回答」流到前端
                         yield _sse({"type": "tool_status", "content": "正在查询番剧库…"})
                         assistant_msg.content = ""
-                        tool_blocks = []
+                        # 注意：不要写 `_tool_blocks_for_fallback = []`，
+                        # 否则 Python 把整个函数内的它标 local，顶部初始化失效、
+                        # 未走 XML 路径时 if _tool_blocks_for_fallback 报
+                        # UnboundLocalError。顶部 event_stream 入口已初始化一次，
+                        # 此处只 append 即可。
                         for name, args in xml_calls:
                             result = _run_tool(name, args)
-                            tool_blocks.append(
+                            _tool_blocks_for_fallback.append(
                                 f"[工具 {name} 返回]\n{json.dumps(result, ensure_ascii=False)}"
                             )
                         # 非原生 tool-calling 模型：把工具结果作为 user 消息回填，
@@ -385,7 +476,7 @@ async def chat(req: ChatRequest):
                                 "content": (
                                     "以下是你刚才请求的工具调用的返回结果，请基于它直接回答用户的问题"
                                     "（不要重复调用工具，也不要输出任何 XML 标签）：\n\n"
-                                    + "\n\n".join(tool_blocks)
+                                    + "\n\n".join(_tool_blocks_for_fallback)
                                 ),
                             }
                         )
@@ -434,7 +525,13 @@ async def chat(req: ChatRequest):
                 # 一旦 buffer 出现完整开标签 -> 截断 stream + 报错
                 if "<longcat_tool_call" in _xml_buf or "<t​ool_call>" in _xml_buf:
                     _xml_hit = True
-                    yield _sse({"type": "error", "content": "模型响应异常（检测到工具调用 XML），请重试。"})
+                    # 软 fallback：不再报错。探测阶段如果走过工具路径，
+                    # 用工具结果拼 Markdown 回答；否则 yield 提示 + done。
+                    if _tool_blocks_for_fallback:
+                        yield _sse({"type": "tool_status", "content": "（模型在流式阶段重复调用工具，已用首次结果直接呈现）"})
+                        yield _sse({"type": "token", "content": _format_tool_results(_tool_blocks_for_fallback)})
+                    else:
+                        yield _sse({"type": "tool_status", "content": "（模型输出异常，已自动截断）"})
                     break
                 # hold-back：找到 buffer 末尾最后一个 "<"，它之前部分安全可以发送
                 _safe_until = max(0, len(_xml_buf) - _MAX_LOOKAHEAD)
@@ -453,7 +550,12 @@ async def chat(req: ChatRequest):
                 if ("<longcat_tool_call" in _xml_buf
                         or "<t​ool_call>" in _xml_buf
                         or _xml_buf.lstrip().startswith("<")):
-                    yield _sse({"type": "error", "content": "模型响应异常（流末残留疑似 XML），请重试。"})
+                    # 软 fallback：流末残留疑似开标签也不报错
+                    if _tool_blocks_for_fallback:
+                        yield _sse({"type": "tool_status", "content": "（流末检测到疑似 XML，已用工具结果呈现）"})
+                        yield _sse({"type": "token", "content": _format_tool_results(_tool_blocks_for_fallback)})
+                    else:
+                        yield _sse({"type": "tool_status", "content": "（流末检测到疑似开标签，已自动截断）"})
                 else:
                     yield _sse({"type": "token", "content": _xml_buf})
         except RuntimeError as e:
