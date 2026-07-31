@@ -8,6 +8,16 @@
 - 客户端惰性创建：在首次调用处初始化，避免导入期崩溃。
 """
 import time
+import urllib.error
+import urllib.request
+
+
+def _resolve_base_url(_model: str | None) -> str:
+    return settings.llm_base_url_chat.rstrip("/")
+
+
+def _resolve_api_key(_model: str | None) -> str:
+    return settings.llm_api_key_chat
 
 from openai import APIConnectionError, OpenAI
 
@@ -100,13 +110,44 @@ def chat_stream(messages: list[dict], tools=None, model: str | None = None, temp
     }
     if tools:
         kwargs["tools"] = tools
-    stream = client.chat.completions.create(**kwargs)
-    for chunk in stream:
-        if not chunk.choices:
-            continue
-        delta = chunk.choices[0].delta
-        if delta and delta.content:
-            yield delta.content
+    # 绕开 openai SDK 走原生 urllib：openai 2.x 在 stream=True 路径下切换到
+    # 内部 AsyncOpenAI，http_client 参数不生效（之前 5ccb9f2 httpx 修复对流式
+    # 无影响）。urllib 完全可控、零依赖、零坑。
+    req = urllib.request.Request(
+        "{}{}".format(
+            _resolve_base_url(kwargs.get("model")),
+            "/v1/chat/completions",
+        ),
+        data=json.dumps(kwargs).encode("utf-8"),
+        headers={
+            "Authorization": "Bearer {}".format(_resolve_api_key(kwargs.get("model"))),
+            "Content-Type": "application/json",
+        },
+        method="POST",
+    )
+    try:
+        with urllib.request.urlopen(req, timeout=60.0) as resp:
+            for raw_line in resp:
+                line = raw_line.decode("utf-8", errors="replace").rstrip("\r\n")
+                if not line.startswith("data: "):
+                    continue
+                payload = line[len("data: "):]
+                if payload == "[DONE]":
+                    break
+                try:
+                    chunk = json.loads(payload)
+                except Exception:
+                    continue
+                if not chunk.get("choices"):
+                    continue
+                delta = chunk["choices"][0].get("delta") or {}
+                content = delta.get("content")
+                if content:
+                    yield content
+    except urllib.error.HTTPError as e:
+        raise RuntimeError("chat_stream HTTP {}: {}".format(e.code, e.read().decode("utf-8", "replace")[:500]))
+    except urllib.error.URLError as e:
+        raise RuntimeError("chat_stream connection error: {}".format(e))
 
 
 def chat_completion(messages: list[dict], tools=None, model: str | None = None, temperature: float | None = None):
