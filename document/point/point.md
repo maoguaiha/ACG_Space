@@ -21,6 +21,10 @@ ACG_Space 是一个动漫内容与数字谷子集换社区平台，采用 Java 1
 13. **JWT过滤器**：JwtAuthenticationTokenFilter.shouldNotFilter() 中若公开路径带 Authorization header，不能跳过过滤链，否则SecurityUtils.getUserId()返回null
 14. **MyBatis-Plus updateById**：updateById 设置所有非null字段，涉及密码/统计字段时，须先设为null防止覆盖
 15. **列表延迟动画**：v-for 使用 stagger-item 动画时更新列表需确保 key 唯一且不变，否则 TransitionGroup 可能无法正确识别进入/离开元素
+16. **LLM 流式 XML 拦截器**：python-agent 处理 LongCat/Agnes AI 等非标准 tool_calls 模型时，stream 阶段必须用累积 buffer + hold-back（找 buffer 末尾最后一个 `<` 暂扣），**不能**单 token 子串检测（跨 token 切碎会绕过）。命中即 `break + yield SSE error`，不是 `continue`（commit 1c162a9 的"continue 静默跳过"是反模式）。测试见 `python-agent/tests/test_xml_interceptor.py`，含 4 个 case。
+17. **零宽字符 U+200B 在代码字面量中**：Agnes AI 的工具调用标签是 `<tool_call>`（t 和 _ 之间有 ZWSP）。Python 文件里**显式**写 `chr(0x200B)` 构造字符串最可靠；不要在 multi-line patch 的 unicode 转义里手打 `\u200b`——传输/编辑器层容易吞掉。验证：`grep` 不到 U+200B 字节 (`\xe2\x80\x8b`) 就说明字符丢了。
+18. **Edit/Write 工具吃零宽/特殊不可见字符**：任何含 U+200B/U+FEFF/ZWJ 等不可见字符的 multi-line 改动，**必须**走 Bash + Python 脚本（`io.open(..., 'rb')` 读字节或 `chr()` 构造字符串再 `io.open(..., 'wb')` 写），不能走 Edit/Write。验证步骤：`grep -c "[omitted]" 文件` 必须为 0；`python -c "import ast; ast.parse(open(...).read())"` 必须通过；零宽字符用 `data.count('\u200B')` 验证。
+19. **python-agent 聊天慢的三大元凶（2026-07-31 修复）**：①**FastEmbed 本地 ONNX 首次使用要在线下载模型（huggingface），Railway 无缓存 + HF 不可达 → 首轮对话卡死几十秒**——embedding 一律用**通义 text-embedding-v3 API**（DASHSCOPE_API_KEY，≤8/批）；②每次对话的 non-streaming 探测（chat_completion 全量生成只为检测 tool_calls）是最大浪费——用 **`_needs_tools()` 意图预判**（番剧/推荐/新番/评分/类似/搜/《等关键词），非番剧问题直接 1 次 streaming 不传 tools；③history 上限设 16（8 轮）会把 prompt 撑爆——**`_MAX_HISTORY_MESSAGES=4`（2 轮）+ RAG top_k=3**。corpus 不可用降级纯 LLM 问答不中断。
 
 ## 当前进度
 
