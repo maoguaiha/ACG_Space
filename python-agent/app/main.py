@@ -389,6 +389,21 @@ async def chat(req: ChatRequest):
                                 ),
                             }
                         )
+                        # 追加一条高优先级的 system 压制指令：工具结果已拿到，
+                        # 本次 streaming 必须直接输出最终回答，禁止再吐工具调用 XML。
+                        # 不加这条，LongCat 会在最终回答阶段再次输出 <longcat_tool_call>
+                        # （已被 hold-back 拦截器拦截并报错，用户看不到答案）。
+                        messages.append(
+                            {
+                                "role": "system",
+                                "content": (
+                                    "工具调用已经完成，工具返回结果已附在上一条用户消息中。"
+                                    "现在请直接基于这些结果用 Markdown 组织最终回答。"
+                                    "绝对禁止再次输出任何 XML 工具调用标签"
+                                    "（如 <longcat_tool_call>、<tool_call>），禁止再次调用工具。"
+                                ),
+                            }
+                        )
                         yield _sse({"type": "tool_status", "content": ""})
 
 
