@@ -522,8 +522,15 @@ async def chat(req: ChatRequest):
                     # 已检测到开标签，后续 token 全部丢弃，直到 stream 结束
                     continue
                 _xml_buf += token
-                # 一旦 buffer 出现完整开标签 -> 截断 stream + 报错
-                if "<longcat_tool_call" in _xml_buf or "<t​ool_call>" in _xml_buf:
+                # 一旦 buffer 出现开标签 -> 软 fallback（不报错）
+                # 先去除 U+FF5C（全角反斜杠）和零宽字符，再用正则匹配。
+                # DeepSeek 实测会输出 <｜｜DSML｜｜tool_calls> 这样的低调标签；
+                # 正则 <[^a-zA-Z]*(tool_calls|invoke|...) 宽松匹配不依赖精确子串。
+                _xml_norm = re.sub(r"[\u200b-\u200f\ufeff\uff5c]", "", _xml_buf)
+                _xml_hit_tag = re.search(
+                    r"<[^<>]{0,40}(tool_calls|invoke|longcat_tool_call|tool_call)", _xml_norm
+                )
+                if _xml_hit_tag:
                     _xml_hit = True
                     # 软 fallback：不再报错。探测阶段如果走过工具路径，
                     # 用工具结果拼 Markdown 回答；否则 yield 提示 + done。
@@ -547,9 +554,11 @@ async def chat(req: ChatRequest):
                         _xml_buf = _xml_buf[-_MAX_LOOKAHEAD:]
             # 流结束：若 buffer 还有残留疑似 "<" 开头片段，丢弃
             if not _xml_hit and _xml_buf:
-                if ("<longcat_tool_call" in _xml_buf
-                        or "<t​ool_call>" in _xml_buf
-                        or _xml_buf.lstrip().startswith("<")):
+                _xml_norm = re.sub(r"[\u200b-\u200f\ufeff\uff5c]", "", _xml_buf)
+                _xml_hit_tag = re.search(
+                    r"<[^<>]{0,40}(tool_calls|invoke|longcat_tool_call|tool_call)", _xml_norm
+                )
+                if _xml_hit_tag or _xml_norm.lstrip().startswith("<"):
                     # 软 fallback：流末残留疑似开标签也不报错
                     if _tool_blocks_for_fallback:
                         yield _sse({"type": "tool_status", "content": "（流末检测到疑似 XML，已用工具结果呈现）"})
