@@ -199,14 +199,14 @@ def test_xml_tool_call_in_probe():
 
     assert tool_results.get("name") == "search_bangumi", f"tool not executed, got {tool_results}"
     assert tool_results.get("args", {}).get("keyword") == "机战", f"wrong args, got {tool_results}"
-    # The tool result must be fed back into the messages for the stream call
-    stream_msgs = fake_stream.calls[0] if fake_stream.calls else []
-    joined = json.dumps(stream_msgs, ensure_ascii=False)
-    assert "某机战番" in joined, f"tool result not fed back: {joined[:200]!r}"
-    # No XML must leak to the client
+    # Since the main flow now yields _format_tool_results directly after tool
+    # execution (skipping the LLM streaming), the formatted tool result lands
+    # in a token frame on the wire, not in the messages passed to chat_stream.
     text = frames_text(frames)
+    assert "某机战番" in text, f"tool result not surfaced in fallback: {text[:200]!r}"
+    # No XML must leak to the client
     assert "longcat_tool_call" not in text, "XML leaked to client"
-    print("  ✓ xml-tool: search_bangumi executed, result fed back, no XML leak")
+    print("  ✓ xml-tool: search_bangumi executed, result surfaced, no XML leak")
 
 
 # ---------------------------------------------------------------------------

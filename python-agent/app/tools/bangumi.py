@@ -116,6 +116,22 @@ def search_bangumi(keyword: str, limit: int = 5) -> dict:
                 seen.add(iid)
                 pool.append(it)
 
+    # 候选相关性过滤：Bangumi 搜索对"番名"质量好（标题完全匹配），
+    # 但对类型词模糊匹配会带一堆无关番剧（如搜"异度侵入"会带回哆啦A梦电影等）。
+    # 只保留 title/name_cn/name 至少一个含原始 keyword（番名场景）或 keyword 前 2 字
+    # （类型词场景如"热血"匹配"热血最强哥修罗"）。
+    primary_kw = keyword.strip()
+    kw_head = primary_kw[:2] if len(primary_kw) >= 2 else primary_kw
+    filtered = []
+    for it in pool:
+        title_cn = (it.get("name_cn") or "").lower()
+        title_raw = (it.get("name") or "").lower()
+        title_alt = (it.get("title") or "").lower()
+        haystack = title_cn + "|" + title_raw + "|" + title_alt
+        if primary_kw.lower() in haystack or kw_head in haystack:
+            filtered.append(it)
+    pool = filtered
+
     # 并发过滤日本番：as_completed + 凑够 limit 提前停止，避免把整个候选池
     # 全查一遍（镜像详情接口每条约 0.5-1s，25 条全查 = 6-8s，只需查少量即可）。
     out = []

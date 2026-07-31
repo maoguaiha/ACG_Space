@@ -148,10 +148,15 @@ def _format_tool_results(tool_blocks):
                 for item in inner[:8]:
                     if not isinstance(item, dict):
                         continue
-                    title = item.get("title") or item.get("name") or item.get("name_cn") or "未题名"
+                    # name_cn（中文名）优先，缺失才回退到 name（日文）
+                    title = item.get("name_cn") or item.get("title") or item.get("name") or "未题名"
                     year = item.get("year") or item.get("publishYear") or item.get("publish_year")
                     rating = item.get("rating")
                     url = item.get("url")
+                    image = item.get("image") or item.get("cover") or ""
+                    # 封面图（独立行，紧凑 Markdown 渲染）
+                    if image:
+                        parts.append(f"![cover]({image})")
                     line = f"- **{title}**"
                     if year:
                         line += f" ({year})"
@@ -160,11 +165,15 @@ def _format_tool_results(tool_blocks):
                             line += f" ⭐{round(float(rating), 1)}"
                         except (TypeError, ValueError):
                             pass
+                    # 简介（取 summary 前 80 字）
+                    summary = item.get("summary") or ""
+                    if summary:
+                        line += f"\n  简介：{summary[:80]}{'…' if len(summary) > 80 else ''}"
                     if url:
-                        line += f"  {url}"
+                        line += f"\n  [Bangumi 详情]({url})"
                     parts.append(line)
             else:
-                title = data.get("title") or data.get("name") or ""
+                title = data.get("name_cn") or data.get("title") or data.get("name") or ""
                 if title:
                     parts.append(f"- **{title}**")
         else:
@@ -447,6 +456,21 @@ async def chat(req: ChatRequest):
                         )
                     yield _sse({"type": "tool_status", "content": ""})
 
+                    # 工具执行完成：直接 yield 格式化结果，跳过 LLM 流式生成。
+                    # LLM 流式在番剧推荐/介绍场景下会偷懒省略封面图/剧情简介/链接，
+                    # 改由 _format_tool_results 统一渲染：每部含封面/标题/中文名/评分/链接，
+                    # 100% 保证有图有信息。代价：失去 LLM 自然语言评论（DeepSeek 流式
+                    # 质量不稳定，这条路更稳）。如需 LLM 评论可加 system 指令
+                    # "不要重复列番剧、只写评论"配合 LLM 流式输出。
+                    if _tool_blocks_for_fallback:
+                        yield _sse({
+                            "type": "token",
+                            "content": _format_tool_results(_tool_blocks_for_fallback)
+                            + "\n\n（来源：Bangumi）",
+                        })
+                    yield _sse({"type": "done", "content": ""})
+                    return
+
                 elif assistant_msg.content:
                     # 自定义 XML 工具调用兜底：部分模型（LongCat、Agnes AI 等）不走
                     # OpenAI 标准 tool_calls,而是把工具调用写成 XML 标签塞进 content。
@@ -496,6 +520,17 @@ async def chat(req: ChatRequest):
                             }
                         )
                         yield _sse({"type": "tool_status", "content": ""})
+
+                        # 工具执行完成：直接 yield 格式化结果，跳过 LLM 流式生成。
+                        # 原因同 if tool_calls 分支的注释。
+                        if _tool_blocks_for_fallback:
+                            yield _sse({
+                                "type": "token",
+                                "content": _format_tool_results(_tool_blocks_for_fallback)
+                                + "\n\n（来源：Bangumi）",
+                            })
+                        yield _sse({"type": "done", "content": ""})
+                        return
 
 
             # 3) 流式最终回答（无论是否经过工具，统一走流式）
