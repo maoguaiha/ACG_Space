@@ -7,6 +7,7 @@
 - 密钥仅来自 settings（.env / 环境变量），不硬编码。
 - 客户端惰性创建：在首次调用处初始化，避免导入期崩溃。
 """
+import json
 import time
 import urllib.error
 import urllib.request
