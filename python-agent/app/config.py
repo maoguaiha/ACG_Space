@@ -7,10 +7,13 @@ load_dotenv()
 
 
 class Settings:
-    # Chat 模型：LongCat（美团"龙猫"，OpenAI 兼容，中文工具调用效果好）。
-    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.longcat.chat/openai")
+    # Chat 模型：DeepSeek（深度求索，OpenAI 兼容，标准 tool_calls + 生成速度 ~4-6x LongCat）。
+    # 曾用 LongCat-2.0：不支持标准 tool_calls（需 XML 兜底），且 streaming 生成仅 ~10 tokens/s，
+    # 复杂番剧问答（232 tokens 回答）实测 streaming 23.7s。换 DeepSeek 后标准 tool_calls
+    # 探测 0.8s + 生成速度 40-60 tokens/s，目标 30s -> 8-12s。
+    llm_base_url_chat: str = os.getenv("LLM_BASE_URL_CHAT", "https://api.deepseek.com")
     llm_api_key_chat: str = os.getenv("LLM_API_KEY_CHAT", "")
-    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "LongCat-2.0")
+    llm_chat_model: str = os.getenv("LLM_CHAT_MODEL", "deepseek-chat")
 
     # Embedding：通义千问 text-embedding-v3（阿里云 OpenAI 兼容端点）。
     # 曾用本地 FastEmbed(ONNX)，但模型需从 huggingface 在线下载，
