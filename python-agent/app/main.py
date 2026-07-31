@@ -500,23 +500,25 @@ async def chat(req: ChatRequest):
                             + "\n\n（来源：Bangumi）",
                         })
                     # 评论阶段：过滤掉 tool 消息（避免 LLM 从 JSON 复述卡片），
-                    # 只留 system/user/assistant 文本 + 番剧名称列表。
-                    _names = _tool_names(_tool_blocks_for_fallback)
-                    if _names:
+                    # 且**不给番剧名称/数据**——DeepSeek 从训练记忆知道知名番剧，
+                    # 只给名称也会复述卡片并编错评分（实测 7.7 vs 真实 7.2）。
+                    # 只给"用户问题"，LLM 只能写泛泛点评，不会复述卡片。
+                    if _tool_blocks_for_fallback:
                         messages = [m for m in messages if m.get("role") != "tool" and not m.get("tool_calls")]
                         messages.append(
                             {
                                 "role": "system",
                                 "content": (
-                                    "番剧信息已在上方展示给用户（封面/名称/评分/简介/链接）。"
-                                    "请对以下番剧写一段 100~200 字的自然语言评论，点评看点、"
-                                    "亮点、适合人群或相互对比。严禁重复列出番剧名称、"
-                                    "评分、链接、图片或简介——只输出你的评论文字。"
+                                    "番剧卡片已在上方展示给用户（封面/名称/评分/简介/链接）。"
+                                    "现在请写一段 100~200 字的自然语言评论，点评这些番剧的看点、"
+                                    "亮点、适合人群或相互对比。"
+                                    "**严禁输出任何番剧名称、评分、链接、图片、简介或 Markdown 卡片**"
+                                    "——只输出你的评论文字。"
                                 ),
                             }
                         )
                         messages.append(
-                            {"role": "user", "content": "番剧名称列表：" + "、".join(_names)}
+                            {"role": "user", "content": f"用户问题：{req.message}"}
                         )
                     # 不 return：继续走 #3 流式最终回答，LLM 生成评论
 
@@ -578,23 +580,24 @@ async def chat(req: ChatRequest):
                                 "content": _format_tool_results(_tool_blocks_for_fallback)
                                 + "\n\n（来源：Bangumi）",
                             })
-                        # 评论阶段：过滤 tool 消息 + 只给番剧名称列表，避免模型重复输出卡片。
-                        _names = _tool_names(_tool_blocks_for_fallback)
-                        if _names:
+                        # 评论阶段：过滤 tool 消息 + **不给番剧数据**（只给用户问题），
+                        # 避免 DeepSeek 从记忆复述卡片并编错评分。
+                        if _tool_blocks_for_fallback:
                             messages = [m for m in messages if m.get("role") != "tool" and not m.get("tool_calls")]
                             messages.append(
                                 {
                                     "role": "system",
                                     "content": (
-                                        "番剧信息已在上方展示给用户（封面/名称/评分/简介/链接）。"
-                                        "请对以下番剧写一段 100~200 字的自然语言评论，点评看点、"
-                                        "亮点、适合人群或相互对比。严禁重复列出番剧名称、"
-                                        "评分、链接、图片或简介——只输出你的评论文字。"
+                                        "番剧卡片已在上方展示给用户（封面/名称/评分/简介/链接）。"
+                                        "现在请写一段 100~200 字的自然语言评论，点评这些番剧的看点、"
+                                        "亮点、适合人群或相互对比。"
+                                        "**严禁输出任何番剧名称、评分、链接、图片、简介或 Markdown 卡片**"
+                                        "——只输出你的评论文字。"
                                     ),
                                 }
                             )
                             messages.append(
-                                {"role": "user", "content": "番剧名称列表：" + "、".join(_names)}
+                                {"role": "user", "content": f"用户问题：{req.message}"}
                             )
                         # 不 return：继续走 #3 流式最终回答
 
