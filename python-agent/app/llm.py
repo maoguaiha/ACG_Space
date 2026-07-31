@@ -37,7 +37,20 @@ def _chat_client() -> OpenAI:
         raise RuntimeError(
             "LLM_API_KEY_CHAT 未配置：请在 python-agent/.env 设置 Chat API Key"
         )
-    return OpenAI(base_url=settings.llm_base_url_chat, api_key=settings.llm_api_key_chat)
+    # 在 Railway 新加坡区曾出现"Connection error"（httpx 默认 HTTP/2 握手失败 +
+    # 默认连接池策略在该网络栈下不稳），urllib 同步调同一地址却正常。显式配置
+    # httpx 强制 HTTP/1.1、加大 timeout、加 retries 可解决。
+    import httpx
+    http_client = httpx.Client(
+        timeout=httpx.Timeout(60.0, connect=15.0),
+        http2=False,
+        transport=httpx.HTTPTransport(retries=3),
+    )
+    return OpenAI(
+        base_url=settings.llm_base_url_chat,
+        api_key=settings.llm_api_key_chat,
+        http_client=http_client,
+    )
 
 
 def embed(texts: list[str]) -> list[list[float]]:
